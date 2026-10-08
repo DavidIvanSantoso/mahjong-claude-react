@@ -93,6 +93,14 @@ const FLOWER_NAMES = [
   'Musim Dingin',
 ]
 
+/** Penjelasan singkat jenis ubin dan set apa saja yang bisa dibentuk dengannya. */
+export function tileDescription(tile: Tile): string {
+  if (tile.suit === 'wind') return 'Ubin angin. Hanya bisa dijadikan pong atau kong, tidak bisa chi.'
+  if (tile.suit === 'dragon') return 'Ubin naga. Hanya bisa dijadikan pong atau kong, tidak bisa chi.'
+  if (tile.suit === 'flower') return 'Ubin bunga. Disisihkan dan diganti ubin baru.'
+  return `Suit ${SUIT_NAMES[tile.suit]}, angka ${tile.rank}. Bisa dijadikan chi (urutan), pong, atau kong.`
+}
+
 export function tileName(tile: Tile): string {
   if (tile.suit === 'wind') return `Angin ${WIND_NAMES[tile.rank - 1]}`
   if (tile.suit === 'dragon') return `Naga ${DRAGON_NAMES[tile.rank - 1]}`

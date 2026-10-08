@@ -1,6 +1,6 @@
 import { useState, type CSSProperties } from 'react'
 import { canDeclareWin, kongOptions, type Action, type Claim, type GameState } from '../game/state'
-import { sortTiles, tileName } from '../game/tiles'
+import { sortTiles, tileDescription, tileName } from '../game/tiles'
 import { Seat } from './Seat'
 import { TileView } from './TileView'
 
@@ -32,7 +32,7 @@ const SEAT_POSITIONS: Record<number, number[]> = {
  * Makin sedikit pemain, makin banyak buangan per orang, jadi kolamnya makin lebar.
  */
 const POND_LAYOUT: Record<number, { cols: number; divisor: number }> = {
-  2: { cols: 12, divisor: 32 },
+  2: { cols: 15, divisor: 25 },
   3: { cols: 8, divisor: 36 },
   4: { cols: 6, divisor: 28 },
 }
@@ -332,6 +332,21 @@ export function GameTable({
           })}
         </div>
       </div>
+
+      {/* Hanya tampil di layar lebar (lihat index.css). */}
+      <aside className="card last-discard" aria-label="Buangan terakhir">
+        <h2 className="last-discard__title">Buangan terakhir</h2>
+        {lastDiscard ? (
+          <>
+            <TileView tile={lastDiscard.tile} size="zoom" />
+            <p className="last-discard__name">{tileName(lastDiscard.tile)}</p>
+            <p>Dibuang oleh {players[lastDiscard.from].name}</p>
+            <p className="last-discard__desc">{tileDescription(lastDiscard.tile)}</p>
+          </>
+        ) : (
+          <p className="last-discard__desc">Tidak ada ubin buangan yang baru.</p>
+        )}
+      </aside>
 
       <section className="card dock" aria-live="polite">
         {renderDock()}

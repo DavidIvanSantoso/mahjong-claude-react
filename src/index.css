@@ -286,7 +286,7 @@ p {
 
 /* Dua pemain duduk berhadapan, jadi bagian tengah boleh melebar tanpa menabrak kolam samping. */
 .game--duo {
-  --center-h: calc(var(--S) * 0.17);
+  --center-h: calc(var(--S) * 0.14);
 }
 
 .topbar {
@@ -479,6 +479,76 @@ p {
   gap: 10px;
 }
 
+/* ---------- Buangan terakhir (diperbesar) ---------- */
+
+.last-discard {
+  display: none;
+  padding: 16px;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.last-discard__title {
+  font-size: 1rem;
+  margin-bottom: 4px;
+}
+
+.last-discard__name {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.last-discard__desc {
+  font-size: 0.875rem;
+  color: var(--ink-soft);
+}
+
+/* ---------- Layar lebar: buangan terakhir | meja | panel aksi ---------- */
+
+/* Syarat rasio: di layar lebar tapi pendek-lebar (mis. 4:3), susunan bertumpuk memberi meja lebih besar. */
+@media (min-width: 1200px) and (min-aspect-ratio: 3 / 2) {
+  .game {
+    --side: 280px;
+    --gap: 16px;
+    /* Judul dan panel aksi pindah ke samping, jadi meja memakai hampir seluruh tinggi layar. */
+    --S: max(320px, min(100vw - 2 * var(--side) - 2 * var(--gap) - 32px, 100dvh - 32px, 1100px));
+
+    width: auto;
+    grid-template-columns: var(--side) var(--S) var(--side);
+    grid-template-rows: auto auto 1fr;
+    grid-template-areas:
+      'top felt dock'
+      'last felt dock'
+      '. felt dock';
+    justify-content: center;
+    align-items: start;
+    column-gap: var(--gap);
+  }
+
+  .last-discard .tile--zoom {
+    --w: 140px;
+  }
+
+  .topbar {
+    grid-area: top;
+  }
+
+  .felt {
+    grid-area: felt;
+  }
+
+  .dock {
+    grid-area: dock;
+  }
+
+  .last-discard {
+    grid-area: last;
+    display: flex;
+  }
+}
+
 /* ---------- Ubin ---------- */
 
 .tile {
@@ -508,13 +578,18 @@ p {
   --w: 26px;
 }
 
+.tile--zoom {
+  --w: 112px;
+}
+
 /* Ukuran di meja, relatif terhadap sisi meja */
+/* 14 ubin + jaraknya pas selebar sisi meja */
 .tile--hand {
-  --w: calc(var(--S) / 16);
+  --w: calc((var(--S) - 44px) / 14);
 }
 
 .tile--side {
-  --w: calc(var(--S) / 28);
+  --w: calc(var(--S) / 22);
 }
 
 .tile--open {

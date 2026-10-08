@@ -8,9 +8,9 @@ const FLOWER_GLYPHS = ['梅', '蘭', '菊', '竹', '春', '夏', '秋', '冬']
 
 /**
  * hand/side/open/pond mengikuti ukuran meja (lihat index.css);
- * md/sm berukuran tetap untuk dipakai di luar meja.
+ * zoom/md/sm berukuran tetap untuk dipakai di luar meja.
  */
-export type TileSize = 'hand' | 'side' | 'open' | 'pond' | 'md' | 'sm'
+export type TileSize = 'hand' | 'side' | 'open' | 'pond' | 'zoom' | 'md' | 'sm'
 
 interface TileViewProps {
   tile: Tile

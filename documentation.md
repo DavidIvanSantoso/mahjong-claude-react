@@ -1,0 +1,320 @@
+# Dokumentasi Mahjong
+
+Game mahjong 2D untuk 2–4 pemain, dibuat dengan React dan TypeScript. Bisa dimainkan bergantian di satu perangkat, atau online lewat room (PeerJS) dengan tiap pemain di perangkatnya sendiri.
+
+- Situs: https://davidivansantoso.github.io/mahjong-claude-react/
+- Repo: https://github.com/DavidIvanSantoso/mahjong-claude-react
+
+## Daftar isi
+
+1. [Menjalankan projek](#1-menjalankan-projek)
+2. [Teknologi](#2-teknologi)
+3. [Struktur folder](#3-struktur-folder)
+4. [Aturan permainan yang dipakai](#4-aturan-permainan-yang-dipakai)
+5. [Logika permainan](#5-logika-permainan)
+6. [Tampilan](#6-tampilan)
+7. [Mode online dengan PeerJS](#7-mode-online-dengan-peerjs)
+8. [Deploy ke GitHub Pages](#8-deploy-ke-github-pages)
+9. [Batasan yang diketahui](#9-batasan-yang-diketahui)
+10. [Lisensi dan aset](#10-lisensi-dan-aset)
+
+---
+
+## 1. Menjalankan projek
+
+Butuh Node.js 22 atau lebih baru.
+
+```
+npm install
+npm run dev
+```
+
+Buka alamat yang muncul di terminal (biasanya `http://localhost:5173`).
+
+| Perintah | Fungsi |
+|---|---|
+| `npm run dev` | Server pengembangan dengan hot reload |
+| `npm run build` | Cek tipe TypeScript lalu build ke folder `dist/` |
+| `npm run preview` | Menyajikan hasil build secara lokal |
+
+Untuk mencoba mode online di satu komputer, buka dua tab atau lebih: satu membuat room, yang lain bergabung dengan kodenya. Mode online butuh koneksi internet walaupun dijalankan lokal, karena pemain dipertemukan lewat server PeerJS.
+
+## 2. Teknologi
+
+| Bagian | Yang dipakai |
+|---|---|
+| UI | React 19 + TypeScript |
+| Build | Vite 7 |
+| Koneksi antarpemain | PeerJS 1.5 (WebRTC) |
+| Hosting | GitHub Pages, deploy lewat GitHub Actions |
+| Gaya | Satu file CSS biasa (`src/index.css`), tanpa library UI |
+
+Palet warna: `#F6E2E9` (merah muda), `#FEFAF3` (krem), `#B8CFB3` (hijau muda), `#84A282` (hijau). Warna teks dan simbol ubin adalah turunan yang lebih gelap dari palet itu supaya terbaca.
+
+## 3. Struktur folder
+
+```
+src/
+  main.tsx                 Titik masuk React
+  App.tsx                  Memilih layar: menu, game lokal, host, atau tamu
+  index.css                Semua gaya
+  game/                    Logika permainan, tanpa React dan tanpa jaringan
+    tiles.ts               Jenis ubin, membuat dan mengocok dinding, nama ubin
+    rules.ts               Cek menang, pong/kong, pilihan chi
+    state.ts               State permainan dan reducer (alur giliran)
+  components/
+    SetupScreen.tsx        Menu awal: jumlah pemain, nama, buat/gabung room
+    GameTable.tsx          Meja, putaran meja, panel pesan dan tombol aksi
+    Seat.tsx               Satu kursi: tangan, set terbuka, bunga, buangan
+    TileView.tsx           Gambar satu ubin (muka atau telungkup)
+    OnlineGame.tsx         Lobi room dan pembungkus meja untuk mode online
+  net/                     Mode online
+    online.ts              Bentuk pesan, kode room, penyaringan state per pemain
+    rooms.ts               Kelas HostRoom dan GuestRoom, plus hook React-nya
+.github/workflows/deploy.yml   Build dan deploy otomatis ke GitHub Pages
+vite.config.ts             Konfigurasi Vite (base path relatif)
+```
+
+Pemisahan yang penting: folder `game/` tidak tahu apa pun soal tampilan atau jaringan. Mode lokal dan mode online memakai reducer yang sama persis.
+
+## 4. Aturan permainan yang dipakai
+
+**Ubin.** 144 ubin: 3 suit bernomor 1–9 (Karakter, Bulat, Bambu), 4 angin, 3 naga, masing-masing 4 salinan (136 ubin), ditambah 8 ubin bunga (4 bunga + 4 musim, masing-masing satu).
+
+**Menang.** 4 set + 1 pair, total 14 ubin. Set adalah:
+
+- **Pong**: 3 ubin kembar.
+- **Chi**: 3 ubin berurutan dalam suit yang sama. Tidak berlaku untuk angin dan naga, dan tidak boleh melewati batas (8-9-1 tidak sah).
+- **Kong**: 4 ubin kembar, dihitung sebagai satu set.
+
+**Giliran.** Tiap pemain mulai dengan 13 ubin. Pada gilirannya pemain mengambil 1 ubin dari dinding, lalu membuang 1 ubin. Pemain bisa menyatakan menang kalau 14 ubinnya memenuhi syarat.
+
+**Klaim buangan.** Setelah ubin dibuang, pemain lain bisa mengklaimnya. Urutan prioritas:
+
+1. **Menang** — siapa saja, mulai dari pemain terdekat setelah pembuang.
+2. **Pong atau Kong** — siapa saja yang punya 2 (pong) atau 3 (kong) ubin kembar.
+3. **Chi** — hanya pemain tepat setelah pembuang.
+
+Pemain yang mengklaim pong atau chi langsung membuang tanpa mengambil dari dinding, dan giliran berlanjut dari dia.
+
+**Kong.** Ada tiga cara:
+
+- **Tertutup**: 4 ubin kembar di tangan, dinyatakan pada giliran sendiri.
+- **Tambahan**: menambah ubin ke-4 ke pong yang sudah terbuka, pada giliran sendiri.
+- **Dari buangan**: punya 3 kembar, lalu pemain lain membuang yang ke-4.
+
+Setelah kong, pemain mengambil satu ubin pengganti dari dinding. Kong tidak ditawarkan kalau dinding sudah habis.
+
+**Bunga.** Ubin bunga tidak pernah ada di tangan. Begitu didapat (saat pembagian awal atau saat mengambil), bunga disisihkan dan otomatis diganti ubin baru dari dinding. Bunga belum bernilai apa pun karena belum ada sistem skor.
+
+**Seri.** Kalau dinding habis tanpa pemenang, permainan berakhir seri.
+
+**Yang tidak ada:** sistem skor, angin putaran/angin kursi, "merampas kong", dan penyesuaian jumlah ubin untuk 2–3 pemain (semua 144 ubin tetap dipakai).
+
+## 5. Logika permainan
+
+### Ubin (`game/tiles.ts`)
+
+Tiap ubin adalah objek `{ id, suit, rank }`. `id` unik per ubin fisik (0–143). `kindIndex(tile)` mengubah ubin menjadi angka jenis 0–33 (bunga mulai dari 34), yang dipakai untuk mengurutkan tangan dan menghitung jumlah per jenis.
+
+### Cek menang (`game/rules.ts`)
+
+`isWinningHand(concealed, meldCount)`:
+
+1. Jumlah ubin di tangan harus tepat `14 − 3 × meldCount`. Kong tetap dihitung 3 karena ubin keempatnya sudah diganti ubin tambahan.
+2. Hitung jumlah ubin per jenis (array 34 angka).
+3. Coba setiap jenis yang jumlahnya ≥ 2 sebagai pair. Untuk tiap percobaan, cek secara rekursif apakah sisa ubin bisa dibagi habis menjadi pong dan chi: ambil jenis terkecil yang masih ada, coba sebagai pong, lalu sebagai awal chi.
+
+Fungsi lain: `matchingTiles` (ubin di tangan yang kembar dengan ubin tertentu) dan `chiOptions` (semua pasangan di tangan yang membentuk urutan dengan ubin buangan).
+
+### State dan reducer (`game/state.ts`)
+
+Seluruh permainan disimpan dalam satu objek `GameState` dan diubah hanya lewat `reducer(state, action)`. Reducer ini murni: tidak menyentuh tampilan atau jaringan.
+
+**Fase permainan:**
+
+| Fase | Arti |
+|---|---|
+| `handoff` | Tangan disembunyikan; menunggu pemain berikutnya memegang perangkat |
+| `turn` | Pemain `current` sudah mengambil ubin dan harus membuang, kong, atau menang |
+| `claim` | Pemain lain ditawari ubin buangan terakhir, satu per satu sesuai prioritas |
+| `over` | Ada pemenang, atau seri |
+
+**Alur satu giliran:**
+
+```
+handoff --reveal--> turn --discard--> ada yang bisa klaim?
+                                         |-- tidak --> handoff (pemain berikutnya)
+                                         '-- ya ----> claim
+claim --claim (pong/chi)--> turn (pengklaim langsung membuang)
+claim --claim (kong)------> turn (pengklaim mengambil ubin pengganti)
+claim --claim (menang)----> over
+claim --pass--> klaim berikutnya, atau handoff kalau semua melewatkan
+turn  --kong--> turn (ambil ubin pengganti)
+turn  --declareWin--> over
+dinding habis --> over (seri)
+```
+
+**Aksi:**
+
+| Aksi | Kapan | Efek |
+|---|---|---|
+| `start` | Kapan saja | Kocok, bagi 13 ubin per pemain, ganti bunga |
+| `reveal` | `handoff` atau `claim` | Ambil ubin dan mulai giliran, atau buka tangan pengklaim |
+| `discard` | `turn` | Buang satu ubin, lalu cari klaim |
+| `kong` | `turn` | Kong tertutup atau tambahan, lalu ambil ubin pengganti |
+| `declareWin` | `turn` | Menang dari ubin ambilan sendiri |
+| `claim` | `claim` | Terima klaim pertama dalam antrean |
+| `pass` | `claim` | Lewati klaim pertama dalam antrean |
+
+Aksi yang tidak sah untuk keadaan saat itu (misalnya membuang ubin yang tidak ada di tangan) tidak mengubah state.
+
+**Mengambil ubin** selalu lewat satu fungsi (`drawTile`): kalau yang terambil bunga, bunga disisihkan dan diambil lagi sampai dapat ubin biasa atau dinding habis.
+
+## 6. Tampilan
+
+### Meja
+
+Meja berbentuk persegi. Tiap pemain menempati satu sisi; buangan tiap pemain tersusun di depannya, mengelilingi kotak tengah yang menampilkan nama pemain dan sisa ubin di dinding. Di antara tangan dan buangan ada set terbuka dan bunga.
+
+- 2 pemain duduk berhadapan (bawah dan atas); 3 pemain di bawah, kanan, dan atas; 4 pemain di keempat sisi.
+- Lebar area buangan menyesuaikan jumlah pemain (15, 8, atau 6 kolom), karena makin sedikit pemain makin banyak buangan per orang.
+- Tangan pemain lain tampil sebagai ubin telungkup berwarna merah muda.
+- Kong tertutup ditampilkan dengan dua ubin luarnya telungkup.
+
+**Cara menggambarnya.** Tiap kursi adalah satu lapisan seukuran meja yang diputar kelipatan 90°, dan isinya selalu ditata seolah-olah kursi bawah. Dengan begitu satu tata letak dipakai untuk keempat sisi.
+
+**Ukuran.** Semua ukuran di meja diturunkan dari satu variabel CSS `--S` (panjang sisi meja), yang dihitung dari ukuran layar. Meja otomatis mengecil di layar kecil.
+
+**Ubin** digambar seluruhnya dengan CSS dan karakter teks; tidak ada file gambar.
+
+### Putaran meja (mode satu perangkat)
+
+Pemain yang sedang memegang perangkat selalu berada di sisi bawah. Saat giliran pindah, seluruh meja berputar sampai pemain berikutnya ada di bawah. Sudut putar terus bertambah (tidak kembali ke 0), supaya meja selalu berputar lewat jalur terpendek. Angka sisa dinding di tengah diputar balik agar tetap tegak.
+
+Animasi dimatikan untuk pengguna yang mengaktifkan "kurangi gerakan" di sistemnya.
+
+### Panel aksi
+
+Panel di bawah meja tidak ikut berputar. Isinya pesan untuk pemain dan tombol sesuai keadaan: Buang, Kong, Mahjong, Pong, Chi, Lewati. Memilih ubin di tangan lalu mengetuknya lagi langsung membuangnya.
+
+### Layar lebar
+
+Di layar selebar 1200 px atau lebih dengan rasio minimal 3:2, tata letaknya menjadi tiga kolom: judul dan panel **Buangan terakhir** di kiri, meja di tengah, dan panel aksi di kanan. Meja memakai hampir seluruh tinggi layar (sampai 1100 px), sehingga semua ubin ikut membesar. Panel kiri menampilkan ubin yang terakhir dibuang dalam ukuran besar, beserta namanya, siapa yang membuang, dan penjelasan singkat jenis ubinnya. Di layar yang lebih sempit panel kiri disembunyikan dan panel aksi kembali ke bawah meja.
+
+### Satu komponen untuk dua mode
+
+`GameTable` dipakai oleh mode lokal dan online. Perbedaannya ditentukan oleh properti `viewer`:
+
+| | Lokal (`viewer` kosong) | Online (`viewer` = kursi sendiri) |
+|---|---|---|
+| Siapa di sisi bawah | Pemain yang memegang perangkat | Selalu diri sendiri |
+| Meja berputar | Ya | Tidak |
+| Tangan yang terlihat | Hanya saat giliran sudah dibuka | Tangan sendiri, selalu |
+| Layar "berikan perangkat" | Ada | Tidak ada |
+
+## 7. Mode online dengan PeerJS
+
+### Gambaran umum
+
+PeerJS adalah library di atas WebRTC yang menghubungkan dua browser secara langsung. Tidak ada server permainan milik sendiri. Yang dipakai dari luar hanya server perantara publik milik PeerJS, untuk mempertemukan dua browser di awal; setelah tersambung, data permainan mengalir langsung antarbrowser.
+
+Browser pembuat room menjadi **host** dan memegang state permainan yang asli. Pemain lain (**tamu**) hanya mengirim aksi dan menerima hasilnya.
+
+```
+  Tamu A  --aksi-->             --state untuk A-->  Tamu A
+                     HOST
+  Tamu B  --aksi-->  (reducer)  --state untuk B-->  Tamu B
+```
+
+### Membuat dan masuk room
+
+1. Host memilih jumlah pemain (2–4) dan membuat room. Aplikasi membuat kode acak 5 karakter (tanpa huruf/angka yang mirip seperti O/0 dan I/1).
+2. Host mendaftar ke server PeerJS dengan ID `mahjong-claude-room-<KODE>`.
+3. Tamu memasukkan kode, atau membuka link undangan `…/?room=KODE`. Browser tamu menyambung ke ID tersebut dan mengirim pesan `join`.
+4. Host menaruh tamu di kursi berikutnya. Tamu ditolak kalau room sudah penuh atau permainan sudah dimulai.
+5. Setelah semua kursi terisi, host menekan "Mulai permainan".
+
+### Pesan yang dikirim (`net/online.ts`)
+
+Tamu ke host:
+
+| Pesan | Isi |
+|---|---|
+| `join` | Nama dan token pemain |
+| `action` | Satu aksi permainan (buang, kong, klaim, lewati, menang) |
+
+Host ke tamu:
+
+| Pesan | Isi |
+|---|---|
+| `sync` | Daftar pemain di lobi, nomor kursi tamu, dan state permainan untuk tamu itu |
+| `rejected` | Alasan penolakan (room penuh atau permainan sudah dimulai) |
+
+Setiap kali ada perubahan, host mengirim `sync` baru ke semua tamu. Tamu tidak menghitung apa pun sendiri; ia hanya menampilkan `sync` terakhir.
+
+### Yang dilakukan host untuk tiap aksi
+
+1. **Memeriksa hak** (`isAllowed`): aksi giliran hanya diterima dari pemain yang sedang giliran; klaim dan lewati hanya dari pemain yang sedang ditawari. Aksi lain diabaikan.
+2. **Menjalankan reducer** yang sama dengan mode lokal.
+3. **Melewati langkah "berikan perangkat"** (`settle`): fase `handoff` dan klaim yang belum dibuka langsung dilanjutkan, karena tiap pemain punya layar sendiri.
+4. **Mengirim state yang sudah disaring** ke tiap pemain.
+
+### Menyembunyikan tangan lawan (`viewFor`)
+
+Sebelum dikirim, state disaring untuk tiap kursi:
+
+- Tangan pemain lain diganti ubin kosong (jumlahnya tetap, isinya tidak ada).
+- Dinding diganti ubin kosong.
+- Info ubin yang baru diambil hanya dikirim ke pemain yang mengambil.
+- Isi klaim hanya dikirim ke pemain yang ditawari; pemain lain hanya tahu bahwa permainan sedang menunggu.
+
+Jadi isi tangan lawan memang tidak pernah sampai ke perangkat tamu. Setelah permainan selesai, semua tangan dibuka.
+
+**Pengecualian: host.** State asli ada di memori browser host. Tampilan host juga disaring sehingga ia tidak melihat tangan lawan saat bermain biasa, tetapi host yang sengaja membongkar lewat DevTools bisa membacanya. Ini dianggap wajar untuk permainan antar teman. Menutup celah ini sepenuhnya butuh server netral.
+
+### Putus dan sambung ulang
+
+- Tiap tamu punya token acak yang disimpan di `sessionStorage` per kode room. Kalau tamu refresh atau terputus lalu masuk lagi dengan kode yang sama dari tab yang sama, host mengenali tokennya dan mengembalikannya ke kursi semula dengan tangan yang sama.
+- Selama permainan, kursi pemain yang terputus ditahan dan namanya tampil redup dan dicoret di tengah meja. Permainan menunggu saat gilirannya tiba.
+- Di lobi (sebelum mulai), kursi pemain yang terputus langsung dilepas.
+- Kalau host menutup atau me-refresh tab, room hilang dan tamu melihat pesan "Koneksi ke host terputus".
+
+### Kode (`net/rooms.ts`)
+
+| Bagian | Peran |
+|---|---|
+| `HostRoom` | Menerima koneksi, mengatur kursi, memvalidasi dan menjalankan aksi, menyebarkan state |
+| `GuestRoom` | Menyambung ke host, mengirim aksi, menyimpan `sync` terakhir |
+| `useHostRoom`, `useGuestRoom` | Hook React yang membungkus kedua kelas itu dan mengembalikan bentuk `Room` yang sama |
+
+`OnlineGame.tsx` memakai `Room` itu untuk menampilkan lobi, pesan error, atau meja permainan.
+
+## 8. Deploy ke GitHub Pages
+
+GitHub Pages hanya menyajikan file statis, dan itu cukup: aplikasi ini tidak punya server sendiri.
+
+**Pengaturan sekali saja:** di repo, **Settings → Pages → Build and deployment → Source**, pilih **GitHub Actions**. Jangan pilih "Deploy from a branch" dengan branch `main`: itu menyajikan kode sumber mentah, dan halamannya akan kosong.
+
+**Setelah itu otomatis.** Setiap `git push` ke `main` menjalankan `.github/workflows/deploy.yml`, yang memasang dependensi (`npm ci`), menjalankan `npm run build`, lalu menerbitkan folder `dist/`.
+
+`vite.config.ts` memakai `base: './'` (path relatif), sehingga hasil build berjalan di `https://<user>.github.io/<nama-repo>/` tanpa perlu menulis nama repo di konfigurasi.
+
+**Mematikan situs:** **Settings → Pages → Unpublish site**. Mengubah repo menjadi privat juga mematikan situs di akun GitHub gratis.
+
+## 9. Batasan yang diketahui
+
+- **Room bergantung pada host.** Room hilang kalau tab host ditutup atau di-refresh.
+- **Host secara teknis bisa mengintip** lewat DevTools (lihat bagian 7).
+- **Tidak semua jaringan bisa tersambung.** Koneksi langsung antarbrowser bisa gagal di sebagian jaringan kantor, kampus, atau operator seluler.
+- **Bergantung pada server PeerJS publik** untuk mempertemukan pemain. Kalau server itu sedang bermasalah, room tidak bisa dibuat atau dimasuki.
+- **Tidak ada batas waktu giliran dan tidak ada cara mengeluarkan pemain.** Kalau seorang pemain terputus dan tidak kembali, permainan berhenti di gilirannya.
+- **Layar ponsel sempit.** Ubin di tangan menjadi kecil karena 14 ubin harus muat di satu sisi meja. Paling nyaman di tablet atau laptop.
+- **Belum ada** sistem skor, "merampas kong", dan tes otomatis di dalam repo.
+
+## 10. Lisensi dan aset
+
+- Tidak ada file gambar, font, atau suara. Ubin digambar dengan CSS dan karakter teks; font memakai bawaan perangkat.
+- Library yang ikut dalam hasil build: React dan React DOM (MIT), PeerJS (MIT), beserta turunannya (MIT, ISC, BSD-3-Clause).
+- Alat build: Vite (MIT), TypeScript (Apache-2.0).
+- Mahjong adalah permainan tradisional; aturan dan namanya tidak dimiliki pihak mana pun.
