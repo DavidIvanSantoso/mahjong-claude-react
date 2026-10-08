@@ -70,6 +70,7 @@ export function GameTable({
   const positions = SEAT_POSITIONS[players.length]
   const pond = POND_LAYOUT[players.length]
   const online = viewer !== undefined
+  const absent = players.filter((_, i) => connected?.[i] === false).map((player) => player.name)
 
   // Pemain yang duduk di sisi bawah layar: di mode online selalu diri sendiri,
   // di satu perangkat pemain yang sedang/akan memegang perangkat.
@@ -88,6 +89,11 @@ export function GameTable({
   }
 
   function renderDock() {
+    // Mode online hanya berhenti di fase ini selama menunggu pemain yang terputus.
+    if (phase === 'handoff' && online) {
+      return <p className="dock__hint">Menunggu {players[current].name} tersambung kembali…</p>
+    }
+
     if (phase === 'handoff') {
       const name = players[current].name
       return (
@@ -349,6 +355,14 @@ export function GameTable({
       </aside>
 
       <section className="card dock" aria-live="polite">
+        {absent.length > 0 && phase !== 'over' && (
+          <p className="dock__notice" role="status">
+            <strong>{absent.join(', ')}</strong> keluar dari permainan.{' '}
+            {players.length - absent.length >= 2
+              ? 'Gilirannya dilewati sampai tersambung kembali.'
+              : 'Permainan menunggu sampai ada yang tersambung kembali.'}
+          </p>
+        )}
         {renderDock()}
       </section>
     </div>

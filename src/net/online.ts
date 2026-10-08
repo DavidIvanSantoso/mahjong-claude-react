@@ -1,4 +1,4 @@
-import { reducer, type Action, type GameState } from '../game/state'
+import type { Action, GameState } from '../game/state'
 import type { Tile } from '../game/tiles'
 
 export interface LobbyInfo {
@@ -35,15 +35,23 @@ export function peerId(code: string): string {
   return `mahjong-claude-room-${code}`
 }
 
+/** Pemain yang aksinya sedang ditunggu, atau null kalau permainan tidak berjalan. */
+export function awaitedSeat(state: GameState): number | null {
+  if (state.phase === 'claim') return state.claims[0]?.player ?? null
+  if (state.phase === 'handoff' || state.phase === 'turn') return state.current
+  return null
+}
+
 /**
- * Di mode online tiap pemain punya layar sendiri, jadi langkah "berikan perangkat"
- * (handoff dan klaim yang belum dibuka) langsung dilewati.
+ * Aksi pengganti untuk pemain yang terputus: gilirannya dilewati tanpa mengambil ubin,
+ * klaimnya dilewatkan, dan kalau ia terputus setelah mengambil, ubin ambilannya dibuang.
  */
-export function settle(state: GameState): GameState {
-  while (state.phase === 'handoff' || (state.phase === 'claim' && !state.claimRevealed)) {
-    state = reducer(state, { type: 'reveal' })
-  }
-  return state
+export function absentAction(state: GameState): Action {
+  if (state.phase === 'handoff') return { type: 'skip' }
+  if (state.phase === 'claim') return { type: 'pass' }
+  const hand = state.players[state.current].hand
+  const tile = hand.find((t) => t.id === state.drawnId) ?? hand[hand.length - 1]
+  return { type: 'discard', tileId: tile.id }
 }
 
 /** Aksi yang boleh dikirim pemain di kursi `seat` pada keadaan sekarang. */
@@ -57,7 +65,7 @@ export function isAllowed(state: GameState, seat: number, action: Action): boole
     case 'pass':
       return state.phase === 'claim' && state.claims[0]?.player === seat
     default:
-      // start/reset/reveal hanya dijalankan host sendiri.
+      // start/reset/reveal/skip hanya dijalankan host sendiri.
       return false
   }
 }

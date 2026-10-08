@@ -456,6 +456,16 @@ p {
   font-size: 1.25rem;
 }
 
+/* Peringatan pemain terputus */
+.dock__notice {
+  align-self: stretch;
+  padding: 8px 12px;
+  font-size: 0.875rem;
+  background: var(--pink);
+  border: 1px solid var(--pink-deep);
+  border-radius: 10px;
+}
+
 .dock__hint {
   color: var(--ink-soft);
 }

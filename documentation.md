@@ -161,6 +161,7 @@ dinding habis --> over (seri)
 |---|---|---|
 | `start` | Kapan saja | Kocok, bagi 13 ubin per pemain, ganti bunga |
 | `reveal` | `handoff` atau `claim` | Ambil ubin dan mulai giliran, atau buka tangan pengklaim |
+| `skip` | `handoff` | Mode online: lewati giliran pemain yang terputus, tanpa mengambil ubin |
 | `discard` | `turn` | Buang satu ubin, lalu cari klaim |
 | `kong` | `turn` | Kong tertutup atau tambahan, lalu ambil ubin pengganti |
 | `declareWin` | `turn` | Menang dari ubin ambilan sendiri |
@@ -257,7 +258,7 @@ Setiap kali ada perubahan, host mengirim `sync` baru ke semua tamu. Tamu tidak m
 
 1. **Memeriksa hak** (`isAllowed`): aksi giliran hanya diterima dari pemain yang sedang giliran; klaim dan lewati hanya dari pemain yang sedang ditawari. Aksi lain diabaikan.
 2. **Menjalankan reducer** yang sama dengan mode lokal.
-3. **Melewati langkah "berikan perangkat"** (`settle`): fase `handoff` dan klaim yang belum dibuka langsung dilanjutkan, karena tiap pemain punya layar sendiri.
+3. **Menjalankan langkah yang tidak butuh keputusan pemain** (`HostRoom.advance`): fase `handoff` dan klaim yang belum dibuka langsung dilanjutkan, karena tiap pemain punya layar sendiri. Di sini juga giliran pemain yang terputus dilewati (lihat "Putus dan sambung ulang").
 4. **Mengirim state yang sudah disaring** ke tiap pemain.
 
 ### Menyembunyikan tangan lawan (`viewFor`)
@@ -276,7 +277,13 @@ Jadi isi tangan lawan memang tidak pernah sampai ke perangkat tamu. Setelah perm
 ### Putus dan sambung ulang
 
 - Tiap tamu punya token acak yang disimpan di `sessionStorage` per kode room. Kalau tamu refresh atau terputus lalu masuk lagi dengan kode yang sama dari tab yang sama, host mengenali tokennya dan mengembalikannya ke kursi semula dengan tangan yang sama.
-- Selama permainan, kursi pemain yang terputus ditahan dan namanya tampil redup dan dicoret di tengah meja. Permainan menunggu saat gilirannya tiba.
+- Selama permainan, kursi pemain yang terputus ditahan. Namanya tampil redup dan dicoret di tengah meja, dan semua pemain melihat peringatan "… keluar dari permainan" di panel aksi.
+- Host menunggu 15 detik (cukup untuk refresh halaman). Kalau pemain itu belum kembali, aksinya digantikan otomatis:
+  - gilirannya **dilewati** tanpa mengambil ubin dari dinding;
+  - tawaran klaim untuknya dilewatkan;
+  - kalau ia terputus setelah mengambil ubin, ubin ambilannya dibuang.
+- Setelah masa tunggu itu lewat, giliran-giliran berikutnya langsung dilewati tanpa jeda sampai ia tersambung kembali. Begitu kembali, ia bermain lagi seperti biasa dengan tangan yang sama.
+- Kalau yang tersambung tinggal satu orang, tidak ada yang dilewati: permainan menunggu sampai ada pemain yang kembali.
 - Di lobi (sebelum mulai), kursi pemain yang terputus langsung dilepas.
 - Kalau host menutup atau me-refresh tab, room hilang dan tamu melihat pesan "Koneksi ke host terputus".
 
@@ -308,7 +315,8 @@ GitHub Pages hanya menyajikan file statis, dan itu cukup: aplikasi ini tidak pun
 - **Host secara teknis bisa mengintip** lewat DevTools (lihat bagian 7).
 - **Tidak semua jaringan bisa tersambung.** Koneksi langsung antarbrowser bisa gagal di sebagian jaringan kantor, kampus, atau operator seluler.
 - **Bergantung pada server PeerJS publik** untuk mempertemukan pemain. Kalau server itu sedang bermasalah, room tidak bisa dibuat atau dimasuki.
-- **Tidak ada batas waktu giliran dan tidak ada cara mengeluarkan pemain.** Kalau seorang pemain terputus dan tidak kembali, permainan berhenti di gilirannya.
+- **Tidak ada batas waktu giliran.** Pemain yang terputus dilewati otomatis, tetapi pemain yang masih tersambung dan diam saja tetap ditunggu.
+- **Ubin pemain yang keluar ikut terkunci.** Tangan dan set terbukanya tetap di kursinya, jadi ubin itu tidak bisa didapat pemain lain.
 - **Layar ponsel sempit.** Ubin di tangan menjadi kecil karena 14 ubin harus muat di satu sisi meja. Paling nyaman di tablet atau laptop.
 - **Belum ada** sistem skor, "merampas kong", dan tes otomatis di dalam repo.
 

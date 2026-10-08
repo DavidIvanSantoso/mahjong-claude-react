@@ -56,6 +56,8 @@ export interface GameState {
 export type Action =
   | { type: 'start'; names: string[] }
   | { type: 'reveal' }
+  /** Mode online: lewati giliran pemain yang terputus, tanpa mengambil ubin. */
+  | { type: 'skip' }
   | { type: 'discard'; tileId: number }
   | { type: 'kong'; tileId: number }
   | { type: 'declareWin' }
@@ -323,6 +325,10 @@ export function reducer(state: GameState, action: Action): GameState {
     case 'reveal':
       if (state.phase === 'claim') return { ...state, claimRevealed: true }
       return state.phase === 'handoff' ? drawAndStartTurn(state, state.current) : state
+
+    case 'skip':
+      if (state.phase !== 'handoff') return state
+      return { ...state, current: (state.current + 1) % state.players.length }
 
     case 'discard':
       return state.phase === 'turn' ? discardTile(state, action.tileId) : state

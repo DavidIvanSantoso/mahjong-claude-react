@@ -2,10 +2,11 @@ import Peer, { type DataConnection } from 'peerjs'
 import { useEffect, useRef, useState } from 'react'
 import { initialState, reducer, type Action, type GameState } from '../game/state'
 import {
+  absentAction,
+  awaitedSeat,
   isAllowed,
   peerId,
   randomCode,
-  settle,
   viewFor,
   type GuestMessage,
   type HostMessage,
@@ -33,6 +34,8 @@ export interface Room extends RoomSnapshot {
 }
 
 const NAME_MAX = 16
+/** Waktu tunggu sebelum pemain yang terputus dianggap keluar (cukup untuk refresh halaman). */
+const GRACE_MS = 15_000
 
 function emptySnapshot(code: string, capacity: number): RoomSnapshot {
   return {
@@ -51,8 +54,15 @@ function emptySnapshot(code: string, capacity: number): RoomSnapshot {
  */
 class HostRoom {
   private peer: Peer
-  private seats: { name: string; token: string; conn: DataConnection | null }[]
+  private seats: {
+    name: string
+    token: string
+    conn: DataConnection | null
+    /** Kapan koneksinya putus; null selama tersambung. */
+    offlineSince: number | null
+  }[]
   private game: GameState | null = null
+  private graceTimer: ReturnType<typeof setTimeout> | undefined
   private status: RoomSnapshot['status'] = 'connecting'
   private error: string | null = null
 
@@ -62,7 +72,7 @@ class HostRoom {
     private capacity: number,
     private onChange: (snapshot: RoomSnapshot) => void,
   ) {
-    this.seats = [{ name: hostName, token: '', conn: null }]
+    this.seats = [{ name: hostName, token: '', conn: null, offlineSince: null }]
     this.peer = new Peer(peerId(code))
     this.peer.on('open', () => {
       this.status = 'ready'
@@ -104,38 +114,90 @@ class HostRoom {
 
     if (returning > 0) {
       this.seats[returning].conn = conn
+      this.seats[returning].offlineSince = null
     } else if (!token || this.game || this.seats.length >= this.capacity) {
       const reason = this.game ? 'Permainan di room ini sudah dimulai.' : 'Room sudah penuh.'
       conn.send({ type: 'rejected', reason } satisfies HostMessage)
       return
     } else {
       const name = String(message.name ?? '').trim().slice(0, NAME_MAX)
-      this.seats.push({ name: name || `Pemain ${this.seats.length + 1}`, token, conn })
+      this.seats.push({
+        name: name || `Pemain ${this.seats.length + 1}`,
+        token,
+        conn,
+        offlineSince: null,
+      })
     }
-    this.publish()
+    this.update()
   }
 
   private drop(conn: DataConnection) {
     const index = this.seats.findIndex((seat) => seat.conn === conn)
     if (index < 1) return
     // Di lobi kursinya dilepas; saat permainan berjalan kursinya ditahan untuk sambung ulang.
-    if (this.game) this.seats[index].conn = null
-    else this.seats.splice(index, 1)
-    this.publish()
+    if (this.game) {
+      this.seats[index].conn = null
+      this.seats[index].offlineSince = Date.now()
+    } else this.seats.splice(index, 1)
+    this.update()
   }
 
   act(seat: number, action: Action) {
     if (!this.game || seat < 0 || !action || typeof action !== 'object') return
     if (!isAllowed(this.game, seat, action)) return
-    this.game = settle(reducer(this.game, action))
-    this.publish()
+    this.game = reducer(this.game, action)
+    this.update()
   }
 
   start() {
     if (this.seats.length !== this.capacity) return
     if (this.game && this.game.phase !== 'over') return
     const names = this.seats.map((seat) => seat.name)
-    this.game = settle(reducer(initialState, { type: 'start', names }))
+    this.game = reducer(initialState, { type: 'start', names })
+    this.update()
+  }
+
+  private isAbsent(seat: number): boolean {
+    return seat > 0 && !this.seats[seat].conn?.open
+  }
+
+  /**
+   * Menjalankan semua langkah yang tidak butuh keputusan pemain:
+   * - langkah "berikan perangkat" (tiap pemain online punya layar sendiri);
+   * - aksi pengganti untuk pemain yang terputus lebih lama dari GRACE_MS.
+   * Kalau yang tersambung tinggal satu orang, permainan menunggu, tidak dilewati.
+   */
+  private advance() {
+    clearTimeout(this.graceTimer)
+    for (;;) {
+      const game = this.game
+      if (!game) return
+      if (game.phase === 'claim' && !game.claimRevealed) {
+        this.game = reducer(game, { type: 'reveal' })
+        continue
+      }
+      const seat = awaitedSeat(game)
+      if (seat === null) return
+
+      if (!this.isAbsent(seat)) {
+        if (game.phase !== 'handoff') return
+        this.game = reducer(game, { type: 'reveal' })
+        continue
+      }
+
+      const present = this.seats.filter((_, i) => !this.isAbsent(i)).length
+      if (present < 2) return
+      const graceLeft = GRACE_MS - (Date.now() - (this.seats[seat].offlineSince ?? 0))
+      if (graceLeft > 0) {
+        this.graceTimer = setTimeout(() => this.update(), graceLeft)
+        return
+      }
+      this.game = reducer(game, absentAction(game))
+    }
+  }
+
+  private update() {
+    this.advance()
     this.publish()
   }
 
@@ -163,6 +225,7 @@ class HostRoom {
   }
 
   destroy() {
+    clearTimeout(this.graceTimer)
     this.onChange = () => {}
     this.peer.destroy()
   }
