@@ -1,0 +1,636 @@
+:root {
+  /* Palet utama */
+  --pink: #f6e2e9;
+  --cream: #fefaf3;
+  --sage: #b8cfb3;
+  --green: #84a282;
+
+  /* Turunan untuk teks dan detail ubin */
+  --ink: #2b352a;
+  --ink-soft: #566354;
+  --line: #d9dfd2;
+  --green-deep: #6b8a69;
+  --pink-deep: #e3b7c6;
+  --tile-red: #b0506a;
+  --tile-green: #4c7a4a;
+  --tile-blue: #47748a;
+
+  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+  color: var(--ink);
+  line-height: 1.45;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--sage);
+}
+
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+.card {
+  background: var(--cream);
+  border-radius: 14px;
+  box-shadow: 0 2px 0 rgb(43 53 42 / 12%);
+}
+
+/* ---------- Tombol ---------- */
+
+.btn {
+  font: inherit;
+  font-weight: 600;
+  color: var(--ink);
+  background: var(--cream);
+  border: 2px solid var(--green);
+  border-radius: 10px;
+  padding: 10px 18px;
+  cursor: pointer;
+}
+
+.btn:hover:not(:disabled) {
+  filter: brightness(0.96);
+}
+
+.btn:focus-visible,
+.tile:focus-visible,
+.count-option:focus-within {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.btn--primary {
+  background: var(--green);
+}
+
+.btn--accent {
+  background: var(--pink);
+  border-color: var(--pink-deep);
+}
+
+.btn--small {
+  padding: 6px 12px;
+  font-size: 0.875rem;
+}
+
+.btn--wide {
+  width: 100%;
+}
+
+.btn--tiles {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+}
+
+/* ---------- Layar awal ---------- */
+
+.setup {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+}
+
+.setup__card {
+  width: min(100%, 420px);
+  padding: 28px;
+  display: grid;
+  gap: 20px;
+}
+
+.setup__title {
+  font-size: 2rem;
+  letter-spacing: 0.02em;
+}
+
+.setup__lead {
+  color: var(--ink-soft);
+}
+
+.setup__field {
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.setup__field legend {
+  font-weight: 600;
+  margin-bottom: 8px;
+  padding: 0;
+}
+
+.setup__counts {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.count-option {
+  display: grid;
+  place-items: center;
+  padding: 14px 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  border: 2px solid var(--line);
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.count-option input {
+  position: absolute;
+  opacity: 0;
+}
+
+.count-option--active {
+  background: var(--pink);
+  border-color: var(--pink-deep);
+}
+
+.setup__names {
+  display: grid;
+  gap: 8px;
+}
+
+.setup__card input[type='text'] {
+  font: inherit;
+  color: var(--ink);
+  min-width: 0;
+  padding: 10px 12px;
+  border: 2px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.setup__card input[type='text']:focus {
+  outline: none;
+  border-color: var(--green);
+}
+
+.setup__form {
+  display: grid;
+  gap: 16px;
+}
+
+.setup__label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.setup__row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+}
+
+.code-input {
+  font-family: ui-monospace, Consolas, monospace !important;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+}
+
+.tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  background: var(--sage);
+  border-radius: 12px;
+}
+
+.tab {
+  font: inherit;
+  font-weight: 600;
+  color: var(--ink);
+  background: transparent;
+  border: 0;
+  border-radius: 9px;
+  padding: 8px;
+  cursor: pointer;
+}
+
+.tab:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.tab--active {
+  background: var(--cream);
+}
+
+/* ---------- Lobi room online ---------- */
+
+.lobby__code {
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 2.5rem;
+  letter-spacing: 0.25em;
+  line-height: 1.2;
+}
+
+.lobby__players {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 6px;
+}
+
+.lobby__players li {
+  padding: 8px 12px;
+  font-weight: 600;
+  background: var(--pink);
+  border-radius: 10px;
+}
+
+.lobby__players .lobby__empty {
+  font-weight: 400;
+  color: var(--ink-soft);
+  background: transparent;
+  outline: 2px dashed var(--line);
+  outline-offset: -2px;
+}
+
+/* ---------- Halaman permainan ---------- */
+
+.game {
+  /* Sisi meja: muat di layar bersama topbar dan dock. Semua ukuran di meja diturunkan dari sini. */
+  --S: max(320px, min(100vw - 16px, 100dvh - 236px, 860px));
+  /* Ubin kolam buangan; --pond-cols dan --pond-divisor diisi dari GameTable. */
+  --p: calc(var(--S) / var(--pond-divisor));
+  --tile-gap: 2px;
+  --center-w: calc(var(--pond-cols) * var(--p) + (var(--pond-cols) - 1) * var(--tile-gap));
+  --center-h: var(--center-w);
+  --spin: 1s cubic-bezier(0.65, 0, 0.35, 1);
+
+  width: var(--S);
+  margin: 0 auto;
+  padding: 8px 0 16px;
+  display: grid;
+  gap: 8px;
+}
+
+/* Dua pemain duduk berhadapan, jadi bagian tengah boleh melebar tanpa menabrak kolam samping. */
+.game--duo {
+  --center-h: calc(var(--S) * 0.17);
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 4px;
+}
+
+.topbar__title {
+  font-size: 1.25rem;
+}
+
+.topbar__room {
+  margin-right: auto;
+  font-family: ui-monospace, Consolas, monospace;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+
+/* ---------- Meja ---------- */
+
+.felt {
+  position: relative;
+  width: var(--S);
+  height: var(--S);
+  overflow: hidden;
+  background: var(--green);
+  border-radius: 28px;
+  box-shadow:
+    inset 0 0 0 6px var(--green-deep),
+    0 3px 0 rgb(43 53 42 / 18%);
+}
+
+/* Seluruh isi meja berputar sebagai satu kesatuan saat giliran berpindah. */
+.board {
+  position: absolute;
+  inset: 0;
+  transition: transform var(--spin);
+}
+
+.center {
+  position: absolute;
+  left: calc(50% - var(--center-w) / 2);
+  top: calc(50% - var(--center-h) / 2);
+  width: var(--center-w);
+  height: var(--center-h);
+  background: var(--cream);
+  border-radius: 12px;
+  box-shadow: 0 2px 0 var(--green-deep);
+}
+
+/* Tiap nama menghadap pemainnya, sama seperti kursinya. */
+.center__seat {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 4px;
+}
+
+.center__name {
+  max-width: 78%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: clamp(10px, calc(var(--S) / 52), 14px);
+  font-weight: 700;
+  line-height: 1.3;
+  padding: 1px 8px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+}
+
+.center__name--active {
+  background: var(--pink);
+  border-color: var(--pink-deep);
+}
+
+.center__name--offline {
+  opacity: 0.45;
+  text-decoration: line-through;
+}
+
+.center__wall {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  line-height: 1.1;
+  transition: transform var(--spin);
+}
+
+.center__wall strong {
+  font-size: clamp(18px, calc(var(--S) / 22), 34px);
+  font-variant-numeric: tabular-nums;
+}
+
+.center__wall span {
+  font-size: clamp(9px, calc(var(--S) / 60), 12px);
+  color: var(--ink-soft);
+}
+
+/* Lapisan seukuran meja yang diputar per kursi; isinya selalu ditata seolah kursi bawah. */
+.seat {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* Lapisan kursi saling menumpuk; hanya ubinnya yang boleh menangkap klik. */
+.seat .tile {
+  pointer-events: auto;
+}
+
+/* Kolam buangan: tepat di depan pemain, tumbuh dari tengah meja ke arah pemain. */
+.pond {
+  position: absolute;
+  top: calc(50% + var(--center-h) / 2 + 6px);
+  left: calc(50% - var(--center-w) / 2);
+  width: var(--center-w);
+  display: grid;
+  grid-template-columns: repeat(var(--pond-cols), var(--p));
+  gap: var(--tile-gap);
+}
+
+.seat__edge {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.seat__open,
+.seat__hand,
+.meld {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--tile-gap);
+}
+
+.seat__open {
+  gap: 8px;
+}
+
+/* ---------- Dock (pesan + tombol aksi, tidak ikut berputar) ---------- */
+
+.dock {
+  min-height: 132px;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  text-align: center;
+}
+
+.dock__title {
+  font-size: 1.25rem;
+}
+
+.dock__hint {
+  color: var(--ink-soft);
+}
+
+.dock__hint strong {
+  color: var(--ink);
+}
+
+.dock__offer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.dock__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+/* ---------- Ubin ---------- */
+
+.tile {
+  --w: 34px;
+  position: relative;
+  flex: none;
+  width: var(--w);
+  height: calc(var(--w) * 1.36);
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--w) * 0.04);
+  padding: 0;
+  font: inherit;
+  line-height: 1;
+  color: var(--ink);
+  background: #fff;
+  border: 1px solid #c9cfc2;
+  border-radius: calc(var(--w) * 0.16);
+  box-shadow: 0 calc(var(--w) * 0.08) 0 var(--green-deep);
+  margin-bottom: calc(var(--w) * 0.08);
+  user-select: none;
+}
+
+.tile--sm {
+  --w: 26px;
+}
+
+/* Ukuran di meja, relatif terhadap sisi meja */
+.tile--hand {
+  --w: calc(var(--S) / 16);
+}
+
+.tile--side {
+  --w: calc(var(--S) / 28);
+}
+
+.tile--open {
+  --w: calc(var(--S) / 30);
+}
+
+.tile--pond {
+  --w: var(--p);
+}
+
+button.tile {
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+
+button.tile:hover {
+  transform: translateY(-4px);
+}
+
+.tile--selected,
+button.tile.tile--selected:hover {
+  transform: translateY(-10px);
+  background: var(--pink);
+  border-color: var(--tile-red);
+}
+
+.tile--marked {
+  border-color: var(--tile-red);
+  box-shadow:
+    0 0 0 2px var(--pink-deep),
+    0 calc(var(--w) * 0.08) 0 var(--green-deep);
+}
+
+.tile--back {
+  background: var(--pink);
+  border-color: var(--pink-deep);
+  box-shadow: 0 calc(var(--w) * 0.08) 0 var(--pink-deep);
+}
+
+.tile--flower {
+  background: var(--cream);
+}
+
+.tile--red {
+  color: var(--tile-red);
+}
+
+.tile--green {
+  color: var(--tile-green);
+}
+
+.tile--blue {
+  color: var(--tile-blue);
+}
+
+.tile__rank {
+  font-size: calc(var(--w) * 0.6);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.tile__glyph {
+  font-size: calc(var(--w) * 0.66);
+  font-weight: 700;
+}
+
+.tile__corner {
+  position: absolute;
+  top: calc(var(--w) * 0.06);
+  left: calc(var(--w) * 0.1);
+  font-size: calc(var(--w) * 0.26);
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+
+/* Naga putih: bingkai kosong */
+.tile__frame {
+  width: 58%;
+  height: 62%;
+  border: calc(var(--w) * 0.07) solid currentColor;
+  border-radius: calc(var(--w) * 0.1);
+}
+
+.tile__suit {
+  display: block;
+  font-size: calc(var(--w) * 0.34);
+  font-weight: 700;
+}
+
+/* Bulat: lingkaran bercincin */
+.tile__suit--pin {
+  width: calc(var(--w) * 0.32);
+  height: calc(var(--w) * 0.32);
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow:
+    inset 0 0 0 calc(var(--w) * 0.05) currentColor,
+    inset 0 0 0 calc(var(--w) * 0.09) #fff;
+}
+
+/* Bambu: batang dengan satu ruas */
+.tile__suit--sou {
+  width: calc(var(--w) * 0.16);
+  height: calc(var(--w) * 0.36);
+  border-radius: calc(var(--w) * 0.06);
+  background: linear-gradient(
+    currentColor 0 42%,
+    #fff 42% 58%,
+    currentColor 58% 100%
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .board,
+  .center__wall,
+  button.tile {
+    transition: none;
+  }
+}
