@@ -971,7 +971,8 @@ p {
 
 .tutorial-dialog {
   width: min(100% - 24px, 760px);
-  max-height: min(100dvh - 32px, 900px);
+  /* Batas tinggi ada di .tutorial-dialog__scroll; batas bawaan browser untuk <dialog> dilepas */
+  max-height: none;
   overflow: hidden;
   padding: 0;
   color: var(--ink);
@@ -981,18 +982,17 @@ p {
   box-shadow: 0 16px 48px rgb(43 53 42 / 30%);
 }
 
-.tutorial-dialog[open] {
-  display: flex;
-  flex-direction: column;
-}
-
 /*
+ * Tinggi modal dibatasi langsung di area scroll-nya, bukan lewat flexbox di <dialog>:
+ * di Safari 16 ke bawah, `flex: 1` di dalam dialog tanpa tinggi tetap membuat isinya
+ * setinggi 0 piksel, sehingga modal terbuka tapi tidak terlihat.
+ *
  * Scrollbar tipis berwarna hijau palet, menjauh dari sudut membulat,
  * dan tanpa tombol panah, supaya menyatu dengan kartu.
  */
 .tutorial-dialog__scroll {
-  flex: 1;
-  min-height: 0;
+  max-height: calc(100vh - 32px);
+  max-height: min(100dvh - 32px, 900px);
   overflow-y: auto;
   overscroll-behavior: contain;
 }
