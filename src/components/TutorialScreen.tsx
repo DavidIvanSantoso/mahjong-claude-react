@@ -72,6 +72,10 @@ function TutorialContent() {
           <li>Kalau 14 ubinmu sudah memenuhi syarat, tekan <strong>Mahjong!</strong> untuk menang.</li>
           <li>Kalau belum, pilih 1 ubin lalu tekan <strong>Buang</strong>. Mengetuk ubin yang sama dua kali juga langsung membuangnya.</li>
         </ol>
+        <p>
+          Tiap aksi dibatasi waktu yang ditentukan pembuat ruangan (bawaannya 15 detik). Kalau waktu
+          habis, ubin yang terakhir kamu dapat dibuang otomatis, dan tawaran klaim dianggap dilewati.
+        </p>
       </Section>
 
       <Section title="Mengklaim buangan">

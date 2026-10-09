@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import { canDeclareWin, kongOptions, type Action, type Claim, type GameState } from '../game/state'
 import { sortTiles, tileDescription, tileName } from '../game/tiles'
 import { ResultDialog } from './ResultDialog'
@@ -20,6 +20,10 @@ interface GameTableProps {
   roomCode?: string
   /** Mode online: status koneksi tiap pemain. */
   connected?: boolean[]
+  /** Batas waktu per aksi (detik). */
+  turnSeconds: number
+  /** Kapan waktu aksi yang sedang ditunggu habis (ms); null selama tidak ada yang dihitung. */
+  deadline: number | null
 }
 
 /** Kursi (0 bawah, 1 kanan, 2 atas, 3 kiri) untuk tiap pemain, tergantung jumlah pemain. */
@@ -57,6 +61,26 @@ function useTableRotation(target: number): number {
   return rotation + delta
 }
 
+/** Hitung mundur waktu aksi. Dipasang ulang (lewat `key`) tiap kali batas waktunya berganti. */
+function TurnTimer({ deadline, total }: { deadline: number; total: number }) {
+  const [now, setNow] = useState(Date.now)
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 250)
+    return () => clearInterval(id)
+  }, [])
+
+  const left = Math.max(0, deadline - now)
+  const seconds = Math.ceil(left / 1000)
+  return (
+    <div className={`turn-timer ${seconds <= 5 ? 'turn-timer--low' : ''}`} role="timer">
+      <span className="turn-timer__bar" aria-hidden="true">
+        <span style={{ width: `${Math.min(100, (left / (total * 1000)) * 100)}%` }} />
+      </span>
+      <span className="turn-timer__text">{seconds} dtk</span>
+    </div>
+  )
+}
+
 export function GameTable({
   state,
   dispatch,
@@ -65,6 +89,8 @@ export function GameTable({
   viewer,
   roomCode,
   connected,
+  turnSeconds,
+  deadline,
 }: GameTableProps) {
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [tutorialOpen, setTutorialOpen] = useState(false)
@@ -128,7 +154,8 @@ export function GameTable({
             <strong>{online ? 'Giliranmu' : player.name}</strong> —{' '}
             {drawn ? `kamu mengambil ${tileName(drawn)}` : 'klaim berhasil'}
             {state.flowersDrawn > 0 && ` (+${state.flowersDrawn} bunga, sudah diganti ubin baru)`}. Pilih
-            satu ubin untuk dibuang; ketuk dua kali untuk langsung membuang.
+            satu ubin untuk dibuang; ketuk dua kali untuk langsung membuang. Kalau waktu habis,{' '}
+            {drawn ? 'ubin ambilan ini' : 'ubin paling kanan'} dibuang otomatis.
           </p>
           <div className="dock__actions">
             <button
@@ -397,6 +424,9 @@ export function GameTable({
               ? 'Gilirannya dilewati sampai tersambung kembali.'
               : 'Permainan menunggu sampai ada yang tersambung kembali.'}
           </p>
+        )}
+        {deadline !== null && phase !== 'over' && (
+          <TurnTimer key={deadline} deadline={deadline} total={turnSeconds} />
         )}
         {renderDock()}
       </section>

@@ -1,5 +1,11 @@
 import gsap from 'gsap'
 import { useLayoutEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
+import {
+  DEFAULT_TURN_SECONDS,
+  MAX_TURN_SECONDS,
+  MIN_TURN_SECONDS,
+  parseTurnSeconds,
+} from '../game/timer'
 import { CODE_LENGTH, normalizeCode } from '../net/online'
 import { TileField } from './TileField'
 
@@ -27,6 +33,29 @@ function CountPicker({
         </label>
       ))}
     </div>
+  )
+}
+
+/** Batas waktu per aksi, dalam detik. Dibiarkan kosong berarti memakai nilai bawaan. */
+function TurnTimeField({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+  return (
+    <label className="setup__field setup__time">
+      <span className="setup__label">Waktu per giliran (detik)</span>
+      <input
+        type="text"
+        inputMode="numeric"
+        maxLength={3}
+        placeholder={String(DEFAULT_TURN_SECONDS)}
+        value={value}
+        onChange={(event) => onChange(event.target.value.replace(/\D/g, ''))}
+        // Angka di luar batas dirapikan begitu kolom ditinggalkan, supaya terlihat nilai yang dipakai.
+        onBlur={() => value && onChange(String(parseTurnSeconds(value)))}
+      />
+      <span className="setup__note">
+        {MIN_TURN_SECONDS}–{MAX_TURN_SECONDS}, kosong = {DEFAULT_TURN_SECONDS}. Waktu habis: ubin terakhir
+        otomatis dibuang.
+      </span>
+    </label>
   )
 }
 
@@ -91,14 +120,23 @@ function SplitScreen({ title, tagline, onBack, children }: SplitScreenProps) {
   )
 }
 
-export function LocalSetup({ onStart, onBack }: { onStart: (names: string[]) => void; onBack: () => void }) {
+interface LocalSetupProps {
+  onStart: (names: string[], turnSeconds: number) => void
+  onBack: () => void
+}
+
+export function LocalSetup({ onStart, onBack }: LocalSetupProps) {
+  const [turnTime, setTurnTime] = useState('')
   const [count, setCount] = useState<number | null>(null)
   const [names, setNames] = useState<string[]>(['', '', '', ''])
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault()
     if (count === null) return
-    onStart(names.slice(0, count).map((name, i) => name.trim() || `Pemain ${i + 1}`))
+    onStart(
+      names.slice(0, count).map((name, i) => name.trim() || `Pemain ${i + 1}`),
+      parseTurnSeconds(turnTime),
+    )
   }
 
   return (
@@ -130,6 +168,8 @@ export function LocalSetup({ onStart, onBack }: { onStart: (names: string[]) => 
           </fieldset>
         )}
 
+        <TurnTimeField value={turnTime} onChange={setTurnTime} />
+
         <button type="submit" className="home__btn" disabled={count === null}>
           {count === null ? 'Pilih jumlah pemain dulu' : 'Mulai permainan'}
         </button>
@@ -139,7 +179,7 @@ export function LocalSetup({ onStart, onBack }: { onStart: (names: string[]) => 
 }
 
 interface OnlineSetupProps {
-  onHost: (name: string, capacity: number) => void
+  onHost: (name: string, capacity: number, turnSeconds: number) => void
   onJoin: (name: string, code: string) => void
   onBack: () => void
 }
@@ -148,10 +188,11 @@ export function OnlineSetup({ onHost, onJoin, onBack }: OnlineSetupProps) {
   const [myName, setMyName] = useState('')
   const [capacity, setCapacity] = useState<number | null>(null)
   const [code, setCode] = useState(invitedRoom)
+  const [turnTime, setTurnTime] = useState('')
 
   function host(event: FormEvent) {
     event.preventDefault()
-    if (capacity !== null) onHost(myName.trim() || 'Host', capacity)
+    if (capacity !== null) onHost(myName.trim() || 'Host', capacity, parseTurnSeconds(turnTime))
   }
 
   function join(event: FormEvent) {
@@ -202,6 +243,7 @@ export function OnlineSetup({ onHost, onJoin, onBack }: OnlineSetupProps) {
           <legend>Buat room baru — main berapa orang?</legend>
           <CountPicker name="room-capacity" value={capacity} onChange={setCapacity} />
         </fieldset>
+        <TurnTimeField value={turnTime} onChange={setTurnTime} />
         <button type="submit" className="home__btn" disabled={capacity === null}>
           {capacity === null ? 'Pilih jumlah pemain dulu' : 'Buat room'}
         </button>

@@ -1,14 +1,20 @@
 import type { Action, GameState } from '../game/state'
+import { timeoutAction } from '../game/timer'
 import type { Tile } from '../game/tiles'
 
 export interface LobbyInfo {
   capacity: number
+  /** Batas waktu per aksi (detik), ditentukan host saat membuat room. */
+  turnSeconds: number
   players: { name: string; connected: boolean }[]
 }
 
-/** Pesan dari host ke tamu. */
+/**
+ * Pesan dari host ke tamu. `timeLeft` adalah sisa waktu aksi yang sedang ditunggu (ms), atau
+ * null kalau tidak ada; dikirim sebagai sisa, bukan jam, karena jam tiap perangkat bisa berbeda.
+ */
 export type HostMessage =
-  | { type: 'sync'; lobby: LobbyInfo; seat: number; view: GameState | null }
+  | { type: 'sync'; lobby: LobbyInfo; seat: number; view: GameState | null; timeLeft: number | null }
   | { type: 'rejected'; reason: string }
 
 /** Pesan dari tamu ke host. `token` dipakai untuk kembali ke kursi yang sama setelah putus. */
@@ -47,11 +53,7 @@ export function awaitedSeat(state: GameState): number | null {
  * klaimnya dilewatkan, dan kalau ia terputus setelah mengambil, ubin ambilannya dibuang.
  */
 export function absentAction(state: GameState): Action {
-  if (state.phase === 'handoff') return { type: 'skip' }
-  if (state.phase === 'claim') return { type: 'pass' }
-  const hand = state.players[state.current].hand
-  const tile = hand.find((t) => t.id === state.drawnId) ?? hand[hand.length - 1]
-  return { type: 'discard', tileId: tile.id }
+  return timeoutAction(state) ?? { type: 'skip' }
 }
 
 /** Aksi yang boleh dikirim pemain di kursi `seat` pada keadaan sekarang. */

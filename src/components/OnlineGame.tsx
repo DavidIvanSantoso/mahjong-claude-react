@@ -6,8 +6,14 @@ interface ExitProps {
   onExit: () => void
 }
 
-export function HostGame({ name, capacity, onExit }: { name: string; capacity: number } & ExitProps) {
-  return <RoomView room={useHostRoom(name, capacity)} onExit={onExit} />
+interface HostGameProps extends ExitProps {
+  name: string
+  capacity: number
+  turnSeconds: number
+}
+
+export function HostGame({ name, capacity, turnSeconds, onExit }: HostGameProps) {
+  return <RoomView room={useHostRoom(name, capacity, turnSeconds)} onExit={onExit} />
 }
 
 export function GuestGame({ name, code, onExit }: { name: string; code: string } & ExitProps) {
@@ -47,6 +53,8 @@ function RoomView({ room, onExit }: { room: Room } & ExitProps) {
         dispatch={room.send}
         viewer={room.seat}
         roomCode={room.code}
+        turnSeconds={room.lobby.turnSeconds}
+        deadline={room.deadline}
         connected={room.lobby.players.map((player) => player.connected)}
         onRestart={room.isHost ? room.start : undefined}
         onExit={onExit}
@@ -54,7 +62,7 @@ function RoomView({ room, onExit }: { room: Room } & ExitProps) {
     )
   }
 
-  const { players, capacity } = room.lobby
+  const { players, capacity, turnSeconds } = room.lobby
   const full = players.length === capacity
   const link = inviteLink(room.code)
 
@@ -108,6 +116,11 @@ function RoomView({ room, onExit }: { room: Room } & ExitProps) {
                 ))}
               </ol>
             </div>
+
+            <p className="setup__lead">
+              Waktu per giliran: <strong>{turnSeconds} detik</strong>. Kalau habis, ubin terakhir yang
+              didapat otomatis dibuang.
+            </p>
 
             {room.isHost ? (
               <button type="button" className="btn btn--primary btn--wide" disabled={!full} onClick={room.start}>

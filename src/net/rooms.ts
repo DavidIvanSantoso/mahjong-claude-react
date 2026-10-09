@@ -1,6 +1,7 @@
 import Peer, { type DataConnection } from 'peerjs'
 import { useEffect, useRef, useState } from 'react'
 import { initialState, reducer, type Action, type GameState } from '../game/state'
+import { DEFAULT_TURN_SECONDS, isTimed, timeoutAction } from '../game/timer'
 import {
   absentAction,
   awaitedSeat,
@@ -22,6 +23,8 @@ export interface RoomSnapshot {
   seat: number
   /** State permainan yang sudah disaring untuk kursi ini; null selama masih di lobi. */
   view: GameState | null
+  /** Kapan waktu aksi yang sedang ditunggu habis (jam perangkat ini, ms); null kalau tidak ada. */
+  deadline: number | null
 }
 
 export interface Room extends RoomSnapshot {
@@ -37,14 +40,15 @@ const NAME_MAX = 16
 /** Waktu tunggu sebelum pemain yang terputus dianggap keluar (cukup untuk refresh halaman). */
 const GRACE_MS = 15_000
 
-function emptySnapshot(code: string, capacity: number): RoomSnapshot {
+function emptySnapshot(code: string, capacity: number, turnSeconds: number): RoomSnapshot {
   return {
     status: 'connecting',
     error: null,
     code,
-    lobby: { capacity, players: [] },
+    lobby: { capacity, turnSeconds, players: [] },
     seat: 0,
     view: null,
+    deadline: null,
   }
 }
 
@@ -63,6 +67,10 @@ class HostRoom {
   }[]
   private game: GameState | null = null
   private graceTimer: ReturnType<typeof setTimeout> | undefined
+  /** State yang batas waktunya sedang berjalan; berganti state berarti waktu dihitung ulang. */
+  private timedGame: GameState | null = null
+  private deadline: number | null = null
+  private turnTimer: ReturnType<typeof setTimeout> | undefined
   private status: RoomSnapshot['status'] = 'connecting'
   private error: string | null = null
 
@@ -70,6 +78,7 @@ class HostRoom {
     private code: string,
     hostName: string,
     private capacity: number,
+    private turnSeconds: number,
     private onChange: (snapshot: RoomSnapshot) => void,
   ) {
     this.seats = [{ name: hostName, token: '', conn: null, offlineSince: null }]
@@ -196,14 +205,36 @@ class HostRoom {
     }
   }
 
+  /** Memasang batas waktu untuk aksi yang sedang ditunggu; saat habis, aksinya dijalankan otomatis. */
+  private armTimer() {
+    if (this.game === this.timedGame) return
+    clearTimeout(this.turnTimer)
+    this.timedGame = this.game
+    this.deadline = null
+    if (!this.game || !isTimed(this.game)) return
+    const limit = this.turnSeconds * 1000
+    this.deadline = Date.now() + limit
+    this.turnTimer = setTimeout(() => this.expire(), limit)
+  }
+
+  private expire() {
+    const action = this.game && timeoutAction(this.game)
+    if (!this.game || !action) return
+    this.game = reducer(this.game, action)
+    this.update()
+  }
+
   private update() {
     this.advance()
+    this.armTimer()
     this.publish()
   }
 
   private publish() {
+    const timeLeft = this.deadline === null ? null : Math.max(0, this.deadline - Date.now())
     const lobby: LobbyInfo = {
       capacity: this.capacity,
+      turnSeconds: this.turnSeconds,
       players: this.seats.map((seat, i) => ({
         name: seat.name,
         connected: i === 0 || Boolean(seat.conn?.open),
@@ -212,7 +243,7 @@ class HostRoom {
     this.seats.forEach((seat, i) => {
       if (!seat.conn?.open) return
       const view = this.game ? viewFor(this.game, i) : null
-      seat.conn.send({ type: 'sync', lobby, seat: i, view } satisfies HostMessage)
+      seat.conn.send({ type: 'sync', lobby, seat: i, view, timeLeft } satisfies HostMessage)
     })
     this.onChange({
       status: this.status,
@@ -221,11 +252,13 @@ class HostRoom {
       lobby,
       seat: 0,
       view: this.game ? viewFor(this.game, 0) : null,
+      deadline: this.deadline,
     })
   }
 
   destroy() {
     clearTimeout(this.graceTimer)
+    clearTimeout(this.turnTimer)
     this.onChange = () => {}
     this.peer.destroy()
   }
@@ -255,7 +288,7 @@ class GuestRoom {
     name: string,
     private onChange: (snapshot: RoomSnapshot) => void,
   ) {
-    this.snapshot = emptySnapshot(code, 0)
+    this.snapshot = emptySnapshot(code, 0, DEFAULT_TURN_SECONDS)
     this.peer = new Peer()
     this.peer.on('open', () => {
       const conn = this.peer.connect(peerId(code), { reliable: true, serialization: 'json' })
@@ -267,8 +300,9 @@ class GuestRoom {
         const message = raw as HostMessage
         if (message.type === 'rejected') this.fail(message.reason)
         else if (message.type === 'sync') {
-          const { lobby, seat, view } = message
-          this.update({ status: 'ready', error: null, lobby, seat, view })
+          const { lobby, seat, view, timeLeft } = message
+          const deadline = typeof timeLeft === 'number' ? Date.now() + timeLeft : null
+          this.update({ status: 'ready', error: null, lobby, seat, view, deadline })
         }
       })
       conn.on('close', () => this.fail('Koneksi ke host terputus.'))
@@ -303,17 +337,17 @@ class GuestRoom {
   }
 }
 
-export function useHostRoom(name: string, capacity: number): Room {
-  const [snapshot, setSnapshot] = useState(() => emptySnapshot('', capacity))
+export function useHostRoom(name: string, capacity: number, turnSeconds: number): Room {
+  const [snapshot, setSnapshot] = useState(() => emptySnapshot('', capacity, turnSeconds))
   const roomRef = useRef<HostRoom | null>(null)
 
   useEffect(() => {
     // Kode dibuat di sini (bukan saat render) supaya tiap pemasangan efek memakai ID baru;
     // server PeerJS tidak langsung melepas ID lama.
-    const room = new HostRoom(randomCode(), name, capacity, setSnapshot)
+    const room = new HostRoom(randomCode(), name, capacity, turnSeconds, setSnapshot)
     roomRef.current = room
     return () => room.destroy()
-  }, [name, capacity])
+  }, [name, capacity, turnSeconds])
 
   return {
     ...snapshot,
@@ -325,7 +359,7 @@ export function useHostRoom(name: string, capacity: number): Room {
 }
 
 export function useGuestRoom(code: string, name: string): Room {
-  const [snapshot, setSnapshot] = useState(() => emptySnapshot(code, 0))
+  const [snapshot, setSnapshot] = useState(() => emptySnapshot(code, 0, DEFAULT_TURN_SECONDS))
   const [attempt, setAttempt] = useState(0)
   const roomRef = useRef<GuestRoom | null>(null)
 

@@ -63,6 +63,7 @@ src/
     tiles.ts               Jenis ubin, membuat dan mengocok dinding, nama ubin
     rules.ts               Cek menang, pong/kong, pilihan chi
     state.ts               State permainan dan reducer (alur giliran)
+    timer.ts               Batas waktu per aksi: nilai bawaan dan aksi otomatis saat waktu habis
   components/
     HomeScreen.tsx         Layar pembuka: menu Local / Online / Tutorial dan ubin animasi
     TileField.tsx          Tumpukan ubin animasi (GSAP) yang dipakai homescreen dan menu Online
@@ -111,6 +112,8 @@ Pemain yang mengklaim pong atau chi langsung membuang tanpa mengambil dari dindi
 Setelah kong, pemain mengambil satu ubin pengganti dari dinding. Kong tidak ditawarkan kalau dinding sudah habis.
 
 **Bunga.** Ubin bunga tidak pernah ada di tangan. Begitu didapat (saat pembagian awal atau saat mengambil), bunga disisihkan dan otomatis diganti ubin baru dari dinding. Bunga belum bernilai apa pun karena belum ada sistem skor.
+
+**Batas waktu.** Pembuat ruangan (Local maupun Online) menentukan waktu per aksi, 5–300 detik. Kalau kolomnya dikosongkan, dipakai 15 detik. Kalau waktu habis saat giliran, ubin yang terakhir didapat otomatis dibuang; setelah pong/chi tidak ada ubin ambilan, jadi yang dibuang ubin paling kanan di tangan. Kalau waktu habis saat ditawari klaim, tawarannya dianggap dilewati.
 
 **Seri.** Kalau dinding habis tanpa pemenang, permainan berakhir seri.
 
@@ -177,6 +180,18 @@ Aksi yang tidak sah untuk keadaan saat itu (misalnya membuang ubin yang tidak ad
 
 **Mengambil ubin** selalu lewat satu fungsi (`drawTile`): kalau yang terambil bunga, bunga disisihkan dan diambil lagi sampai dapat ubin biasa atau dinding habis.
 
+### Batas waktu aksi (`game/timer.ts`)
+
+Batas waktu sengaja tidak disimpan di `GameState`, supaya reducer tetap murni (tanpa jam). Yang ada di `timer.ts`:
+
+| Fungsi | Peran |
+|---|---|
+| `parseTurnSeconds(input)` | Isi kolom di menu menjadi detik: kosong/tidak sah → 15, sisanya dijepit ke 5–300 |
+| `isTimed(state)` | Waktu hanya berjalan di fase `turn`, dan di fase `claim` setelah tangan pengklaim dibuka. Layar "berikan perangkat" tidak dihitung |
+| `timeoutAction(state)` | Aksi otomatis saat waktu habis: `discard` ubin ambilan (atau ubin paling kanan), atau `pass` untuk klaim |
+
+Yang menjalankan jamnya adalah pemilik state: di mode lokal komponen `LocalGame` di `App.tsx` (sebuah `useEffect` dengan `setTimeout`), di mode online `HostRoom`. Setiap kali state berganti ke keadaan baru yang menunggu keputusan pemain (termasuk setelah kong, atau pindah ke tawaran klaim berikutnya), waktu dihitung ulang dari penuh.
+
 ## 6. Tampilan
 
 ### Homescreen
@@ -206,6 +221,8 @@ Semua perilaku ubin di atas (jatuh masuk, flip saat hover/ketuk, flip acak, pali
 
 Keduanya memakai tata letak yang sama (`SplitScreen` di `SetupScreen.tsx`). Layar dibagi dua: form di kiri (3/4 lebar layar) dan kolom ubin tegak berlatar merah muda di kanan (1/4), memakai `TileField` yang sama dengan homescreen. Judul dan tombolnya bergaya sama dengan homescreen, dan isi form bergeser masuk dari kiri saat dibuka. Di desktop, jarak dan ukuran elemen form mengikuti tinggi layar dan nama pemain Local disusun dua kolom, supaya form selalu muat satu layar tanpa scroll. Di layar 720 px atau lebih kecil, kolom ubin disembunyikan dan form memenuhi layar.
 
+Kedua menu punya kolom **Waktu per giliran (detik)**. Kolom ini boleh dikosongkan (dipakai 15 detik); angka di luar 5–300 dirapikan begitu kolom ditinggalkan. Di mode online hanya pembuat room yang mengisinya, dan nilainya ditampilkan ke semua pemain di lobi.
+
 ### Meja
 
 Meja berbentuk persegi. Tiap pemain menempati satu sisi; buangan tiap pemain tersusun di depannya, mengelilingi kotak tengah yang menampilkan nama pemain dan sisa ubin di dinding. Di antara tangan dan buangan ada set terbuka dan bunga.
@@ -231,6 +248,8 @@ Animasi dimatikan untuk pengguna yang mengaktifkan "kurangi gerakan" di sistemny
 ### Panel aksi
 
 Panel di bawah meja tidak ikut berputar. Isinya pesan untuk pemain dan tombol sesuai keadaan: Buang, Kong, Mahjong, Pong, Chi, Lewati. Memilih ubin di tangan lalu mengetuknya lagi langsung membuangnya.
+
+Selama waktu aksi berjalan, di bagian atas panel ada hitung mundur (`TurnTimer` di `GameTable.tsx`): batang yang menyusut dan sisa detik. Pada 5 detik terakhir warnanya berubah merah. Di mode online semua pemain melihat hitung mundur pemain yang sedang ditunggu.
 
 ### Layar lebar
 
@@ -293,10 +312,16 @@ Host ke tamu:
 
 | Pesan | Isi |
 |---|---|
-| `sync` | Daftar pemain di lobi, nomor kursi tamu, dan state permainan untuk tamu itu |
+| `sync` | Daftar pemain dan batas waktu room, nomor kursi tamu, state permainan untuk tamu itu, dan sisa waktu aksi yang sedang ditunggu (`timeLeft`, ms) |
 | `rejected` | Alasan penolakan (room penuh atau permainan sudah dimulai) |
 
 Setiap kali ada perubahan, host mengirim `sync` baru ke semua tamu. Tamu tidak menghitung apa pun sendiri; ia hanya menampilkan `sync` terakhir.
+
+### Batas waktu di mode online
+
+Jam yang menentukan ada di host. Setelah tiap perubahan state, `HostRoom.armTimer` memasang `setTimeout` sepanjang batas waktu room; kalau pemain belum bertindak saat waktunya habis, host menjalankan `timeoutAction` lalu mengirim `sync` baru. Aksi pemain yang datang lebih dulu otomatis membatalkan jam itu karena state-nya sudah berganti.
+
+Yang dikirim ke tamu adalah **sisa waktu** (`timeLeft`), bukan jam habisnya, karena jam tiap perangkat bisa berbeda. Tamu menambahkannya ke jamnya sendiri hanya untuk menggambar hitung mundur; hitung mundur di layar tamu bisa terlambat sedikit sebesar jeda jaringan, tetapi keputusan tetap di host.
 
 ### Yang dilakukan host untuk tiap aksi
 
@@ -326,6 +351,7 @@ Jadi isi tangan lawan memang tidak pernah sampai ke perangkat tamu. Setelah perm
   - gilirannya **dilewati** tanpa mengambil ubin dari dinding;
   - tawaran klaim untuknya dilewatkan;
   - kalau ia terputus setelah mengambil ubin, ubin ambilannya dibuang.
+- Batas waktu aksi tetap berjalan untuk pemain yang terputus di tengah giliran, jadi ubinnya bisa terbuang lebih cepat dari 15 detik kalau batas waktu room lebih pendek.
 - Setelah masa tunggu itu lewat, giliran-giliran berikutnya langsung dilewati tanpa jeda sampai ia tersambung kembali. Begitu kembali, ia bermain lagi seperti biasa dengan tangan yang sama.
 - Kalau yang tersambung tinggal satu orang, tidak ada yang dilewati: permainan menunggu sampai ada pemain yang kembali.
 - Di lobi (sebelum mulai), kursi pemain yang terputus langsung dilepas.
