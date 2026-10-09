@@ -61,7 +61,8 @@ p {
 
 .btn:focus-visible,
 .tile:focus-visible,
-.count-option:focus-within {
+/* Hanya saat dipilih lewat keyboard, bukan saat diklik */
+.count-option:has(input:focus-visible) {
   outline: 3px solid var(--ink);
   outline-offset: 2px;
 }
@@ -165,7 +166,7 @@ p {
   gap: 8px;
 }
 
-.setup__card input[type='text'] {
+:is(.setup__card, .split__form) input[type='text'] {
   font: inherit;
   color: var(--ink);
   min-width: 0;
@@ -175,7 +176,7 @@ p {
   background: #fff;
 }
 
-.setup__card input[type='text']:focus {
+:is(.setup__card, .split__form) input[type='text']:focus {
   outline: none;
   border-color: var(--green);
 }
@@ -204,33 +205,453 @@ p {
   text-transform: uppercase;
 }
 
-.tabs {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 4px;
-  padding: 4px;
-  background: var(--sage);
-  border-radius: 12px;
+.setup__back {
+  justify-self: start;
 }
 
-.tab {
+/* ---------- Homescreen ---------- */
+
+.home {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  padding: 48px clamp(20px, 7vw, 120px);
+  background: linear-gradient(135deg, var(--cream) 0%, var(--cream) 35%, var(--pink) 100%);
+}
+
+.home__menu {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 300px);
+  display: grid;
+  gap: 14px;
+}
+
+.home__title {
+  font-size: clamp(2.75rem, 6vw, 4.5rem);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.home__tagline {
+  margin-bottom: 10px;
+  color: var(--ink-soft);
+}
+
+.home__btn {
   font: inherit;
-  font-weight: 600;
+  font-size: 1.125rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: var(--ink);
-  background: transparent;
+  background: var(--green);
   border: 0;
-  border-radius: 9px;
-  padding: 8px;
+  border-radius: 10px;
+  padding: 16px;
+  box-shadow: 0 4px 0 var(--green-deep);
+  cursor: pointer;
+  /*
+   * Efek hover memakai properti `translate`, bukan `transform`: `transform` dipakai GSAP
+   * untuk animasi masuk, dan transisi CSS di properti yang sama membuat posisi akhirnya meleset.
+   */
+  transition:
+    translate 0.15s ease,
+    box-shadow 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.home__btn:hover {
+  background: var(--sage);
+  translate: 0 -2px;
+  box-shadow: 0 6px 0 var(--green-deep);
+}
+
+.home__btn:active {
+  translate: 0 2px;
+  box-shadow: 0 2px 0 var(--green-deep);
+}
+
+.home__btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  translate: none;
+  box-shadow: 0 4px 0 var(--green-deep);
+  background: var(--green);
+}
+
+.home__btn:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 3px;
+}
+
+/* Kredit pembuat di pojok kanan bawah: tulisan di atas, tombol sosial di bawahnya */
+.home__credit {
+  position: absolute;
+  right: clamp(16px, 3vw, 40px);
+  bottom: clamp(16px, 3vh, 32px);
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  font-size: 0.9375rem;
+  color: var(--ink-soft);
+}
+
+.home__credit strong {
+  color: var(--ink);
+}
+
+.home__socials {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  gap: 8px;
+}
+
+/* Tombol sosial berbentuk ubin kecil dengan monogram */
+.social-link {
+  width: 40px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  font-size: 0.875rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+  text-decoration: none;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 0 var(--green);
+  transition:
+    translate 0.15s ease,
+    box-shadow 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.social-link svg {
+  width: 20px;
+  height: 20px;
+}
+
+.social-link:hover {
+  background: var(--pink);
+  translate: 0 -3px;
+  box-shadow: 0 7px 0 var(--green);
+}
+
+.social-link:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 3px;
+}
+
+/* ---------- Tumpukan ubin animasi (TileField) ---------- */
+
+.tile-field {
+  position: relative;
+  overflow: hidden;
+}
+
+/* Bawaan: tegak di tengah area. Halaman pemakai mengatur ukuran ubin dan putarannya. */
+.tile-field__pile {
+  --htile-w: 72px;
+  --htile-gap: calc(var(--htile-w) * 0.14);
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: grid;
+  gap: var(--htile-gap);
+  transform: translate(-50%, -50%);
+}
+
+.tile-field__row {
+  display: flex;
+  gap: var(--htile-gap);
+}
+
+/* Baris selang-seling digeser setengah ubin, seperti tumpukan bata */
+.tile-field__row:nth-child(odd) {
+  margin-left: calc(var(--htile-w) * 0.57);
+}
+
+.htile {
+  width: var(--htile-w);
+  height: calc(var(--htile-w) * 1.36);
+  perspective: 700px;
   cursor: pointer;
 }
 
-.tab:focus-visible {
-  outline: 3px solid var(--ink);
-  outline-offset: 2px;
+.htile__inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
 }
 
-.tab--active {
-  background: var(--cream);
+.htile__side {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #fff;
+  border-radius: calc(var(--htile-w) * 0.14);
+  /* Ketebalan ubin (tampil di kiri bawah kalau tumpukannya diputar 45°) */
+  box-shadow: 0 calc(var(--htile-w) * 0.09) 0 var(--green);
+  backface-visibility: hidden;
+}
+
+.htile__face {
+  transform: rotateY(180deg);
+}
+
+.htile__face .tile {
+  --w: var(--htile-w);
+  margin: 0;
+  border: 0;
+  box-shadow: none;
+}
+
+/* Homescreen: pita ubin diagonal di sisi kanan, boleh meluber ke kiri */
+.home__tiles {
+  position: absolute;
+  inset: 0 0 0 36%;
+  overflow: visible;
+}
+
+.home__tiles .tile-field__pile {
+  --htile-w: clamp(64px, 7vw, 112px);
+  left: 56%;
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+/*
+ * Mobile: ubin tegak (tidak diputar) memenuhi seluruh layar sebagai latar,
+ * dan menu berada di kartu di tengah. Ubin di luar kartu tetap bisa diketuk.
+ */
+@media (max-width: 720px) {
+  .home {
+    justify-content: center;
+    padding: 24px 16px;
+  }
+
+  .home__menu {
+    width: min(100%, 360px);
+    padding: 24px 20px;
+    background: rgb(254 250 243 / 92%);
+    backdrop-filter: blur(6px);
+    border-radius: 18px;
+    box-shadow:
+      0 4px 0 var(--green-deep),
+      0 12px 32px rgb(43 53 42 / 18%);
+  }
+
+  .home .home__title {
+    font-size: clamp(2.25rem, 12vw, 3rem);
+    text-align: center;
+  }
+
+  .home .home__tagline {
+    text-align: center;
+  }
+
+  .home__tiles {
+    inset: 0;
+  }
+
+  .home__tiles .tile-field__pile {
+    /* 4 ubin + setengah ubin geseran baris selang-seling, sedikit melebihi layar */
+    --htile-w: calc(100vw / 4.6);
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  /* Baris di belakang kartu menu dikosongkan; tetap memakan tempat supaya susunannya tidak bergeser */
+  .home .htile--center {
+    visibility: hidden;
+  }
+
+  /* Kredit jadi kartu kecil di tengah bawah, dengan latar krem supaya terbaca di atas ubin */
+  .home__credit {
+    right: auto;
+    left: 50%;
+    bottom: 16px;
+    translate: -50% 0;
+    width: max-content;
+    max-width: calc(100% - 32px);
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px 12px;
+    background: rgb(254 250 243 / 92%);
+    backdrop-filter: blur(6px);
+    border-radius: 16px;
+    box-shadow: 0 6px 20px rgb(43 53 42 / 18%);
+  }
+
+  .social-link {
+    width: 34px;
+    height: 38px;
+    font-size: 0.8125rem;
+  }
+}
+
+/* ---------- Menu Online: form (3/4) | kolom ubin (1/4) ---------- */
+
+/*
+ * Desktop: semua ukuran vertikal mengikuti tinggi layar (vh), supaya form selalu muat
+ * satu layar tanpa scroll, termasuk menu Local dengan 4 kolom nama.
+ */
+.split {
+  height: 100vh;
+  height: 100dvh;
+  display: grid;
+  grid-template-columns: 3fr 1fr;
+  background: linear-gradient(135deg, var(--cream) 0%, var(--cream) 45%, var(--pink) 100%);
+}
+
+.split__main {
+  display: grid;
+  place-items: center;
+  /* Cadangan untuk layar yang sangat pendek: hanya area form yang bisa di-scroll */
+  overflow-y: auto;
+  padding: clamp(12px, 4vh, 40px) clamp(20px, 6vw, 96px);
+}
+
+.split__form {
+  width: min(100%, 520px);
+  display: grid;
+  gap: clamp(10px, 2.2vh, 22px);
+}
+
+.split .home__title {
+  font-size: clamp(2.25rem, 7vh, 4.5rem);
+}
+
+.split .setup__form {
+  gap: clamp(10px, 1.6vh, 16px);
+}
+
+.split .setup__field legend,
+.split .setup__label {
+  margin-bottom: clamp(4px, 0.8vh, 8px);
+}
+
+.split .count-option {
+  padding: clamp(6px, 1.4vh, 14px) 0;
+}
+
+.split__form input[type='text'] {
+  padding: clamp(7px, 1.1vh, 10px) 12px;
+}
+
+/* Nama pemain Local dua kolom, supaya 4 nama tidak memanjangkan form */
+.setup__names--grid {
+  grid-template-columns: 1fr 1fr;
+}
+
+.split__form .setup__back {
+  justify-self: start;
+}
+
+.split__form .home__btn {
+  padding: 12px 20px;
+  font-size: 1rem;
+}
+
+.split__divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.875rem;
+  color: var(--ink-soft);
+}
+
+.split__divider::before,
+.split__divider::after {
+  content: '';
+  flex: 1;
+  border-top: 1px solid var(--line);
+}
+
+/* Kolom ubin tegak; ukuran ubin mengikuti lebar kolom (3 ubin + geseran setengah ubin) */
+.split__tiles {
+  background: var(--pink);
+  box-shadow: inset 6px 0 12px -8px rgb(43 53 42 / 25%);
+}
+
+.split__tiles .tile-field__pile {
+  --htile-w: clamp(56px, calc(25vw / 3.7), 140px);
+}
+
+/* Mobile: kolom ubin disembunyikan, form memenuhi layar dan boleh di-scroll seperti halaman biasa */
+@media (max-width: 720px) {
+  .split {
+    height: auto;
+    min-height: 100vh;
+    min-height: 100dvh;
+    grid-template-columns: 1fr;
+  }
+
+  .split__tiles {
+    display: none;
+  }
+
+  .split__main {
+    place-items: start center;
+    overflow-y: visible;
+    padding: 24px 16px 32px;
+  }
+
+  .setup__names--grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- Tutorial ---------- */
+
+.tutorial {
+  width: min(100%, 760px);
+}
+
+.tutorial__section {
+  display: grid;
+  gap: 10px;
+}
+
+.tutorial__section h2 {
+  font-size: 1.125rem;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.tutorial__section ol,
+.tutorial__section ul {
+  margin: 0;
+  padding-left: 1.25rem;
+  display: grid;
+  gap: 4px;
+}
+
+.tutorial__example {
+  margin: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.tutorial__example figcaption {
+  font-size: 0.875rem;
+  color: var(--ink-soft);
+}
+
+.tutorial__tiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
 }
 
 /* ---------- Lobi room online ---------- */
@@ -289,6 +710,19 @@ p {
   --center-h: calc(var(--S) * 0.14);
 }
 
+/*
+ * Dua pemain: kotak tengahnya pendek, jadi nama tidak muat di atas/bawah angka sisa ubin.
+ * Nama dipindah ke pojok (milik sendiri kiri bawah, lawan tampil kanan atas) dan angka tetap di tengah.
+ */
+.game--duo .center__seat {
+  justify-content: flex-start;
+  padding: 4px 8px;
+}
+
+.game--duo .center__name {
+  max-width: 32%;
+}
+
 .topbar {
   display: flex;
   align-items: center;
@@ -342,6 +776,8 @@ p {
 
 /* Tiap nama menghadap pemainnya, sama seperti kursinya. */
 .center__seat {
+  /* Tinggi satu label nama (font + padding), dipakai untuk menjaga jarak antar-label */
+  --name-h: calc(clamp(10px, calc(var(--S) / 52), 14px) * 1.3 + 4px);
   position: absolute;
   inset: 0;
   display: flex;
@@ -351,14 +787,15 @@ p {
 }
 
 .center__name {
-  max-width: 78%;
+  /* Sisakan ruang untuk nama di dua sisi tegak lurus, supaya tidak bertabrakan di sudut */
+  max-width: calc(100% - 2 * var(--name-h));
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: clamp(10px, calc(var(--S) / 52), 14px);
   font-weight: 700;
   line-height: 1.3;
-  padding: 1px 8px;
+  padding: 1px clamp(4px, calc(var(--S) / 100), 8px);
   border-radius: 999px;
   border: 1px solid transparent;
 }
@@ -489,6 +926,239 @@ p {
   gap: 10px;
 }
 
+/* ---------- Tombol tutorial di meja ---------- */
+
+.help-button {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 20;
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  font: inherit;
+  color: var(--ink);
+  background: var(--pink);
+  border: 2px solid var(--pink-deep);
+  border-radius: 50%;
+  box-shadow: 0 4px 12px rgb(43 53 42 / 25%);
+  cursor: pointer;
+}
+
+.help-button:hover {
+  filter: brightness(0.97);
+}
+
+.help-button:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 3px;
+}
+
+.help-button__icon {
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.help-button__label {
+  /* Hanya terlihat di desktop lebar; sebagai tombol bulat cukup ikon "?" + aria-label */
+  display: none;
+}
+
+/* ---------- Modal tutorial ---------- */
+
+.tutorial-dialog {
+  width: min(100% - 24px, 760px);
+  max-height: min(100dvh - 32px, 900px);
+  overflow: hidden;
+  padding: 0;
+  color: var(--ink);
+  background: var(--cream);
+  border: 0;
+  border-radius: 16px;
+  box-shadow: 0 16px 48px rgb(43 53 42 / 30%);
+}
+
+.tutorial-dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+/*
+ * Scrollbar tipis berwarna hijau palet, menjauh dari sudut membulat,
+ * dan tanpa tombol panah, supaya menyatu dengan kartu.
+ */
+.tutorial-dialog__scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* Area scroll tetap bisa di-scroll dengan keyboard; cincin fokusnya tidak perlu */
+.tutorial-dialog__scroll:focus {
+  outline: none;
+}
+
+.tutorial-dialog__scroll::-webkit-scrollbar {
+  width: 14px;
+}
+
+.tutorial-dialog__scroll::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 16px 0;
+}
+
+.tutorial-dialog__scroll::-webkit-scrollbar-thumb {
+  background: var(--sage);
+  background-clip: padding-box;
+  border: 4px solid transparent;
+  border-radius: 999px;
+}
+
+.tutorial-dialog__scroll::-webkit-scrollbar-thumb:hover {
+  background-color: var(--green);
+}
+
+.tutorial-dialog__scroll::-webkit-scrollbar-button {
+  display: none;
+}
+
+/* Firefox tidak mengenal ::-webkit-scrollbar */
+@supports not selector(::-webkit-scrollbar) {
+  .tutorial-dialog__scroll {
+    scrollbar-width: thin;
+    scrollbar-color: var(--sage) transparent;
+  }
+}
+
+.tutorial-dialog::backdrop {
+  background: rgb(43 53 42 / 45%);
+}
+
+.tutorial-dialog__card {
+  display: grid;
+  gap: 16px;
+  padding: 0 24px 24px;
+}
+
+/* Judul dan tombol tutup tetap terlihat saat isi modal di-scroll */
+.tutorial-dialog__header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 20px 0 12px;
+  background: var(--cream);
+  border-bottom: 1px solid var(--line);
+}
+
+/* Header modal sudah punya garis bawah, jadi garis atas bagian pertama tidak perlu */
+.tutorial-dialog .tutorial__section:first-of-type h2 {
+  padding-top: 0;
+  border-top: 0;
+}
+
+@media (max-width: 520px) {
+  .tutorial-dialog__card {
+    padding: 0 16px 16px;
+  }
+}
+
+/* ---------- Modal hasil akhir (memakai kerangka .tutorial-dialog) ---------- */
+
+.result-dialog {
+  width: min(100% - 24px, 640px);
+}
+
+.result-dialog__card {
+  display: grid;
+  gap: 14px;
+  justify-items: center;
+  padding: 28px 24px 24px;
+  text-align: center;
+}
+
+.result-dialog__title {
+  font-size: clamp(1.75rem, 5vw, 2.5rem);
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.result-dialog__how {
+  color: var(--ink-soft);
+}
+
+.result-dialog__hand {
+  justify-self: stretch;
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  background: var(--sage);
+  border-radius: 14px;
+}
+
+.result-dialog__group {
+  margin: 0;
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+}
+
+.result-dialog__group figcaption {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.result-dialog__tiles,
+.result-dialog__melds {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 3px;
+}
+
+.result-dialog__melds {
+  gap: 14px;
+}
+
+.result-dialog__meld {
+  display: grid;
+  gap: 2px;
+  justify-items: center;
+  font-size: 0.8125rem;
+}
+
+.result-dialog__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+@media (max-width: 520px) {
+  .result-dialog__card {
+    padding: 22px 14px 18px;
+  }
+
+  .result-dialog__hand {
+    padding: 12px 8px;
+  }
+
+  /* 14 ubin jadi dua baris berisi 7 */
+  .result-dialog .tile {
+    --w: 30px;
+  }
+}
+
 /* ---------- Buangan terakhir (diperbesar) ---------- */
 
 .last-discard {
@@ -526,12 +1196,18 @@ p {
     --S: max(320px, min(100vw - 2 * var(--side) - 2 * var(--gap) - 32px, 100dvh - 32px, 1100px));
 
     width: auto;
+    /*
+     * Tinggi dikunci tepat setinggi meja (+ padding atas-bawah 24px), supaya baris tengah
+     * mengisi sisa ruang dan kartu di pojok bawah tidak turun melewati layar.
+     */
+    height: calc(var(--S) + 24px);
     grid-template-columns: var(--side) var(--S) var(--side);
-    grid-template-rows: auto auto 1fr;
+    /* Kiri: buangan terakhir (atas) + tutorial (bawah). Kanan: panel aksi (atas) + judul/room (bawah). */
+    grid-template-rows: auto minmax(0, 1fr) auto;
     grid-template-areas:
-      'top felt dock'
       'last felt dock'
-      '. felt dock';
+      '. felt .'
+      'help felt top';
     justify-content: center;
     align-items: start;
     column-gap: var(--gap);
@@ -541,8 +1217,20 @@ p {
     --w: 140px;
   }
 
+  /* Judul, kode room, dan tombol keluar jadi kartu di pojok kanan bawah, sejajar tombol Tutorial */
   .topbar {
     grid-area: top;
+    align-self: end;
+    flex-wrap: wrap;
+    row-gap: 10px;
+    padding: 14px 16px;
+    background: var(--cream);
+    border-radius: 14px;
+    box-shadow: 0 2px 0 rgb(43 53 42 / 12%);
+  }
+
+  .topbar > .btn {
+    flex-basis: 100%;
   }
 
   .felt {
@@ -557,6 +1245,38 @@ p {
     grid-area: last;
     display: flex;
   }
+
+  .help-button {
+    grid-area: help;
+    align-self: end;
+    position: static;
+    width: 100%;
+    height: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 14px 16px;
+    font-weight: 700;
+    background: var(--cream);
+    border-color: var(--green);
+    border-radius: 14px;
+    box-shadow: 0 2px 0 rgb(43 53 42 / 12%);
+  }
+
+  .help-button__icon {
+    width: 28px;
+    height: 28px;
+    display: grid;
+    place-items: center;
+    font-size: 1rem;
+    background: var(--pink);
+    border-radius: 50%;
+  }
+
+  .help-button__label {
+    display: inline;
+  }
 }
 
 /* ---------- Ubin ---------- */
@@ -567,11 +1287,7 @@ p {
   flex: none;
   width: var(--w);
   height: calc(var(--w) * 1.36);
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: calc(var(--w) * 0.04);
+  display: inline-block;
   padding: 0;
   font: inherit;
   line-height: 1;
@@ -582,6 +1298,45 @@ p {
   box-shadow: 0 calc(var(--w) * 0.08) 0 var(--green-deep);
   margin-bottom: calc(var(--w) * 0.08);
   user-select: none;
+}
+
+/* Isi muka ubin; terpisah dari .tile supaya bisa diputar tanpa memutar bentuk ubin */
+.tile__content {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--w) * 0.04);
+}
+
+/*
+ * Mode online: muka ubin di kolam buangan pemain lain diputar balik supaya tegak menghadap
+ * pemain di perangkat ini. Untuk kursi samping, kotak isinya ditukar lebar-tingginya dulu
+ * supaya setelah diputar 90° pas mengisi ubin yang tampil mendatar.
+ */
+.pond--turn-180 .tile__content {
+  rotate: 180deg;
+}
+
+.pond--turn-90 .tile__content,
+.pond--turn-270 .tile__content {
+  inset: auto;
+  left: 50%;
+  top: 50%;
+  width: calc(var(--w) * 1.36);
+  height: var(--w);
+  translate: -50% -50%;
+  scale: 0.92;
+}
+
+.pond--turn-90 .tile__content {
+  rotate: 90deg;
+}
+
+.pond--turn-270 .tile__content {
+  rotate: 270deg;
 }
 
 .tile--sm {

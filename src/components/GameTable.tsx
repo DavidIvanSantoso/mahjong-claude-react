@@ -1,8 +1,10 @@
 import { useState, type CSSProperties } from 'react'
 import { canDeclareWin, kongOptions, type Action, type Claim, type GameState } from '../game/state'
 import { sortTiles, tileDescription, tileName } from '../game/tiles'
+import { ResultDialog } from './ResultDialog'
 import { Seat } from './Seat'
 import { TileView } from './TileView'
+import { TutorialDialog } from './TutorialScreen'
 
 interface GameTableProps {
   state: GameState
@@ -65,7 +67,12 @@ export function GameTable({
   connected,
 }: GameTableProps) {
   const [selectedId, setSelectedId] = useState<number | null>(null)
+  const [tutorialOpen, setTutorialOpen] = useState(false)
+  // Modal hasil muncul otomatis saat permainan berakhir; pemain boleh menutupnya untuk melihat meja.
+  const [resultClosed, setResultClosed] = useState(false)
   const { players, phase, current, lastDiscard } = state
+  // Ronde baru dimulai: modal hasil ronde berikutnya harus muncul lagi.
+  if (phase !== 'over' && resultClosed) setResultClosed(false)
   const claim = state.claims[0]
   const positions = SEAT_POSITIONS[players.length]
   const pond = POND_LAYOUT[players.length]
@@ -253,6 +260,9 @@ export function GameTable({
               Main lagi
             </button>
           )}
+          <button type="button" className="btn" onClick={() => setResultClosed(false)}>
+            Lihat hasil
+          </button>
           <button type="button" className="btn" onClick={onExit}>
             {online ? 'Keluar dari room' : 'Ganti pemain'}
           </button>
@@ -328,6 +338,9 @@ export function GameTable({
                 drawnId={state.drawnId}
                 lastDiscardId={lastDiscard?.tile.id ?? null}
                 selectedId={interactive ? selectedId : null}
+                // Mode online: meja tidak berputar, jadi buangan semua pemain dibuat tegak menghadap
+                // pemain ini. Putaran bersih kursi di layar = rotation - posisi*90; dibalik di sini.
+                pondFaceTurn={online ? (((positions[i] * 90 - rotation) % 360) + 360) % 360 : 0}
                 onTileClick={
                   interactive
                     ? (tileId) => (tileId === selectedId ? discard(tileId) : setSelectedId(tileId))
@@ -353,6 +366,28 @@ export function GameTable({
           <p className="last-discard__desc">Tidak ada ubin buangan yang baru.</p>
         )}
       </aside>
+
+      {/* Desktop lebar: tombol di pojok kiri bawah. Layar lain: tombol bulat melayang "?". */}
+      <button
+        type="button"
+        className="help-button"
+        aria-label="Buka tutorial"
+        onClick={() => setTutorialOpen(true)}
+      >
+        <span className="help-button__icon" aria-hidden="true">
+          ?
+        </span>
+        <span className="help-button__label">Tutorial</span>
+      </button>
+      <TutorialDialog open={tutorialOpen} onClose={() => setTutorialOpen(false)} />
+      <ResultDialog
+        state={state}
+        open={phase === 'over' && !resultClosed}
+        onClose={() => setResultClosed(true)}
+        onExit={onExit}
+        onRestart={onRestart}
+        viewer={viewer}
+      />
 
       <section className="card dock" aria-live="polite">
         {absent.length > 0 && phase !== 'over' && (

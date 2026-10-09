@@ -47,6 +47,7 @@ Untuk mencoba mode online di satu komputer, buka dua tab atau lebih: satu membua
 | Build | Vite 7 |
 | Koneksi antarpemain | PeerJS 1.5 (WebRTC) |
 | Hosting | GitHub Pages, deploy lewat GitHub Actions |
+| Animasi homescreen | GSAP 3 |
 | Gaya | Satu file CSS biasa (`src/index.css`), tanpa library UI |
 
 Palet warna: `#F6E2E9` (merah muda), `#FEFAF3` (krem), `#B8CFB3` (hijau muda), `#84A282` (hijau). Warna teks dan simbol ubin adalah turunan yang lebih gelap dari palet itu supaya terbaca.
@@ -63,7 +64,11 @@ src/
     rules.ts               Cek menang, pong/kong, pilihan chi
     state.ts               State permainan dan reducer (alur giliran)
   components/
-    SetupScreen.tsx        Menu awal: jumlah pemain, nama, buat/gabung room
+    HomeScreen.tsx         Layar pembuka: menu Local / Online / Tutorial dan ubin animasi
+    TileField.tsx          Tumpukan ubin animasi (GSAP) yang dipakai homescreen dan menu Online
+    SetupScreen.tsx        Pengaturan sebelum main: LocalSetup dan OnlineSetup
+    TutorialScreen.tsx     Penjelasan aturan dengan contoh ubin
+    ResultDialog.tsx       Modal hasil akhir: pemenang dan tangan menangnya
     GameTable.tsx          Meja, putaran meja, panel pesan dan tombol aksi
     Seat.tsx               Satu kursi: tangan, set terbuka, bunga, buangan
     TileView.tsx           Gambar satu ubin (muka atau telungkup)
@@ -174,12 +179,40 @@ Aksi yang tidak sah untuk keadaan saat itu (misalnya membuang ubin yang tidak ad
 
 ## 6. Tampilan
 
+### Homescreen
+
+Layar pertama saat situs dibuka. Di kiri ada judul dan tiga menu:
+
+- **Local** — pengaturan main di satu perangkat (jumlah pemain wajib dipilih, nama opsional).
+- **Online** — buat room atau gabung dengan kode.
+- **Tutorial** — penjelasan aturan lengkap dengan contoh ubin.
+
+Di kanan ada pita ubin putih yang diputar 45°. Animasinya memakai GSAP:
+
+- Saat halaman dibuka, ubin jatuh masuk satu per satu dan menu bergeser masuk dari kiri.
+- Saat kursor menyentuh ubin, ubin itu terangkat dan berbalik (flip) memperlihatkan muka ubin acak; saat kursor pergi, ubin berbalik lagi.
+- Di layar sentuh, ubin yang diketuk berbalik lalu menutup sendiri setelah 1,2 detik.
+- Tanpa disentuh pun, setiap 1,2–2,4 detik satu ubin acak yang terlihat di layar berbalik sebentar (1,8 detik) supaya tampilan terasa hidup. Paling banyak 2 ubin terbuka sekaligus, termasuk yang sedang disentuh pengguna.
+- Di layar selebar 720 px atau kurang, ubin tidak diputar: ubin tegak memenuhi seluruh layar sebagai latar, dan menu berada di kartu krem di tengah. Ubin di luar kartu tetap bisa diketuk. Tiga baris di belakang kartu menu dikosongkan supaya area menu terlihat bersih.
+- Semua animasi dibungkus `gsap.context` supaya dibersihkan saat pindah layar, dan dimatikan untuk pengguna yang mengaktifkan "kurangi gerakan".
+
+Link undangan room (`?room=KODE`) melewati homescreen dan langsung membuka menu Online.
+
+Di pojok kanan bawah (di HP: kartu kecil di tengah bawah) ada kredit "Created by David Ivan", dan di bawah tulisan itu tautan sosial berbentuk ubin kecil berikon, yang membuka profil di tab baru. Daftarnya ada di konstanta `SOCIALS` di `HomeScreen.tsx`; entri dengan `url` kosong tidak ditampilkan. Ikonnya adalah path SVG dari Bootstrap Icons yang disalin ke `socialIcons.ts`, tanpa menambah dependensi.
+
+Semua perilaku ubin di atas (jatuh masuk, flip saat hover/ketuk, flip acak, paling banyak 2 terbuka) ada di komponen `TileField`, yang hanya mengatur logika dan animasinya. Posisi, ukuran, dan putaran tumpukan diatur dari CSS halaman yang memakainya.
+
+### Menu Local dan Online
+
+Keduanya memakai tata letak yang sama (`SplitScreen` di `SetupScreen.tsx`). Layar dibagi dua: form di kiri (3/4 lebar layar) dan kolom ubin tegak berlatar merah muda di kanan (1/4), memakai `TileField` yang sama dengan homescreen. Judul dan tombolnya bergaya sama dengan homescreen, dan isi form bergeser masuk dari kiri saat dibuka. Di desktop, jarak dan ukuran elemen form mengikuti tinggi layar dan nama pemain Local disusun dua kolom, supaya form selalu muat satu layar tanpa scroll. Di layar 720 px atau lebih kecil, kolom ubin disembunyikan dan form memenuhi layar.
+
 ### Meja
 
 Meja berbentuk persegi. Tiap pemain menempati satu sisi; buangan tiap pemain tersusun di depannya, mengelilingi kotak tengah yang menampilkan nama pemain dan sisa ubin di dinding. Di antara tangan dan buangan ada set terbuka dan bunga.
 
 - 2 pemain duduk berhadapan (bawah dan atas); 3 pemain di bawah, kanan, dan atas; 4 pemain di keempat sisi.
 - Lebar area buangan menyesuaikan jumlah pemain (15, 8, atau 6 kolom), karena makin sedikit pemain makin banyak buangan per orang.
+- Di kotak tengah, nama tiap pemain menghadap kursinya. Untuk 2 pemain kotaknya pendek, jadi nama ditaruh di pojok (milik sendiri kiri bawah, lawan kanan atas) agar tidak menabrak angka sisa ubin. Nama yang terlalu panjang dipotong dengan "…".
 - Tangan pemain lain tampil sebagai ubin telungkup berwarna merah muda.
 - Kong tertutup ditampilkan dengan dua ubin luarnya telungkup.
 
@@ -187,7 +220,7 @@ Meja berbentuk persegi. Tiap pemain menempati satu sisi; buangan tiap pemain ter
 
 **Ukuran.** Semua ukuran di meja diturunkan dari satu variabel CSS `--S` (panjang sisi meja), yang dihitung dari ukuran layar. Meja otomatis mengecil di layar kecil.
 
-**Ubin** digambar seluruhnya dengan CSS dan karakter teks; tidak ada file gambar.
+**Ubin** digambar seluruhnya dengan CSS dan karakter teks; tidak ada file gambar. Isi muka ubin dibungkus `.tile__content`, terpisah dari bentuk ubinnya, supaya muka bisa diputar sendiri. Ini dipakai di mode online agar buangan pemain di samping dan seberang tetap terbaca tegak: untuk kursi samping, kotak isinya ditukar lebar-tingginya lalu diputar 90°.
 
 ### Putaran meja (mode satu perangkat)
 
@@ -201,7 +234,17 @@ Panel di bawah meja tidak ikut berputar. Isinya pesan untuk pemain dan tombol se
 
 ### Layar lebar
 
-Di layar selebar 1200 px atau lebih dengan rasio minimal 3:2, tata letaknya menjadi tiga kolom: judul dan panel **Buangan terakhir** di kiri, meja di tengah, dan panel aksi di kanan. Meja memakai hampir seluruh tinggi layar (sampai 1100 px), sehingga semua ubin ikut membesar. Panel kiri menampilkan ubin yang terakhir dibuang dalam ukuran besar, beserta namanya, siapa yang membuang, dan penjelasan singkat jenis ubinnya. Di layar yang lebih sempit panel kiri disembunyikan dan panel aksi kembali ke bawah meja.
+Di layar selebar 1200 px atau lebih dengan rasio minimal 3:2, tata letaknya menjadi tiga kolom: panel **Buangan terakhir** (atas) dan tombol Tutorial (bawah) di kiri, meja di tengah, serta panel aksi (atas) dan kartu judul/kode room/tombol keluar (bawah) di kanan. Meja memakai hampir seluruh tinggi layar (sampai 1100 px), sehingga semua ubin ikut membesar. Panel kiri menampilkan ubin yang terakhir dibuang dalam ukuran besar, beserta namanya, siapa yang membuang, dan penjelasan singkat jenis ubinnya. Di layar yang lebih sempit panel kiri disembunyikan dan panel aksi kembali ke bawah meja.
+
+### Tutorial di tengah permainan
+
+Di meja (lokal maupun online) ada tombol untuk membuka tutorial dalam modal, tanpa meninggalkan permainan. Di desktop lebar tombolnya ada di pojok kiri bawah dengan tulisan "Tutorial"; di layar lain berupa tombol bulat melayang "?" di pojok kanan bawah. Modal menutup lewat tombol Tutup, tombol Esc, atau klik di luar kartu. Isinya sama dengan layar Tutorial di menu utama (`TutorialContent` di `TutorialScreen.tsx`).
+
+### Modal hasil akhir
+
+Begitu permainan berakhir, muncul modal (`ResultDialog.tsx`) yang menampilkan siapa pemenangnya, dari mana ubin penentunya (ambilan sendiri atau buangan pemain lain), dan susunan tangan menangnya: ubin di tangan dengan ubin penentu diberi tanda, set terbuka beserta jenisnya, dan bunga. Di mode online pemenang melihat judul "Kamu menang!". Untuk permainan seri, modal hanya memberi tahu bahwa dinding habis.
+
+Tombolnya: **Main lagi** (di mode online hanya untuk host), **Lihat meja** untuk menutup modal dan melihat semua tangan di meja, dan tombol keluar. Setelah ditutup, modal bisa dibuka lagi lewat tombol **Lihat hasil** di panel aksi.
 
 ### Satu komponen untuk dua mode
 
@@ -211,6 +254,7 @@ Di layar selebar 1200 px atau lebih dengan rasio minimal 3:2, tata letaknya menj
 |---|---|---|
 | Siapa di sisi bawah | Pemain yang memegang perangkat | Selalu diri sendiri |
 | Meja berputar | Ya | Tidak |
+| Muka ubin buangan pemain lain | Mengikuti arah kursi masing-masing | Selalu tegak menghadap diri sendiri |
 | Tangan yang terlihat | Hanya saat giliran sudah dibuka | Tangan sendiri, selalu |
 | Layar "berikan perangkat" | Ada | Tidak ada |
 
@@ -323,6 +367,8 @@ GitHub Pages hanya menyajikan file statis, dan itu cukup: aplikasi ini tidak pun
 ## 10. Lisensi dan aset
 
 - Tidak ada file gambar, font, atau suara. Ubin digambar dengan CSS dan karakter teks; font memakai bawaan perangkat.
+- Ikon LinkedIn, GitHub, dan Instagram di homescreen berasal dari Bootstrap Icons (MIT). Lisensi itu mencakup gambar ikonnya; logonya sendiri tetap merek dagang masing-masing perusahaan dan di sini hanya dipakai sebagai tautan ke profil pembuat, tanpa diubah bentuknya.
 - Library yang ikut dalam hasil build: React dan React DOM (MIT), PeerJS (MIT), beserta turunannya (MIT, ISC, BSD-3-Clause).
+- GSAP memakai lisensi "Standard No Charge" dari GreenSock (https://gsap.com/standard-license): gratis, termasuk untuk dipublikasikan, tetapi bukan lisensi open-source. Larangan utamanya adalah memakai GSAP di produk yang bersaing dengan Webflow, yang tidak berlaku untuk game ini.
 - Alat build: Vite (MIT), TypeScript (Apache-2.0).
 - Mahjong adalah permainan tradisional; aturan dan namanya tidak dimiliki pihak mana pun.

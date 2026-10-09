@@ -27,6 +27,11 @@ interface SeatProps {
   lastDiscardId: number | null
   selectedId?: number | null
   onTileClick?: (tileId: number) => void
+  /**
+   * Putaran tambahan (derajat, kelipatan 90) untuk muka ubin di kolam buangan, supaya tetap
+   * tegak menghadap pemain di perangkat ini walaupun kursinya ada di samping atau seberang.
+   */
+  pondFaceTurn?: number
 }
 
 export function Seat({
@@ -38,12 +43,13 @@ export function Seat({
   lastDiscardId,
   selectedId,
   onTileClick,
+  pondFaceTurn = 0,
 }: SeatProps) {
   const handSize = large ? 'hand' : 'side'
 
   return (
     <div className="seat" style={{ transform: `rotate(${-position * 90}deg)` }}>
-      <div className="pond" aria-label={`Buangan ${player.name}`}>
+      <div className={`pond pond--turn-${pondFaceTurn}`} aria-label={`Buangan ${player.name}`}>
         {player.discards.map((tile) => (
           <TileView key={tile.id} tile={tile} size="pond" marked={tile.id === lastDiscardId} />
         ))}

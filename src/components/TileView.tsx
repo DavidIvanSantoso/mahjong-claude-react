@@ -21,6 +21,7 @@ interface TileViewProps {
   onClick?: () => void
 }
 
+/** Isi muka ubin. Dibungkus `.tile__content` supaya bisa diputar tanpa memutar bentuk ubinnya. */
 function TileFace({ tile }: { tile: Tile }) {
   if (tile.suit === 'wind') {
     return (
@@ -79,13 +80,17 @@ export function TileView({ tile, size = 'md', selected, marked, onClick }: TileV
   if (onClick) {
     return (
       <button type="button" className={className} title={name} aria-label={name} aria-pressed={selected} onClick={onClick}>
-        <TileFace tile={tile} />
+        <span className="tile__content">
+          <TileFace tile={tile} />
+        </span>
       </button>
     )
   }
   return (
     <span className={className} title={name} role="img" aria-label={name}>
-      <TileFace tile={tile} />
+      <span className="tile__content">
+        <TileFace tile={tile} />
+      </span>
     </span>
   )
 }
