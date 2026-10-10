@@ -20,8 +20,10 @@ interface GameTableProps {
   roomCode?: string
   /** Mode online: status koneksi tiap pemain. */
   connected?: boolean[]
-  /** Batas waktu per aksi (detik). */
+  /** Batas waktu aksi yang sedang berjalan (detik); sudah dipercepat kalau `rush`. */
   turnSeconds: number
+  /** Time attack sedang berlangsung: ada pemain yang hampir menang. */
+  rush?: boolean
   /** Kapan waktu aksi yang sedang ditunggu habis (ms); null selama tidak ada yang dihitung. */
   deadline: number | null
 }
@@ -62,7 +64,7 @@ function useTableRotation(target: number): number {
 }
 
 /** Hitung mundur waktu aksi. Dipasang ulang (lewat `key`) tiap kali batas waktunya berganti. */
-function TurnTimer({ deadline, total }: { deadline: number; total: number }) {
+function TurnTimer({ deadline, total, rush }: { deadline: number; total: number; rush: boolean }) {
   const [now, setNow] = useState(Date.now)
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 250)
@@ -73,6 +75,7 @@ function TurnTimer({ deadline, total }: { deadline: number; total: number }) {
   const seconds = Math.ceil(left / 1000)
   return (
     <div className={`turn-timer ${seconds <= 5 ? 'turn-timer--low' : ''}`} role="timer">
+      {rush && <span className="turn-timer__rush">Time attack</span>}
       <span className="turn-timer__bar" aria-hidden="true">
         <span style={{ width: `${Math.min(100, (left / (total * 1000)) * 100)}%` }} />
       </span>
@@ -90,6 +93,7 @@ export function GameTable({
   roomCode,
   connected,
   turnSeconds,
+  rush = false,
   deadline,
 }: GameTableProps) {
   const [selectedId, setSelectedId] = useState<number | null>(null)
@@ -426,7 +430,7 @@ export function GameTable({
           </p>
         )}
         {deadline !== null && phase !== 'over' && (
-          <TurnTimer key={deadline} deadline={deadline} total={turnSeconds} />
+          <TurnTimer key={deadline} deadline={deadline} total={turnSeconds} rush={rush} />
         )}
         {renderDock()}
       </section>

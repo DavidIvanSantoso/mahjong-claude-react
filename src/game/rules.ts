@@ -7,10 +7,45 @@ import { KIND_COUNT, isSuited, kindIndex, sameKind, type Tile } from './tiles'
  */
 export function isWinningHand(concealed: Tile[], meldCount: number): boolean {
   if (concealed.length !== 14 - meldCount * 3) return false
+  return hasWinningShape(countKinds(concealed))
+}
 
+/**
+ * Tangan "menunggu": tinggal butuh 1 ubin lagi untuk menang. Saat pemain sedang memegang ubin
+ * ambilan (satu ubin lebih banyak), cukup ada satu buangan yang menyisakan tangan menunggu.
+ */
+export function isWaitingHand(concealed: Tile[], meldCount: number): boolean {
+  const resting = 13 - meldCount * 3
+  if (concealed.length === resting + 1) {
+    return concealed.some((_, i) =>
+      isWaitingHand(
+        concealed.filter((_, j) => j !== i),
+        meldCount,
+      ),
+    )
+  }
+  if (concealed.length !== resting) return false
+
+  const counts = countKinds(concealed)
+  for (let i = 0; i < KIND_COUNT; i++) {
+    // Jenis yang keempat ubinnya sudah di tangan tidak mungkin didapat lagi.
+    if (counts[i] >= 4) continue
+    counts[i]++
+    const ok = hasWinningShape(counts)
+    counts[i]--
+    if (ok) return true
+  }
+  return false
+}
+
+function countKinds(tiles: Tile[]): number[] {
   const counts = new Array<number>(KIND_COUNT).fill(0)
-  for (const tile of concealed) counts[kindIndex(tile)]++
+  for (const tile of tiles) counts[kindIndex(tile)]++
+  return counts
+}
 
+/** Apakah ubin-ubin ini tepat membentuk 1 pair ditambah set-set (pong/chi). */
+function hasWinningShape(counts: number[]): boolean {
   for (let i = 0; i < KIND_COUNT; i++) {
     if (counts[i] < 2) continue
     counts[i] -= 2

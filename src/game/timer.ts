@@ -1,3 +1,4 @@
+import { isWaitingHand } from './rules'
 import type { Action, GameState } from './state'
 
 /** Batas waktu per aksi (detik) kalau pembuat ruangan tidak mengisinya. */
@@ -30,4 +31,25 @@ export function timeoutAction(state: GameState): Action | null {
   const hand = state.players[state.current].hand
   const tile = hand.find((t) => t.id === state.drawnId) ?? hand[hand.length - 1]
   return tile ? { type: 'discard', tileId: tile.id } : null
+}
+
+/** Batas waktu selama time attack berlangsung: setengah dari biasanya, tapi tidak di bawah batas terkecil. */
+export function rushSeconds(turnSeconds: number): number {
+  return Math.min(turnSeconds, Math.max(MIN_TURN_SECONDS, Math.ceil(turnSeconds / 2)))
+}
+
+/** Time attack berlangsung selama ada pemain yang tinggal butuh 1 ubin untuk menang. */
+export function isRush(state: GameState): boolean {
+  if (state.phase === 'setup' || state.phase === 'over') return false
+  return state.players.some((player) => isWaitingHand(player.hand, player.melds.length))
+}
+
+/** Batas waktu (detik) untuk aksi yang sedang ditunggu, dan apakah itu batas yang dipercepat. */
+export function turnLimit(
+  state: GameState,
+  turnSeconds: number,
+  timeAttack: boolean,
+): { seconds: number; rush: boolean } {
+  const rush = timeAttack && isRush(state)
+  return { seconds: rush ? rushSeconds(turnSeconds) : turnSeconds, rush }
 }

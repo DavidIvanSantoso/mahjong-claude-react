@@ -115,6 +115,8 @@ Setelah kong, pemain mengambil satu ubin pengganti dari dinding. Kong tidak dita
 
 **Batas waktu.** Pembuat ruangan (Local maupun Online) menentukan waktu per aksi, 5–300 detik. Kalau kolomnya dikosongkan, dipakai 15 detik. Kalau waktu habis saat giliran, ubin yang terakhir didapat otomatis dibuang; setelah pong/chi tidak ada ubin ambilan, jadi yang dibuang ubin paling kanan di tangan. Kalau waktu habis saat ditawari klaim, tawarannya dianggap dilewati.
 
+**Time attack (opsional).** Pembuat ruangan bisa memilih mode Time attack. Di mode ini, selama ada pemain yang tinggal butuh 1 ubin untuk menang, batas waktu **semua** pemain dipercepat jadi setengahnya (dibulatkan ke atas, paling cepat 5 detik; misalnya 15 → 8 detik). Begitu tidak ada lagi yang hampir menang, waktunya kembali normal. Pemain hanya diberi tahu bahwa time attack sedang berlangsung, bukan siapa penyebabnya.
+
 **Seri.** Kalau dinding habis tanpa pemenang, permainan berakhir seri.
 
 **Yang tidak ada:** sistem skor, angin putaran/angin kursi, "merampas kong", dan penyesuaian jumlah ubin untuk 2–3 pemain (semua 144 ubin tetap dipakai).
@@ -132,6 +134,8 @@ Tiap ubin adalah objek `{ id, suit, rank }`. `id` unik per ubin fisik (0–143).
 1. Jumlah ubin di tangan harus tepat `14 − 3 × meldCount`. Kong tetap dihitung 3 karena ubin keempatnya sudah diganti ubin tambahan.
 2. Hitung jumlah ubin per jenis (array 34 angka).
 3. Coba setiap jenis yang jumlahnya ≥ 2 sebagai pair. Untuk tiap percobaan, cek secara rekursif apakah sisa ubin bisa dibagi habis menjadi pong dan chi: ambil jenis terkecil yang masih ada, coba sebagai pong, lalu sebagai awal chi.
+
+`isWaitingHand(concealed, meldCount)` memeriksa apakah tangan tinggal butuh 1 ubin: tiap jenis ubin (34 jenis) dicoba ditambahkan, lalu dicek dengan cara yang sama. Untuk pemain yang sedang memegang ubin ambilan (satu ubin lebih banyak), cukup ada satu buangan yang menyisakan tangan seperti itu. Dipakai oleh mode time attack.
 
 Fungsi lain: `matchingTiles` (ubin di tangan yang kembar dengan ubin tertentu) dan `chiOptions` (semua pasangan di tangan yang membentuk urutan dengan ubin buangan).
 
@@ -189,6 +193,9 @@ Batas waktu sengaja tidak disimpan di `GameState`, supaya reducer tetap murni (t
 | `parseTurnSeconds(input)` | Isi kolom di menu menjadi detik: kosong/tidak sah → 15, sisanya dijepit ke 5–300 |
 | `isTimed(state)` | Waktu hanya berjalan di fase `turn`, dan di fase `claim` setelah tangan pengklaim dibuka. Layar "berikan perangkat" tidak dihitung |
 | `timeoutAction(state)` | Aksi otomatis saat waktu habis: `discard` ubin ambilan (atau ubin paling kanan), atau `pass` untuk klaim |
+| `isRush(state)` | Ada pemain yang tangannya menunggu 1 ubin (`isWaitingHand`) |
+| `rushSeconds(turnSeconds)` | Batas waktu selama time attack: setengahnya, paling cepat 5 detik |
+| `turnLimit(state, turnSeconds, timeAttack)` | Batas waktu untuk aksi yang sedang ditunggu, dan apakah itu batas yang dipercepat |
 
 Yang menjalankan jamnya adalah pemilik state: di mode lokal komponen `LocalGame` di `App.tsx` (sebuah `useEffect` dengan `setTimeout`), di mode online `HostRoom`. Setiap kali state berganti ke keadaan baru yang menunggu keputusan pemain (termasuk setelah kong, atau pindah ke tawaran klaim berikutnya), waktu dihitung ulang dari penuh.
 
@@ -223,6 +230,8 @@ Keduanya memakai tata letak yang sama (`SplitScreen` di `SetupScreen.tsx`). Laya
 
 Kedua menu punya kolom **Waktu per giliran (detik)**. Kolom ini boleh dikosongkan (dipakai 15 detik); angka di luar 5–300 dirapikan begitu kolom ditinggalkan. Di mode online hanya pembuat room yang mengisinya, dan nilainya ditampilkan ke semua pemain di lobi.
 
+Di bawahnya ada pilihan **Mode permainan**: Normal atau Time attack (`ModeField`). Tombol bulat "?" di sebelahnya membuka kotak penjelasan beda kedua mode, dengan angka detik yang mengikuti isi kolom waktu. Kotak itu melayang di atas tombol (tidak menambah tinggi form) dan menutup lewat Esc, ketukan di luar, atau tombol "?" lagi. Di desktop yang pendek (tinggi ≤ 760 px), keterangan kecil di bawah kolom waktu dan judul "Mode permainan" disembunyikan supaya form tetap muat satu layar.
+
 ### Meja
 
 Meja berbentuk persegi. Tiap pemain menempati satu sisi; buangan tiap pemain tersusun di depannya, mengelilingi kotak tengah yang menampilkan nama pemain dan sisa ubin di dinding. Di antara tangan dan buangan ada set terbuka dan bunga.
@@ -249,7 +258,7 @@ Animasi dimatikan untuk pengguna yang mengaktifkan "kurangi gerakan" di sistemny
 
 Panel di bawah meja tidak ikut berputar. Isinya pesan untuk pemain dan tombol sesuai keadaan: Buang, Kong, Mahjong, Pong, Chi, Lewati. Memilih ubin di tangan lalu mengetuknya lagi langsung membuangnya.
 
-Selama waktu aksi berjalan, di bagian atas panel ada hitung mundur (`TurnTimer` di `GameTable.tsx`): batang yang menyusut dan sisa detik. Pada 5 detik terakhir warnanya berubah merah. Di mode online semua pemain melihat hitung mundur pemain yang sedang ditunggu.
+Selama waktu aksi berjalan, di bagian atas panel ada hitung mundur (`TurnTimer` di `GameTable.tsx`): batang yang menyusut dan sisa detik. Pada 5 detik terakhir warnanya berubah merah. Di mode online semua pemain melihat hitung mundur pemain yang sedang ditunggu. Selama time attack berlangsung, di sebelah batangnya muncul lencana "Time attack".
 
 ### Layar lebar
 
@@ -312,7 +321,7 @@ Host ke tamu:
 
 | Pesan | Isi |
 |---|---|
-| `sync` | Daftar pemain dan batas waktu room, nomor kursi tamu, state permainan untuk tamu itu, dan sisa waktu aksi yang sedang ditunggu (`timeLeft`, ms) |
+| `sync` | Daftar pemain dan batas waktu room, nomor kursi tamu, state permainan untuk tamu itu, sisa waktu aksi yang sedang ditunggu (`timeLeft`, ms), dan apakah waktunya sedang dipercepat (`rush`) |
 | `rejected` | Alasan penolakan (room penuh atau permainan sudah dimulai) |
 
 Setiap kali ada perubahan, host mengirim `sync` baru ke semua tamu. Tamu tidak menghitung apa pun sendiri; ia hanya menampilkan `sync` terakhir.
@@ -322,6 +331,8 @@ Setiap kali ada perubahan, host mengirim `sync` baru ke semua tamu. Tamu tidak m
 Jam yang menentukan ada di host. Setelah tiap perubahan state, `HostRoom.armTimer` memasang `setTimeout` sepanjang batas waktu room; kalau pemain belum bertindak saat waktunya habis, host menjalankan `timeoutAction` lalu mengirim `sync` baru. Aksi pemain yang datang lebih dulu otomatis membatalkan jam itu karena state-nya sudah berganti.
 
 Yang dikirim ke tamu adalah **sisa waktu** (`timeLeft`), bukan jam habisnya, karena jam tiap perangkat bisa berbeda. Tamu menambahkannya ke jamnya sendiri hanya untuk menggambar hitung mundur; hitung mundur di layar tamu bisa terlambat sedikit sebesar jeda jaringan, tetapi keputusan tetap di host.
+
+Time attack juga dihitung di host (`turnLimit`), karena hanya host yang memegang semua tangan. Tamu hanya menerima tanda `rush`; isi tangan pemain lain tetap tidak dikirim. Tanda itu memang memberi tahu semua pemain bahwa ada yang hampir menang — itulah inti modenya.
 
 ### Yang dilakukan host untuk tiap aksi
 

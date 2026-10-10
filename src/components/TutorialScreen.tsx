@@ -76,6 +76,10 @@ function TutorialContent() {
           Tiap aksi dibatasi waktu yang ditentukan pembuat ruangan (bawaannya 15 detik). Kalau waktu
           habis, ubin yang terakhir kamu dapat dibuang otomatis, dan tawaran klaim dianggap dilewati.
         </p>
+        <p>
+          Di mode <strong>Time attack</strong> (pilihan saat membuat ruangan), batas waktu semua pemain
+          dipercepat jadi setengahnya selama ada pemain yang tinggal butuh 1 ubin untuk menang.
+        </p>
       </Section>
 
       <Section title="Mengklaim buangan">

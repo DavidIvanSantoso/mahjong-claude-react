@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { rushSeconds } from '../game/timer'
 import { useGuestRoom, useHostRoom, type Room } from '../net/rooms'
 import { GameTable } from './GameTable'
 
@@ -10,10 +11,11 @@ interface HostGameProps extends ExitProps {
   name: string
   capacity: number
   turnSeconds: number
+  timeAttack: boolean
 }
 
-export function HostGame({ name, capacity, turnSeconds, onExit }: HostGameProps) {
-  return <RoomView room={useHostRoom(name, capacity, turnSeconds)} onExit={onExit} />
+export function HostGame({ name, capacity, turnSeconds, timeAttack, onExit }: HostGameProps) {
+  return <RoomView room={useHostRoom(name, capacity, turnSeconds, timeAttack)} onExit={onExit} />
 }
 
 export function GuestGame({ name, code, onExit }: { name: string; code: string } & ExitProps) {
@@ -53,7 +55,8 @@ function RoomView({ room, onExit }: { room: Room } & ExitProps) {
         dispatch={room.send}
         viewer={room.seat}
         roomCode={room.code}
-        turnSeconds={room.lobby.turnSeconds}
+        turnSeconds={room.rush ? rushSeconds(room.lobby.turnSeconds) : room.lobby.turnSeconds}
+        rush={room.rush}
         deadline={room.deadline}
         connected={room.lobby.players.map((player) => player.connected)}
         onRestart={room.isHost ? room.start : undefined}
@@ -62,7 +65,7 @@ function RoomView({ room, onExit }: { room: Room } & ExitProps) {
     )
   }
 
-  const { players, capacity, turnSeconds } = room.lobby
+  const { players, capacity, turnSeconds, timeAttack } = room.lobby
   const full = players.length === capacity
   const link = inviteLink(room.code)
 
@@ -120,6 +123,13 @@ function RoomView({ room, onExit }: { room: Room } & ExitProps) {
             <p className="setup__lead">
               Waktu per giliran: <strong>{turnSeconds} detik</strong>. Kalau habis, ubin terakhir yang
               didapat otomatis dibuang.
+              {timeAttack && (
+                <>
+                  {' '}
+                  <strong>Time attack aktif</strong>: waktunya jadi {rushSeconds(turnSeconds)} detik
+                  selama ada pemain yang hampir menang.
+                </>
+              )}
             </p>
 
             {room.isHost ? (

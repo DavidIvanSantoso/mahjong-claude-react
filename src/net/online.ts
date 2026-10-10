@@ -6,15 +6,19 @@ export interface LobbyInfo {
   capacity: number
   /** Batas waktu per aksi (detik), ditentukan host saat membuat room. */
   turnSeconds: number
+  /** Mode time attack: batas waktu dipercepat selama ada pemain yang hampir menang. */
+  timeAttack: boolean
   players: { name: string; connected: boolean }[]
 }
 
 /**
  * Pesan dari host ke tamu. `timeLeft` adalah sisa waktu aksi yang sedang ditunggu (ms), atau
  * null kalau tidak ada; dikirim sebagai sisa, bukan jam, karena jam tiap perangkat bisa berbeda.
+ * `rush` menandai batas waktu yang sedang dipercepat (time attack); tamu tidak bisa menghitungnya
+ * sendiri karena tidak menerima isi tangan pemain lain.
  */
 export type HostMessage =
-  | { type: 'sync'; lobby: LobbyInfo; seat: number; view: GameState | null; timeLeft: number | null }
+  | { type: 'sync'; lobby: LobbyInfo; seat: number; view: GameState | null; timeLeft: number | null; rush: boolean }
   | { type: 'rejected'; reason: string }
 
 /** Pesan dari tamu ke host. `token` dipakai untuk kembali ke kursi yang sama setelah putus. */

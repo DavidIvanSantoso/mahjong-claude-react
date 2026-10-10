@@ -5,28 +5,30 @@ import { HomeScreen } from './components/HomeScreen'
 import { invitedRoom, LocalSetup, OnlineSetup } from './components/SetupScreen'
 import { TutorialScreen } from './components/TutorialScreen'
 import { initialState, reducer } from './game/state'
-import { isTimed, timeoutAction } from './game/timer'
+import { isTimed, timeoutAction, turnLimit } from './game/timer'
 
 type Screen =
   | { kind: 'home' }
   | { kind: 'local-setup' }
   | { kind: 'online-setup' }
   | { kind: 'tutorial' }
-  | { kind: 'local'; names: string[]; turnSeconds: number }
-  | { kind: 'host'; name: string; capacity: number; turnSeconds: number }
+  | { kind: 'local'; names: string[]; turnSeconds: number; timeAttack: boolean }
+  | { kind: 'host'; name: string; capacity: number; turnSeconds: number; timeAttack: boolean }
   | { kind: 'guest'; name: string; code: string }
 
 interface LocalGameProps {
   names: string[]
   turnSeconds: number
+  timeAttack: boolean
   onExit: () => void
 }
 
-function LocalGame({ names, turnSeconds, onExit }: LocalGameProps) {
+function LocalGame({ names, turnSeconds, timeAttack, onExit }: LocalGameProps) {
   const [state, dispatch] = useReducer(reducer, names, (initial) =>
     reducer(initialState, { type: 'start', names: initial }),
   )
   const [deadline, setDeadline] = useState<number | null>(null)
+  const limit = turnLimit(state, turnSeconds, timeAttack)
 
   // Tiap state baru yang menunggu keputusan pemain mendapat waktu penuh; saat habis,
   // ubin terakhir dibuang (atau klaim dilewatkan) secara otomatis.
@@ -36,17 +38,17 @@ function LocalGame({ names, turnSeconds, onExit }: LocalGameProps) {
       setDeadline(null)
       return
     }
-    const limit = turnSeconds * 1000
-    setDeadline(Date.now() + limit)
-    const timer = setTimeout(() => dispatch(action), limit)
+    setDeadline(Date.now() + limit.seconds * 1000)
+    const timer = setTimeout(() => dispatch(action), limit.seconds * 1000)
     return () => clearTimeout(timer)
-  }, [state, turnSeconds])
+  }, [state, limit.seconds])
 
   return (
     <GameTable
       state={state}
       dispatch={dispatch}
-      turnSeconds={turnSeconds}
+      turnSeconds={limit.seconds}
+      rush={limit.rush}
       deadline={deadline}
       onRestart={() => dispatch({ type: 'start', names })}
       onExit={onExit}
@@ -71,12 +73,14 @@ export function App() {
         />
       )
     case 'local-setup':
-      return <LocalSetup onStart={(names, turnSeconds) => setScreen({ kind: 'local', names, turnSeconds })} onBack={goHome} />
+      return <LocalSetup onStart={(names, turnSeconds, timeAttack) =>
+            setScreen({ kind: 'local', names, turnSeconds, timeAttack })
+          } onBack={goHome} />
     case 'online-setup':
       return (
         <OnlineSetup
-          onHost={(name, capacity, turnSeconds) =>
-            setScreen({ kind: 'host', name, capacity, turnSeconds })
+          onHost={(name, capacity, turnSeconds, timeAttack) =>
+            setScreen({ kind: 'host', name, capacity, turnSeconds, timeAttack })
           }
           onJoin={(name, code) => setScreen({ kind: 'guest', name, code })}
           onBack={goHome}
@@ -85,13 +89,21 @@ export function App() {
     case 'tutorial':
       return <TutorialScreen onBack={goHome} />
     case 'local':
-      return <LocalGame names={screen.names} turnSeconds={screen.turnSeconds} onExit={goHome} />
+      return (
+        <LocalGame
+          names={screen.names}
+          turnSeconds={screen.turnSeconds}
+          timeAttack={screen.timeAttack}
+          onExit={goHome}
+        />
+      )
     case 'host':
       return (
         <HostGame
           name={screen.name}
           capacity={screen.capacity}
           turnSeconds={screen.turnSeconds}
+          timeAttack={screen.timeAttack}
           onExit={goHome}
         />
       )

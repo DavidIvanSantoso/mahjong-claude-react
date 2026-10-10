@@ -1,10 +1,11 @@
 import gsap from 'gsap'
-import { useLayoutEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import {
   DEFAULT_TURN_SECONDS,
   MAX_TURN_SECONDS,
   MIN_TURN_SECONDS,
   parseTurnSeconds,
+  rushSeconds,
 } from '../game/timer'
 import { CODE_LENGTH, normalizeCode } from '../net/online'
 import { TileField } from './TileField'
@@ -56,6 +57,89 @@ function TurnTimeField({ value, onChange }: { value: string; onChange: (value: s
         otomatis dibuang.
       </span>
     </label>
+  )
+}
+
+const MODES = [
+  { timeAttack: false, label: 'Normal' },
+  { timeAttack: true, label: 'Time attack' },
+]
+
+interface ModeFieldProps {
+  name: string
+  timeAttack: boolean
+  onChange: (timeAttack: boolean) => void
+  /** Batas waktu yang akan dipakai, untuk contoh angka di penjelasan. */
+  turnSeconds: number
+}
+
+/** Pilihan mode Normal / Time attack, dengan tombol "?" yang membuka penjelasan bedanya. */
+function ModeField({ name, timeAttack, onChange, turnSeconds }: ModeFieldProps) {
+  const [helpOpen, setHelpOpen] = useState(false)
+  const helpRef = useRef<HTMLDivElement>(null)
+
+  // Penjelasan menutup lewat Esc atau ketukan di luar kotaknya.
+  useEffect(() => {
+    if (!helpOpen) return
+    const onPointerDown = (event: PointerEvent) => {
+      if (!helpRef.current?.contains(event.target as Node)) setHelpOpen(false)
+    }
+    const onKeyDown = (event: KeyboardEvent) => event.key === 'Escape' && setHelpOpen(false)
+    document.addEventListener('pointerdown', onPointerDown)
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown)
+      document.removeEventListener('keydown', onKeyDown)
+    }
+  }, [helpOpen])
+
+  return (
+    <fieldset className="setup__field setup__mode">
+      <legend>Mode permainan</legend>
+      <div className="setup__mode-row">
+        <div className="setup__mode-options">
+          {MODES.map((mode) => (
+            <label
+              key={mode.label}
+              className={`count-option mode-option ${timeAttack === mode.timeAttack ? 'count-option--active' : ''}`}
+            >
+              <input
+                type="radio"
+                name={name}
+                checked={timeAttack === mode.timeAttack}
+                onChange={() => onChange(mode.timeAttack)}
+              />
+              {mode.label}
+            </label>
+          ))}
+        </div>
+        <div className="mode-help" ref={helpRef}>
+          <button
+            type="button"
+            className="mode-help__button"
+            aria-label="Apa bedanya Normal dan Time attack?"
+            aria-expanded={helpOpen}
+            onClick={() => setHelpOpen(!helpOpen)}
+          >
+            ?
+          </button>
+          {helpOpen && (
+            <div className="card mode-help__panel" role="note">
+              <p>
+                <strong>Normal</strong> — batas waktu tiap aksi tetap {turnSeconds} detik sepanjang
+                permainan.
+              </p>
+              <p>
+                <strong>Time attack</strong> — begitu ada pemain yang tinggal butuh 1 ubin untuk menang,
+                batas waktu <em>semua</em> pemain dipercepat jadi {rushSeconds(turnSeconds)} detik
+                (setengahnya, paling cepat {MIN_TURN_SECONDS} detik). Waktunya kembali normal kalau tidak
+                ada lagi yang hampir menang.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    </fieldset>
   )
 }
 
@@ -121,12 +205,13 @@ function SplitScreen({ title, tagline, onBack, children }: SplitScreenProps) {
 }
 
 interface LocalSetupProps {
-  onStart: (names: string[], turnSeconds: number) => void
+  onStart: (names: string[], turnSeconds: number, timeAttack: boolean) => void
   onBack: () => void
 }
 
 export function LocalSetup({ onStart, onBack }: LocalSetupProps) {
   const [turnTime, setTurnTime] = useState('')
+  const [timeAttack, setTimeAttack] = useState(false)
   const [count, setCount] = useState<number | null>(null)
   const [names, setNames] = useState<string[]>(['', '', '', ''])
 
@@ -136,6 +221,7 @@ export function LocalSetup({ onStart, onBack }: LocalSetupProps) {
     onStart(
       names.slice(0, count).map((name, i) => name.trim() || `Pemain ${i + 1}`),
       parseTurnSeconds(turnTime),
+      timeAttack,
     )
   }
 
@@ -169,6 +255,12 @@ export function LocalSetup({ onStart, onBack }: LocalSetupProps) {
         )}
 
         <TurnTimeField value={turnTime} onChange={setTurnTime} />
+        <ModeField
+          name="local-mode"
+          timeAttack={timeAttack}
+          onChange={setTimeAttack}
+          turnSeconds={parseTurnSeconds(turnTime)}
+        />
 
         <button type="submit" className="home__btn" disabled={count === null}>
           {count === null ? 'Pilih jumlah pemain dulu' : 'Mulai permainan'}
@@ -179,7 +271,7 @@ export function LocalSetup({ onStart, onBack }: LocalSetupProps) {
 }
 
 interface OnlineSetupProps {
-  onHost: (name: string, capacity: number, turnSeconds: number) => void
+  onHost: (name: string, capacity: number, turnSeconds: number, timeAttack: boolean) => void
   onJoin: (name: string, code: string) => void
   onBack: () => void
 }
@@ -189,10 +281,11 @@ export function OnlineSetup({ onHost, onJoin, onBack }: OnlineSetupProps) {
   const [capacity, setCapacity] = useState<number | null>(null)
   const [code, setCode] = useState(invitedRoom)
   const [turnTime, setTurnTime] = useState('')
+  const [timeAttack, setTimeAttack] = useState(false)
 
   function host(event: FormEvent) {
     event.preventDefault()
-    if (capacity !== null) onHost(myName.trim() || 'Host', capacity, parseTurnSeconds(turnTime))
+    if (capacity !== null) onHost(myName.trim() || 'Host', capacity, parseTurnSeconds(turnTime), timeAttack)
   }
 
   function join(event: FormEvent) {
@@ -244,6 +337,12 @@ export function OnlineSetup({ onHost, onJoin, onBack }: OnlineSetupProps) {
           <CountPicker name="room-capacity" value={capacity} onChange={setCapacity} />
         </fieldset>
         <TurnTimeField value={turnTime} onChange={setTurnTime} />
+        <ModeField
+          name="room-mode"
+          timeAttack={timeAttack}
+          onChange={setTimeAttack}
+          turnSeconds={parseTurnSeconds(turnTime)}
+        />
         <button type="submit" className="home__btn" disabled={capacity === null}>
           {capacity === null ? 'Pilih jumlah pemain dulu' : 'Buat room'}
         </button>
