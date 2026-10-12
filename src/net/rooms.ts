@@ -72,8 +72,12 @@ class HostRoom {
     conn: DataConnection | null
     /** Kapan koneksinya putus; null selama tersambung. */
     offlineSince: number | null
+    /** Ronde yang dimenangkan di room ini. */
+    wins: number
   }[]
   private game: GameState | null = null
+  /** Ronde selesai yang hasilnya sudah dicatat, supaya kemenangannya tidak terhitung dua kali. */
+  private scoredGame: GameState | null = null
   private graceTimer: ReturnType<typeof setTimeout> | undefined
   /** State yang batas waktunya sedang berjalan; berganti state berarti waktu dihitung ulang. */
   private timedGame: GameState | null = null
@@ -91,7 +95,7 @@ class HostRoom {
     private timeAttack: boolean,
     private onChange: (snapshot: RoomSnapshot) => void,
   ) {
-    this.seats = [{ name: hostName, token: '', conn: null, offlineSince: null }]
+    this.seats = [{ name: hostName, token: '', conn: null, offlineSince: null, wins: 0 }]
     this.peer = new Peer(peerId(code))
     this.peer.on('open', () => {
       this.status = 'ready'
@@ -145,6 +149,7 @@ class HostRoom {
         token,
         conn,
         offlineSince: null,
+        wins: 0,
       })
     }
     this.update()
@@ -236,8 +241,17 @@ class HostRoom {
     this.update()
   }
 
+  /** Mencatat kemenangan ronde yang baru selesai; ronde seri tidak menambah poin siapa pun. */
+  private score() {
+    const game = this.game
+    if (!game || game.phase !== 'over' || game === this.scoredGame) return
+    this.scoredGame = game
+    if (game.winner !== null) this.seats[game.winner].wins += 1
+  }
+
   private update() {
     this.advance()
+    this.score()
     this.armTimer()
     this.publish()
   }
@@ -251,6 +265,7 @@ class HostRoom {
       players: this.seats.map((seat, i) => ({
         name: seat.name,
         connected: i === 0 || Boolean(seat.conn?.open),
+        wins: seat.wins,
       })),
     }
     this.seats.forEach((seat, i) => {

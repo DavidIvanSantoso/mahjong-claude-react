@@ -8,7 +8,8 @@ export interface LobbyInfo {
   turnSeconds: number
   /** Mode time attack: batas waktu dipercepat selama ada pemain yang hampir menang. */
   timeAttack: boolean
-  players: { name: string; connected: boolean }[]
+  /** `wins`: jumlah ronde yang dimenangkan pemain itu selama room ini dibuka. */
+  players: { name: string; connected: boolean; wins: number }[]
 }
 
 /**

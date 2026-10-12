@@ -20,6 +20,8 @@ interface GameTableProps {
   roomCode?: string
   /** Mode online: status koneksi tiap pemain. */
   connected?: boolean[]
+  /** Mode online: jumlah ronde yang sudah dimenangkan tiap pemain di room ini. */
+  scores?: number[]
   /** Batas waktu aksi yang sedang berjalan (detik); sudah dipercepat kalau `rush`. */
   turnSeconds: number
   /** Time attack sedang berlangsung: ada pemain yang hampir menang. */
@@ -92,6 +94,7 @@ export function GameTable({
   viewer,
   roomCode,
   connected,
+  scores,
   turnSeconds,
   rush = false,
   deadline,
@@ -107,6 +110,12 @@ export function GameTable({
   const positions = SEAT_POSITIONS[players.length]
   const pond = POND_LAYOUT[players.length]
   const online = viewer !== undefined
+  // Urut dari kemenangan terbanyak; yang seri tetap urut kursi.
+  const ranking = scores
+    ? players
+        .map((player, i) => ({ name: player.name, seat: i, wins: scores[i] ?? 0 }))
+        .sort((a, b) => b.wins - a.wins)
+    : null
   const absent = players.filter((_, i) => connected?.[i] === false).map((player) => player.name)
 
   // Pemain yang duduk di sisi bawah layar: di mode online selalu diri sendiri,
@@ -434,6 +443,20 @@ export function GameTable({
         )}
         {renderDock()}
       </section>
+
+      {ranking && (
+        <section className="card scoreboard" aria-label="Papan skor">
+          <h2 className="scoreboard__title">Player Scoreboard:</h2>
+          <ol className="scoreboard__list">
+            {ranking.map((entry) => (
+              <li key={entry.seat}>
+                {entry.name}
+                {entry.wins > 0 && <span className="scoreboard__wins">+{entry.wins}</span>}
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
     </div>
   )
 }

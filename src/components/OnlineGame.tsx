@@ -59,6 +59,7 @@ function RoomView({ room, onExit }: { room: Room } & ExitProps) {
         rush={room.rush}
         deadline={room.deadline}
         connected={room.lobby.players.map((player) => player.connected)}
+        scores={room.lobby.players.map((player) => player.wins)}
         onRestart={room.isHost ? room.start : undefined}
         onExit={onExit}
       />
