@@ -30,12 +30,13 @@ export interface KongOption {
 
 /**
  * setup   : memilih jumlah pemain
+ * roll    : hasil lemparan dadu penentu bandar sedang ditampilkan; berlanjut sendiri (lihat timer.ts)
  * handoff : tangan disembunyikan, menunggu pemain berikutnya memegang perangkat
  * turn    : pemain `current` memegang 3n+2 ubin dan harus membuang (atau menang/kong)
  * claim   : pemain lain ditawari ubin buangan terakhir, satu per satu sesuai prioritas
  * over    : ada pemenang, atau seri karena dinding habis
  */
-export type Phase = 'setup' | 'handoff' | 'turn' | 'claim' | 'over'
+export type Phase = 'setup' | 'roll' | 'handoff' | 'turn' | 'claim' | 'over'
 
 /** classic: hanya menang/kalah. hk: kemenangan dinilai dengan faan ala Hong Kong (lihat scoring.ts). */
 export type Ruleset = 'classic' | 'hk'
@@ -52,6 +53,11 @@ export interface Deal {
   dealer: number
   /** Angin ronde: 0 Timur, 1 Selatan, 2 Barat, 3 Utara. */
   roundWind: number
+  /**
+   * Dua dadu tiap pemain kalau bandar ronde ini ditentukan lemparan dadu (ronde pertama);
+   * null kalau bandarnya mengikuti ronde sebelumnya.
+   */
+  rolls: [number, number][] | null
 }
 
 export interface GameState extends Deal {
@@ -73,6 +79,8 @@ export interface GameState extends Deal {
 export type Action =
   /** Tanpa `deal`, ronde memakai aturan Normal. */
   | { type: 'start'; names: string[]; deal?: Deal }
+  /** Menutup tampilan lemparan dadu dan memulai giliran bandar. */
+  | { type: 'begin' }
   | { type: 'reveal' }
   /** Mode online: lewati giliran pemain yang terputus, tanpa mengambil ubin. */
   | { type: 'skip' }
@@ -87,6 +95,7 @@ export const initialState: GameState = {
   ruleset: 'classic',
   dealer: 0,
   roundWind: 0,
+  rolls: null,
   phase: 'setup',
   players: [],
   wall: [],
@@ -101,20 +110,39 @@ export const initialState: GameState = {
 }
 
 export function firstDeal(ruleset: Ruleset): Deal {
-  return { ruleset, dealer: 0, roundWind: 0 }
+  return { ruleset, dealer: 0, roundWind: 0, rolls: null }
+}
+
+function rollDie(): number {
+  return 1 + Math.floor(Math.random() * 6)
+}
+
+/**
+ * Ronde pertama: tiap pemain melempar dua dadu dan angka tertinggi jadi bandar.
+ * Kalau angka tertinggi dimiliki lebih dari satu pemain, semua melempar ulang.
+ */
+export function rollForDealer(ruleset: Ruleset, playerCount: number): Deal {
+  for (;;) {
+    const rolls = Array.from({ length: playerCount }, (): [number, number] => [rollDie(), rollDie()])
+    const totals = rolls.map(([a, b]) => a + b)
+    const best = Math.max(...totals)
+    if (totals.filter((total) => total === best).length === 1) {
+      return { ruleset, dealer: totals.indexOf(best), roundWind: 0, rolls }
+    }
+  }
 }
 
 /**
  * Ronde berikutnya setelah `state` selesai. Hong Kong Points: bandar bertahan kalau ia menang
  * atau rondenya seri; kalau tidak, bandar pindah ke pemain berikutnya, dan angin ronde berganti
- * setelah semua pemain pernah jadi bandar. Mode Normal selalu dibuka pemain pertama.
+ * setelah semua pemain pernah jadi bandar. Mode Normal: pemain pertama bergilir tiap ronde.
  */
 export function nextDeal(state: GameState): Deal {
   const { ruleset, dealer, roundWind } = state
-  if (ruleset !== 'hk') return firstDeal(ruleset)
-  if (state.winner === null || state.winner === dealer) return { ruleset, dealer, roundWind }
   const next = (dealer + 1) % state.players.length
-  return { ruleset, dealer: next, roundWind: next === 0 ? (roundWind + 1) % 4 : roundWind }
+  if (ruleset !== 'hk') return { ruleset, dealer: next, roundWind, rolls: null }
+  if (state.winner === null || state.winner === dealer) return { ruleset, dealer, roundWind, rolls: null }
+  return { ruleset, dealer: next, roundWind: next === 0 ? (roundWind + 1) % 4 : roundWind, rolls: null }
 }
 
 /** Angin kursi pemain (0 Timur, 1 Selatan, ...), dihitung dari posisi bandar. */
@@ -171,7 +199,9 @@ function startGame(names: string[], deal: Deal): GameState {
       discards: [],
     }))
     .map((player) => replaceDealtFlowers(player, wall))
-  return { ...initialState, ...deal, phase: 'handoff', players, wall, current: deal.dealer }
+  // Ada lemparan dadu: hasilnya ditampilkan dulu sebelum bandar mulai.
+  const phase = deal.rolls ? 'roll' : 'handoff'
+  return { ...initialState, ...deal, phase, players, wall, current: deal.dealer }
 }
 
 function updatePlayer(players: Player[], index: number, patch: Partial<Player>): Player[] {
@@ -365,6 +395,9 @@ export function reducer(state: GameState, action: Action): GameState {
 
     case 'reset':
       return initialState
+
+    case 'begin':
+      return state.phase === 'roll' ? { ...state, phase: 'handoff' } : state
 
     case 'reveal':
       if (state.phase === 'claim') return { ...state, claimRevealed: true }

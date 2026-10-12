@@ -7,7 +7,7 @@ import { invitedRoom, LocalSetup, OnlineSetup } from './components/SetupScreen'
 import { useRulesetTheme } from './components/theme'
 import { TutorialScreen } from './components/TutorialScreen'
 import { roundDeltas } from './game/scoring'
-import { firstDeal, initialState, nextDeal, reducer, type Ruleset } from './game/state'
+import { initialState, nextDeal, reducer, rollForDealer, type Ruleset } from './game/state'
 import { isTimed, timeoutAction, turnLimit } from './game/timer'
 
 type Screen =
@@ -40,7 +40,7 @@ interface LocalGameProps {
 
 function LocalGame({ names, ruleset, turnSeconds, timeAttack, onExit }: LocalGameProps) {
   const [state, dispatch] = useReducer(reducer, names, (initial) =>
-    reducer(initialState, { type: 'start', names: initial, deal: firstDeal(ruleset) }),
+    reducer(initialState, { type: 'start', names: initial, deal: rollForDealer(ruleset, initial.length) }),
   )
   const [deadline, setDeadline] = useState<number | null>(null)
   // Skor dari ronde-ronde sebelumnya; hasil ronde yang sedang tampil dijumlahkan saat ditampilkan.

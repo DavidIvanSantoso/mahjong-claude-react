@@ -9,6 +9,7 @@ import {
   type GameState,
 } from '../game/state'
 import { sortTiles, tileDescription, tileName, WIND_NAMES } from '../game/tiles'
+import { DealerRoll } from './DealerRoll'
 import { MusicSlot } from './MusicPlayer'
 import { ResultDialog } from './ResultDialog'
 import { Seat } from './Seat'
@@ -149,6 +150,10 @@ export function GameTable({
   }
 
   function renderDock() {
+    if (phase === 'roll') {
+      return <p className="dock__hint">Melempar dadu untuk menentukan siapa yang jalan pertama…</p>
+    }
+
     // Mode online hanya berhenti di fase ini selama menunggu pemain yang terputus.
     if (phase === 'handoff' && online) {
       return <p className="dock__hint">Menunggu {players[current].name} tersambung kembali…</p>
@@ -362,6 +367,7 @@ export function GameTable({
       </header>
 
       <div className="felt">
+        {phase === 'roll' && <DealerRoll state={state} viewer={viewer} />}
         <div className="board" style={{ transform: `rotate(${rotation}deg)` }}>
           <div className="center">
             {players.map((player, i) => {
@@ -466,7 +472,7 @@ export function GameTable({
               : 'Permainan menunggu sampai ada yang tersambung kembali.'}
           </p>
         )}
-        {deadline !== null && phase !== 'over' && (
+        {deadline !== null && phase !== 'over' && phase !== 'roll' && (
           <TurnTimer key={deadline} deadline={deadline} total={turnSeconds} rush={rush} />
         )}
         {renderDock()}

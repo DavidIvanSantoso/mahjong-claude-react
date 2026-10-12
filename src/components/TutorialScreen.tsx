@@ -138,8 +138,9 @@ function HongKongSections() {
       <Section title="Bandar dan angin">
         <ul>
           <li>
-            Pemain pertama jadi <strong>bandar</strong> di ronde pertama dan duduk di angin Timur;
-            pemain berikutnya Selatan, Barat, lalu Utara. Angin kursi tampil di depan nama pemain.
+            Di awal permainan tiap pemain melempar dua dadu; angka tertinggi jadi{' '}
+            <strong>bandar</strong> ronde pertama dan duduk di angin Timur. Pemain berikutnya
+            Selatan, Barat, lalu Utara. Angin kursi tampil di depan nama pemain.
           </li>
           <li>
             Bandar bertahan kalau ia menang atau rondenya seri. Kalau tidak, bandar pindah ke pemain
@@ -235,6 +236,11 @@ function TutorialContent({ ruleset }: { ruleset: Ruleset }) {
       </Section>
 
       <Section title="Jalannya giliran">
+        <p>
+          Di awal permainan tiap pemain melempar dua dadu, dan pemilik angka tertinggi jalan pertama
+          (kalau seri, dadunya dilempar ulang).
+          {ruleset === 'classic' && ' Di ronde berikutnya, giliran pertama pindah ke pemain selanjutnya.'}
+        </p>
         <ol>
           <li>Ambil 1 ubin dari dinding.</li>
           <li>Kalau 14 ubinmu sudah memenuhi syarat, tekan <strong>Mahjong!</strong> untuk menang.</li>

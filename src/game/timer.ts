@@ -6,6 +6,9 @@ export const DEFAULT_TURN_SECONDS = 15
 export const MIN_TURN_SECONDS = 5
 export const MAX_TURN_SECONDS = 300
 
+/** Lama hasil lemparan dadu penentu bandar ditampilkan sebelum permainan mulai (detik). */
+export const ROLL_SECONDS = 5
+
 /** Isi kolom "waktu per giliran": kosong atau tidak sah jadi nilai bawaan, sisanya dijepit ke batas. */
 export function parseTurnSeconds(input: string): number {
   const value = Number.parseInt(input, 10)
@@ -16,9 +19,10 @@ export function parseTurnSeconds(input: string): number {
 /**
  * Waktu hanya berjalan selama seorang pemain sedang melihat tangannya dan harus memutuskan:
  * saat gilirannya, atau saat ditawari klaim. Layar "berikan perangkat" tidak dihitung.
+ * Tampilan lemparan dadu juga berbatas waktu: ia menutup sendiri setelah ROLL_SECONDS.
  */
 export function isTimed(state: GameState): boolean {
-  return state.phase === 'turn' || (state.phase === 'claim' && state.claimRevealed)
+  return state.phase === 'roll' || state.phase === 'turn' || (state.phase === 'claim' && state.claimRevealed)
 }
 
 /**
@@ -26,6 +30,7 @@ export function isTimed(state: GameState): boolean {
  * ubin ambilan, jadi ubin paling kanan di tangan), dan tawaran klaim dilewatkan.
  */
 export function timeoutAction(state: GameState): Action | null {
+  if (state.phase === 'roll') return { type: 'begin' }
   if (state.phase === 'claim') return { type: 'pass' }
   if (state.phase !== 'turn') return null
   const hand = state.players[state.current].hand
@@ -40,7 +45,7 @@ export function rushSeconds(turnSeconds: number): number {
 
 /** Time attack berlangsung selama ada pemain yang tinggal butuh 1 ubin untuk menang. */
 export function isRush(state: GameState): boolean {
-  if (state.phase === 'setup' || state.phase === 'over') return false
+  if (state.phase === 'setup' || state.phase === 'roll' || state.phase === 'over') return false
   return state.players.some((player) => isWaitingHand(player.hand, player.melds.length))
 }
 
@@ -50,6 +55,7 @@ export function turnLimit(
   turnSeconds: number,
   timeAttack: boolean,
 ): { seconds: number; rush: boolean } {
+  if (state.phase === 'roll') return { seconds: ROLL_SECONDS, rush: false }
   const rush = timeAttack && isRush(state)
   return { seconds: rush ? rushSeconds(turnSeconds) : turnSeconds, rush }
 }

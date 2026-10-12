@@ -2,10 +2,10 @@ import Peer, { type DataConnection } from 'peerjs'
 import { useEffect, useRef, useState } from 'react'
 import { roundDeltas } from '../game/scoring'
 import {
-  firstDeal,
   initialState,
   nextDeal,
   reducer,
+  rollForDealer,
   type Action,
   type GameState,
   type Ruleset,
@@ -188,7 +188,7 @@ class HostRoom {
     if (this.seats.length !== this.capacity) return
     if (this.game && this.game.phase !== 'over') return
     const names = this.seats.map((seat) => seat.name)
-    const deal = this.game ? nextDeal(this.game) : firstDeal(this.ruleset)
+    const deal = this.game ? nextDeal(this.game) : rollForDealer(this.ruleset, names.length)
     this.game = reducer(initialState, { type: 'start', names, deal })
     this.update()
   }
