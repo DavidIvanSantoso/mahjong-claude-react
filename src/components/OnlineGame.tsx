@@ -1,7 +1,9 @@
 import { useState } from 'react'
+import { RULESET_NAMES, type Ruleset } from '../game/state'
 import { rushSeconds } from '../game/timer'
 import { useGuestRoom, useHostRoom, type Room } from '../net/rooms'
 import { GameTable } from './GameTable'
+import { useRulesetTheme } from './theme'
 
 interface ExitProps {
   onExit: () => void
@@ -12,10 +14,11 @@ interface HostGameProps extends ExitProps {
   capacity: number
   turnSeconds: number
   timeAttack: boolean
+  ruleset: Ruleset
 }
 
-export function HostGame({ name, capacity, turnSeconds, timeAttack, onExit }: HostGameProps) {
-  return <RoomView room={useHostRoom(name, capacity, turnSeconds, timeAttack)} onExit={onExit} />
+export function HostGame({ name, capacity, turnSeconds, timeAttack, ruleset, onExit }: HostGameProps) {
+  return <RoomView room={useHostRoom(name, capacity, turnSeconds, timeAttack, ruleset)} onExit={onExit} />
 }
 
 export function GuestGame({ name, code, onExit }: { name: string; code: string } & ExitProps) {
@@ -28,6 +31,8 @@ function inviteLink(code: string): string {
 
 function RoomView({ room, onExit }: { room: Room } & ExitProps) {
   const [copied, setCopied] = useState(false)
+  // Tampilan mengikuti sistem permainan room, yang bisa berbeda dari pilihan tamu di menu awal.
+  useRulesetTheme(room.lobby.ruleset)
 
   if (room.status === 'error') {
     return (
@@ -59,14 +64,14 @@ function RoomView({ room, onExit }: { room: Room } & ExitProps) {
         rush={room.rush}
         deadline={room.deadline}
         connected={room.lobby.players.map((player) => player.connected)}
-        scores={room.lobby.players.map((player) => player.wins)}
+        scores={room.lobby.players.map((player) => player.score)}
         onRestart={room.isHost ? room.start : undefined}
         onExit={onExit}
       />
     )
   }
 
-  const { players, capacity, turnSeconds, timeAttack } = room.lobby
+  const { players, capacity, turnSeconds, timeAttack, ruleset } = room.lobby
   const full = players.length === capacity
   const link = inviteLink(room.code)
 
@@ -122,7 +127,7 @@ function RoomView({ room, onExit }: { room: Room } & ExitProps) {
             </div>
 
             <p className="setup__lead">
-              Waktu per giliran: <strong>{turnSeconds} detik</strong>. Kalau habis, ubin terakhir yang
+              Sistem skor: <strong>{RULESET_NAMES[ruleset]}</strong>. Waktu per giliran: <strong>{turnSeconds} detik</strong>. Kalau habis, ubin terakhir yang
               didapat otomatis dibuang.
               {timeAttack && (
                 <>

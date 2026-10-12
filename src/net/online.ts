@@ -1,4 +1,4 @@
-import type { Action, GameState } from '../game/state'
+import type { Action, GameState, Ruleset } from '../game/state'
 import { timeoutAction } from '../game/timer'
 import type { Tile } from '../game/tiles'
 
@@ -8,8 +8,13 @@ export interface LobbyInfo {
   turnSeconds: number
   /** Mode time attack: batas waktu dipercepat selama ada pemain yang hampir menang. */
   timeAttack: boolean
-  /** `wins`: jumlah ronde yang dimenangkan pemain itu selama room ini dibuka. */
-  players: { name: string; connected: boolean; wins: number }[]
+  /** Sistem permainan room ini, ditentukan host. */
+  ruleset: Ruleset
+  /**
+   * `score`: skor pemain selama room ini dibuka. Normal: jumlah ronde yang dimenangkan.
+   * Hong Kong Points: total poin, bisa negatif.
+   */
+  players: { name: string; connected: boolean; score: number }[]
 }
 
 /**

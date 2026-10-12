@@ -80,7 +80,7 @@ const SUIT_NAMES: Record<'man' | 'pin' | 'sou', string> = {
   pin: 'Bulat',
   sou: 'Bambu',
 }
-const WIND_NAMES = ['Timur', 'Selatan', 'Barat', 'Utara']
+export const WIND_NAMES = ['Timur', 'Selatan', 'Barat', 'Utara']
 const DRAGON_NAMES = ['Merah', 'Hijau', 'Putih']
 const FLOWER_NAMES = [
   'Bunga Plum',

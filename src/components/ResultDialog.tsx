@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { formatPoints, roundDeltas, scoreWin } from '../game/scoring'
 import type { GameState } from '../game/state'
 import { TileView } from './TileView'
 
@@ -19,6 +20,7 @@ interface ResultDialogProps {
 /**
  * Modal hasil akhir: siapa yang menang, dari mana ubin penentunya, dan susunan tangan menangnya.
  * Untuk permainan seri (dinding habis) hanya pesannya yang ditampilkan.
+ * Hong Kong Points: ditambah rincian faan dan poin yang berpindah antar-pemain.
  */
 export function ResultDialog({ state, open, onClose, onExit, onRestart, viewer }: ResultDialogProps) {
   const ref = useRef<HTMLDialogElement>(null)
@@ -37,6 +39,8 @@ export function ResultDialog({ state, open, onClose, onExit, onRestart, viewer }
   const { players, lastDiscard } = state
   const winner = state.winner === null ? null : players[state.winner]
   const online = viewer !== undefined
+  const score = scoreWin(state)
+  const deltas = roundDeltas(state)
 
   return (
     <dialog
@@ -104,6 +108,39 @@ export function ResultDialog({ state, open, onClose, onExit, onRestart, viewer }
                   </div>
                 </figure>
               )}
+            </div>
+          )}
+
+          {score && (
+            <div className="result-dialog__score">
+              <ul className="result-dialog__rows">
+                {score.items.map((item) => (
+                  <li key={item.label}>
+                    <span>{item.label}</span>
+                    <strong>{item.faan} faan</strong>
+                  </li>
+                ))}
+                {score.items.length === 0 && (
+                  <li>
+                    <span>Tangan tanpa pola bernilai</span>
+                    <strong>0 faan</strong>
+                  </li>
+                )}
+              </ul>
+              <p className="result-dialog__total">
+                <strong>{score.faan} faan</strong>
+                {score.limit && ' (batas)'} = <strong>{score.base} poin dasar</strong>
+              </p>
+              <ul className="result-dialog__rows">
+                {players.map((player, i) => (
+                  <li key={i}>
+                    <span>{player.name}</span>
+                    <strong className={deltas[i] < 0 ? 'result-dialog__minus' : ''}>
+                      {formatPoints(deltas[i])}
+                    </strong>
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
 

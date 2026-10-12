@@ -37,7 +37,24 @@ export interface KongOption {
  */
 export type Phase = 'setup' | 'handoff' | 'turn' | 'claim' | 'over'
 
-export interface GameState {
+/** classic: hanya menang/kalah. hk: kemenangan dinilai dengan faan ala Hong Kong (lihat scoring.ts). */
+export type Ruleset = 'classic' | 'hk'
+
+export const RULESET_NAMES: Record<Ruleset, string> = {
+  classic: 'Normal',
+  hk: 'Hong Kong Points',
+}
+
+/** Hal yang ditetapkan sebelum ubin dibagikan. */
+export interface Deal {
+  ruleset: Ruleset
+  /** Bandar: pemain yang membuka ronde dan duduk di angin Timur. */
+  dealer: number
+  /** Angin ronde: 0 Timur, 1 Selatan, 2 Barat, 3 Utara. */
+  roundWind: number
+}
+
+export interface GameState extends Deal {
   phase: Phase
   players: Player[]
   wall: Tile[]
@@ -54,7 +71,8 @@ export interface GameState {
 }
 
 export type Action =
-  | { type: 'start'; names: string[] }
+  /** Tanpa `deal`, ronde memakai aturan Normal. */
+  | { type: 'start'; names: string[]; deal?: Deal }
   | { type: 'reveal' }
   /** Mode online: lewati giliran pemain yang terputus, tanpa mengambil ubin. */
   | { type: 'skip' }
@@ -66,6 +84,9 @@ export type Action =
   | { type: 'reset' }
 
 export const initialState: GameState = {
+  ruleset: 'classic',
+  dealer: 0,
+  roundWind: 0,
   phase: 'setup',
   players: [],
   wall: [],
@@ -77,6 +98,29 @@ export const initialState: GameState = {
   claimRevealed: false,
   winner: null,
   winType: null,
+}
+
+export function firstDeal(ruleset: Ruleset): Deal {
+  return { ruleset, dealer: 0, roundWind: 0 }
+}
+
+/**
+ * Ronde berikutnya setelah `state` selesai. Hong Kong Points: bandar bertahan kalau ia menang
+ * atau rondenya seri; kalau tidak, bandar pindah ke pemain berikutnya, dan angin ronde berganti
+ * setelah semua pemain pernah jadi bandar. Mode Normal selalu dibuka pemain pertama.
+ */
+export function nextDeal(state: GameState): Deal {
+  const { ruleset, dealer, roundWind } = state
+  if (ruleset !== 'hk') return firstDeal(ruleset)
+  if (state.winner === null || state.winner === dealer) return { ruleset, dealer, roundWind }
+  const next = (dealer + 1) % state.players.length
+  return { ruleset, dealer: next, roundWind: next === 0 ? (roundWind + 1) % 4 : roundWind }
+}
+
+/** Angin kursi pemain (0 Timur, 1 Selatan, ...), dihitung dari posisi bandar. */
+export function seatWind(state: GameState, seat: number): number {
+  const count = state.players.length
+  return (seat - state.dealer + count) % count
 }
 
 const HAND_SIZE = 13
@@ -116,7 +160,7 @@ function replaceDealtFlowers(player: Player, wall: Tile[]): Player {
   return { ...result, hand: sortTiles(result.hand) }
 }
 
-function startGame(names: string[]): GameState {
+function startGame(names: string[], deal: Deal): GameState {
   const wall = shuffle(createWall())
   const players = names
     .map((name) => ({
@@ -127,7 +171,7 @@ function startGame(names: string[]): GameState {
       discards: [],
     }))
     .map((player) => replaceDealtFlowers(player, wall))
-  return { ...initialState, phase: 'handoff', players, wall }
+  return { ...initialState, ...deal, phase: 'handoff', players, wall, current: deal.dealer }
 }
 
 function updatePlayer(players: Player[], index: number, patch: Partial<Player>): Player[] {
@@ -317,7 +361,7 @@ function declareKong(state: GameState, tileId: number): GameState {
 export function reducer(state: GameState, action: Action): GameState {
   switch (action.type) {
     case 'start':
-      return startGame(action.names)
+      return startGame(action.names, action.deal ?? firstDeal('classic'))
 
     case 'reset':
       return initialState

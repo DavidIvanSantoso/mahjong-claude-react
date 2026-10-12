@@ -1,5 +1,6 @@
 import gsap from 'gsap'
 import { useEffect, useLayoutEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
+import { RULESET_NAMES, type Ruleset } from '../game/state'
 import {
   DEFAULT_TURN_SECONDS,
   MAX_TURN_SECONDS,
@@ -205,11 +206,12 @@ function SplitScreen({ title, tagline, onBack, children }: SplitScreenProps) {
 }
 
 interface LocalSetupProps {
+  ruleset: Ruleset
   onStart: (names: string[], turnSeconds: number, timeAttack: boolean) => void
   onBack: () => void
 }
 
-export function LocalSetup({ onStart, onBack }: LocalSetupProps) {
+export function LocalSetup({ ruleset, onStart, onBack }: LocalSetupProps) {
   const [turnTime, setTurnTime] = useState('')
   const [timeAttack, setTimeAttack] = useState(false)
   const [count, setCount] = useState<number | null>(null)
@@ -226,7 +228,11 @@ export function LocalSetup({ onStart, onBack }: LocalSetupProps) {
   }
 
   return (
-    <SplitScreen title="Local" tagline="Bergantian di satu perangkat." onBack={onBack}>
+    <SplitScreen
+      title="Local"
+      tagline={`Bergantian di satu perangkat. Sistem skor: ${RULESET_NAMES[ruleset]}.`}
+      onBack={onBack}
+    >
       <form className="setup__form" onSubmit={handleSubmit}>
         <fieldset className="setup__field">
           <legend>Main berapa orang?</legend>
@@ -271,12 +277,14 @@ export function LocalSetup({ onStart, onBack }: LocalSetupProps) {
 }
 
 interface OnlineSetupProps {
+  /** Dipakai untuk room yang dibuat di sini; room yang dimasuki mengikuti host-nya. */
+  ruleset: Ruleset
   onHost: (name: string, capacity: number, turnSeconds: number, timeAttack: boolean) => void
   onJoin: (name: string, code: string) => void
   onBack: () => void
 }
 
-export function OnlineSetup({ onHost, onJoin, onBack }: OnlineSetupProps) {
+export function OnlineSetup({ ruleset, onHost, onJoin, onBack }: OnlineSetupProps) {
   const [myName, setMyName] = useState('')
   const [capacity, setCapacity] = useState<number | null>(null)
   const [code, setCode] = useState(invitedRoom)
@@ -333,7 +341,7 @@ export function OnlineSetup({ onHost, onJoin, onBack }: OnlineSetupProps) {
 
       <form className="setup__form" onSubmit={host}>
         <fieldset className="setup__field">
-          <legend>Buat room baru — main berapa orang?</legend>
+          <legend>Buat room baru ({RULESET_NAMES[ruleset]}) — main berapa orang?</legend>
           <CountPicker name="room-capacity" value={capacity} onChange={setCapacity} />
         </fieldset>
         <TurnTimeField value={turnTime} onChange={setTurnTime} />

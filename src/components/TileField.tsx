@@ -9,8 +9,11 @@ const TOUCH_HOLD_S = 1.2
 const AMBIENT_DELAY_S: [number, number] = [1.2, 2.4]
 const AMBIENT_HOLD_S = 1.8
 const MAX_OPEN = 2
-/** Flip acak baru dimulai setelah animasi masuk selesai. */
-const AMBIENT_START_S = 1.8
+/** Animasi masuk: lama jatuh tiap ubin dan jeda antar-ubin. */
+const ENTER_DURATION_S = 0.7
+const ENTER_STAGGER_S = 0.025
+/** Jeda sebelum flip acak pertama, dihitung dari selesainya animasi masuk. */
+const AMBIENT_START_S = 0.4
 
 interface TileFieldProps {
   cols: number
@@ -46,12 +49,17 @@ export function TileField({ cols, rows, className = '', tileClassName }: TileFie
   const ctxRef = useRef<gsap.Context | null>(null)
   /** Ubin yang sedang terbuka, baik karena disentuh pengguna maupun flip acak. */
   const openRef = useRef(new Set<HTMLElement>())
+  /** Animasi masuk sudah selesai; sebelum itu ubin belum boleh dibalik (lihat `flip`). */
+  const enteredRef = useRef(false)
   // Muka ubin acak yang terlihat saat dibalik; bunga dilewati supaya variasinya ubin biasa.
   const [faces] = useState(() =>
     shuffle(createWall().filter((tile) => !isFlower(tile))).slice(0, cols * rows),
   )
 
   function flip(tile: HTMLElement, showFace: boolean) {
+    // `overwrite: true` di bawah mematikan semua animasi ubin itu, termasuk animasi masuknya.
+    // Ubin yang tersentuh kursor sebelum gilirannya jatuh akan tertinggal di opacity 0 (hilang).
+    if (!enteredRef.current) return
     if (showFace) openRef.current.add(tile)
     else openRef.current.delete(tile)
 
@@ -91,14 +99,19 @@ export function TileField({ cols, rows, className = '', tileClassName }: TileFie
   useLayoutEffect(() => {
     const reduced = prefersReducedMotion()
     // gsap.context mengumpulkan semua animasi supaya bisa dibatalkan bersih saat unmount.
+    const enterTotal = reduced ? 0 : ENTER_DURATION_S + ENTER_STAGGER_S * (cols * rows - 1)
+    enteredRef.current = reduced
     const ctx = gsap.context(() => {
       if (reduced) return
       gsap.from('.htile', {
         y: -80,
         opacity: 0,
-        duration: 0.7,
+        duration: ENTER_DURATION_S,
         ease: 'back.out(1.7)',
-        stagger: { each: 0.025, from: 'end' },
+        stagger: { each: ENTER_STAGGER_S, from: 'end' },
+      })
+      gsap.delayedCall(enterTotal, () => {
+        enteredRef.current = true
       })
     }, rootRef)
     ctxRef.current = ctx
@@ -112,14 +125,15 @@ export function TileField({ cols, rows, className = '', tileClassName }: TileFie
         }),
       )
     }
-    if (!reduced) scheduleAmbient(AMBIENT_START_S)
+    if (!reduced) scheduleAmbient(enterTotal + AMBIENT_START_S)
 
     const open = openRef.current
     return () => {
       ctx.revert()
       open.clear()
     }
-    // flipRandomTile hanya membaca ref, jadi aman dipakai dari efek yang berjalan sekali.
+    // flipRandomTile hanya membaca ref, dan cols/rows tetap selama komponen terpasang
+    // (pemakainya memasang ulang lewat `key`), jadi efek ini cukup berjalan sekali.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 

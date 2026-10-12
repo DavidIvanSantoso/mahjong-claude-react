@@ -1,6 +1,6 @@
 import { tileName, type Tile } from '../game/tiles'
 
-const WIND_GLYPHS = ['東', '南', '西', '北']
+export const WIND_GLYPHS = ['東', '南', '西', '北']
 const WIND_LETTERS = ['T', 'S', 'B', 'U']
 const DRAGON_GLYPHS = ['中', '發', '']
 const DRAGON_COLORS = ['red', 'green', 'blue']

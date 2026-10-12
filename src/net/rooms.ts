@@ -1,6 +1,15 @@
 import Peer, { type DataConnection } from 'peerjs'
 import { useEffect, useRef, useState } from 'react'
-import { initialState, reducer, type Action, type GameState } from '../game/state'
+import { roundDeltas } from '../game/scoring'
+import {
+  firstDeal,
+  initialState,
+  nextDeal,
+  reducer,
+  type Action,
+  type GameState,
+  type Ruleset,
+} from '../game/state'
 import { DEFAULT_TURN_SECONDS, isTimed, timeoutAction, turnLimit } from '../game/timer'
 import {
   absentAction,
@@ -47,12 +56,13 @@ function emptySnapshot(
   capacity: number,
   turnSeconds: number,
   timeAttack: boolean,
+  ruleset: Ruleset = 'classic',
 ): RoomSnapshot {
   return {
     status: 'connecting',
     error: null,
     code,
-    lobby: { capacity, turnSeconds, timeAttack, players: [] },
+    lobby: { capacity, turnSeconds, timeAttack, ruleset, players: [] },
     seat: 0,
     view: null,
     deadline: null,
@@ -72,11 +82,11 @@ class HostRoom {
     conn: DataConnection | null
     /** Kapan koneksinya putus; null selama tersambung. */
     offlineSince: number | null
-    /** Ronde yang dimenangkan di room ini. */
-    wins: number
+    /** Skor selama room ini dibuka (lihat LobbyInfo). */
+    score: number
   }[]
   private game: GameState | null = null
-  /** Ronde selesai yang hasilnya sudah dicatat, supaya kemenangannya tidak terhitung dua kali. */
+  /** Ronde selesai yang hasilnya sudah dicatat, supaya skornya tidak terhitung dua kali. */
   private scoredGame: GameState | null = null
   private graceTimer: ReturnType<typeof setTimeout> | undefined
   /** State yang batas waktunya sedang berjalan; berganti state berarti waktu dihitung ulang. */
@@ -93,9 +103,10 @@ class HostRoom {
     private capacity: number,
     private turnSeconds: number,
     private timeAttack: boolean,
+    private ruleset: Ruleset,
     private onChange: (snapshot: RoomSnapshot) => void,
   ) {
-    this.seats = [{ name: hostName, token: '', conn: null, offlineSince: null, wins: 0 }]
+    this.seats = [{ name: hostName, token: '', conn: null, offlineSince: null, score: 0 }]
     this.peer = new Peer(peerId(code))
     this.peer.on('open', () => {
       this.status = 'ready'
@@ -149,7 +160,7 @@ class HostRoom {
         token,
         conn,
         offlineSince: null,
-        wins: 0,
+        score: 0,
       })
     }
     this.update()
@@ -177,7 +188,8 @@ class HostRoom {
     if (this.seats.length !== this.capacity) return
     if (this.game && this.game.phase !== 'over') return
     const names = this.seats.map((seat) => seat.name)
-    this.game = reducer(initialState, { type: 'start', names })
+    const deal = this.game ? nextDeal(this.game) : firstDeal(this.ruleset)
+    this.game = reducer(initialState, { type: 'start', names, deal })
     this.update()
   }
 
@@ -241,12 +253,14 @@ class HostRoom {
     this.update()
   }
 
-  /** Mencatat kemenangan ronde yang baru selesai; ronde seri tidak menambah poin siapa pun. */
+  /** Mencatat hasil ronde yang baru selesai; ronde seri tidak mengubah skor siapa pun. */
   private score() {
     const game = this.game
     if (!game || game.phase !== 'over' || game === this.scoredGame) return
     this.scoredGame = game
-    if (game.winner !== null) this.seats[game.winner].wins += 1
+    roundDeltas(game).forEach((delta, i) => {
+      this.seats[i].score += delta
+    })
   }
 
   private update() {
@@ -262,10 +276,11 @@ class HostRoom {
       capacity: this.capacity,
       turnSeconds: this.turnSeconds,
       timeAttack: this.timeAttack,
+      ruleset: this.ruleset,
       players: this.seats.map((seat, i) => ({
         name: seat.name,
         connected: i === 0 || Boolean(seat.conn?.open),
-        wins: seat.wins,
+        score: seat.score,
       })),
     }
     this.seats.forEach((seat, i) => {
@@ -372,17 +387,20 @@ export function useHostRoom(
   capacity: number,
   turnSeconds: number,
   timeAttack: boolean,
+  ruleset: Ruleset,
 ): Room {
-  const [snapshot, setSnapshot] = useState(() => emptySnapshot('', capacity, turnSeconds, timeAttack))
+  const [snapshot, setSnapshot] = useState(() =>
+    emptySnapshot('', capacity, turnSeconds, timeAttack, ruleset),
+  )
   const roomRef = useRef<HostRoom | null>(null)
 
   useEffect(() => {
     // Kode dibuat di sini (bukan saat render) supaya tiap pemasangan efek memakai ID baru;
     // server PeerJS tidak langsung melepas ID lama.
-    const room = new HostRoom(randomCode(), name, capacity, turnSeconds, timeAttack, setSnapshot)
+    const room = new HostRoom(randomCode(), name, capacity, turnSeconds, timeAttack, ruleset, setSnapshot)
     roomRef.current = room
     return () => room.destroy()
-  }, [name, capacity, turnSeconds, timeAttack])
+  }, [name, capacity, turnSeconds, timeAttack, ruleset])
 
   return {
     ...snapshot,

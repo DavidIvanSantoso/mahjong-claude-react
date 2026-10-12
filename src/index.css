@@ -15,6 +15,16 @@
   --tile-green: #4c7a4a;
   --tile-blue: #47748a;
 
+  /* Peran warna yang berbeda antar-tema (lihat "Tema Hong Kong Points" di akhir berkas) */
+  --page: var(--sage);
+  --on-page: var(--ink);
+  --on-page-soft: var(--ink-soft);
+  --on-green: var(--ink);
+  --tile-bg: #fff;
+  --btn-bg: var(--green);
+  --btn-hover: var(--sage);
+  --btn-shadow: var(--green-deep);
+
   font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
   color: var(--ink);
   line-height: 1.45;
@@ -27,7 +37,7 @@
 body {
   margin: 0;
   min-height: 100vh;
-  background: var(--sage);
+  background: var(--page);
 }
 
 h1,
@@ -73,6 +83,7 @@ p {
 }
 
 .btn--primary {
+  color: var(--on-green);
   background: var(--green);
 }
 
@@ -333,18 +344,67 @@ p {
   color: var(--ink-soft);
 }
 
+/* Baris kedua judul, hanya ada di Hong Kong Points */
+.home__title-sub {
+  display: block;
+  margin-top: 0.15em;
+  font-size: 0.62em;
+  color: var(--pink);
+}
+
+/* Pengganti tinggi baris itu di mode Normal (lihat HomeScreen); margin menghapus jarak antar-baris menu */
+.home__title-spacer {
+  margin-top: -14px;
+  visibility: hidden;
+}
+
+/* Pilihan sistem permainan: Normal / HK Points */
+.ruleset-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  border: 2px solid var(--btn-bg);
+  border-radius: 999px;
+}
+
+.ruleset-toggle__option {
+  padding: 6px 0;
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-align: center;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.ruleset-toggle__option input {
+  position: absolute;
+  opacity: 0;
+}
+
+.ruleset-toggle__option--active {
+  color: var(--on-green);
+  background: var(--btn-bg);
+}
+
+.ruleset-toggle__option:has(input:focus-visible) {
+  outline: 3px solid currentColor;
+  outline-offset: 2px;
+}
+
 .home__btn {
   font: inherit;
   font-size: 1.125rem;
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--ink);
-  background: var(--green);
+  color: var(--on-green);
+  background: var(--btn-bg);
   border: 0;
   border-radius: 10px;
   padding: 16px;
-  box-shadow: 0 4px 0 var(--green-deep);
+  box-shadow: 0 4px 0 var(--btn-shadow);
   cursor: pointer;
   /*
    * Efek hover memakai properti `translate`, bukan `transform`: `transform` dipakai GSAP
@@ -357,22 +417,22 @@ p {
 }
 
 .home__btn:hover {
-  background: var(--sage);
+  background: var(--btn-hover);
   translate: 0 -2px;
-  box-shadow: 0 6px 0 var(--green-deep);
+  box-shadow: 0 6px 0 var(--btn-shadow);
 }
 
 .home__btn:active {
   translate: 0 2px;
-  box-shadow: 0 2px 0 var(--green-deep);
+  box-shadow: 0 2px 0 var(--btn-shadow);
 }
 
 .home__btn:disabled {
   opacity: 0.55;
   cursor: not-allowed;
   translate: none;
-  box-shadow: 0 4px 0 var(--green-deep);
-  background: var(--green);
+  box-shadow: 0 4px 0 var(--btn-shadow);
+  background: var(--btn-bg);
 }
 
 .home__btn:focus-visible {
@@ -406,6 +466,16 @@ p {
   gap: 8px;
 }
 
+/* Layar lebar: kredit diberi kartu supaya tetap terbaca di atas ubin hiasan (mobile: lihat di bawah) */
+@media (min-width: 721px) {
+  .home__credit {
+    padding: 12px 16px 14px;
+    background: rgb(254 250 243 / 92%);
+    border-radius: 16px;
+    box-shadow: 0 6px 20px rgb(43 53 42 / 18%);
+  }
+}
+
 /* Tombol sosial berbentuk ubin kecil dengan monogram */
 .social-link {
   width: 40px;
@@ -417,7 +487,7 @@ p {
   letter-spacing: 0.02em;
   color: var(--ink);
   text-decoration: none;
-  background: #fff;
+  background: var(--tile-bg);
   border-radius: 8px;
   box-shadow: 0 4px 0 var(--green);
   transition:
@@ -489,7 +559,7 @@ p {
   position: absolute;
   inset: 0;
   overflow: hidden;
-  background: #fff;
+  background: var(--tile-bg);
   border-radius: calc(var(--htile-w) * 0.14);
   /* Ketebalan ubin (tampil di kiri bawah kalau tumpukannya diputar 45°) */
   box-shadow: 0 calc(var(--htile-w) * 0.09) 0 var(--green);
@@ -544,6 +614,19 @@ p {
   .home .home__title {
     font-size: clamp(2.25rem, 12vw, 3rem);
     text-align: center;
+  }
+
+  /*
+   * Kartu mode Normal lebih pendek setinggi baris "HK Points" (0,62em + jarak 0,15em-nya).
+   * Selisih itu dijadikan margin di luar kartu, supaya tepi atas kartu dan toggle-nya
+   * tetap di posisi yang sama dengan mode Hong Kong Points tanpa ruang kosong di dalam kartu.
+   */
+  .home--classic .home__menu {
+    margin-bottom: calc(clamp(2.25rem, 12vw, 3rem) * 0.713);
+  }
+
+  .home__title-spacer {
+    display: none;
   }
 
   .home .home__tagline {
@@ -766,6 +849,55 @@ p {
   gap: 3px;
 }
 
+/* Daftar faan: nama pola + nilainya, lalu contoh ubinnya */
+.tutorial__section .faan-list {
+  padding: 0;
+  list-style: none;
+  gap: 0;
+}
+
+.faan-list li {
+  display: grid;
+  gap: 6px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.faan-list__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.faan-list__value {
+  flex: none;
+  padding: 1px 10px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  background: var(--pink);
+  border-radius: 999px;
+}
+
+.tutorial__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+}
+
+.tutorial__table :is(th, td) {
+  padding: 6px 8px;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+}
+
+.tutorial__table :is(th, td):last-child {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
 /* ---------- Lobi room online ---------- */
 
 .lobby__code {
@@ -841,6 +973,8 @@ p {
   justify-content: space-between;
   gap: 12px;
   padding: 0 4px;
+  /* Di layar bertumpuk, judul berada langsung di atas latar halaman */
+  color: var(--on-page);
 }
 
 .topbar__title {
@@ -851,7 +985,7 @@ p {
   margin-right: auto;
   font-family: ui-monospace, Consolas, monospace;
   font-weight: 700;
-  color: var(--ink-soft);
+  color: var(--on-page-soft);
 }
 
 /* ---------- Meja ---------- */
@@ -1104,6 +1238,10 @@ p {
   color: var(--green-deep);
 }
 
+.scoreboard__wins--minus {
+  color: var(--tile-red);
+}
+
 /* ---------- Tombol tutorial di meja ---------- */
 
 .help-button {
@@ -1277,6 +1415,7 @@ p {
   display: grid;
   gap: 14px;
   padding: 16px;
+  color: var(--on-green);
   background: var(--sage);
   border-radius: 14px;
 }
@@ -1312,6 +1451,41 @@ p {
   gap: 2px;
   justify-items: center;
   font-size: 0.8125rem;
+}
+
+/* Hong Kong Points: rincian faan, lalu poin yang berpindah */
+.result-dialog__score {
+  justify-self: stretch;
+  display: grid;
+  gap: 10px;
+}
+
+.result-dialog__rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.result-dialog__rows li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 4px;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+}
+
+.result-dialog__rows strong {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.result-dialog__total {
+  font-size: 1.125rem;
+}
+
+.result-dialog__minus {
+  color: var(--tile-red);
 }
 
 .result-dialog__actions {
@@ -1406,9 +1580,14 @@ p {
     flex-wrap: wrap;
     row-gap: 10px;
     padding: 14px 16px;
+    color: var(--ink);
     background: var(--cream);
     border-radius: 14px;
     box-shadow: 0 2px 0 rgb(43 53 42 / 12%);
+  }
+
+  .topbar__room {
+    color: var(--ink-soft);
   }
 
   .topbar > .btn {
@@ -1480,7 +1659,7 @@ p {
   font: inherit;
   line-height: 1;
   color: var(--ink);
-  background: #fff;
+  background: var(--tile-bg);
   border: 1px solid #c9cfc2;
   border-radius: calc(var(--w) * 0.16);
   box-shadow: 0 calc(var(--w) * 0.08) 0 var(--green-deep);
@@ -1640,7 +1819,7 @@ button.tile.tile--selected:hover {
   background: currentColor;
   box-shadow:
     inset 0 0 0 calc(var(--w) * 0.05) currentColor,
-    inset 0 0 0 calc(var(--w) * 0.09) #fff;
+    inset 0 0 0 calc(var(--w) * 0.09) var(--tile-bg);
 }
 
 /* Bambu: batang dengan satu ruas */
@@ -1650,7 +1829,7 @@ button.tile.tile--selected:hover {
   border-radius: calc(var(--w) * 0.06);
   background: linear-gradient(
     currentColor 0 42%,
-    #fff 42% 58%,
+    var(--tile-bg) 42% 58%,
     currentColor 58% 100%
   );
 }
@@ -1660,5 +1839,103 @@ button.tile.tile--selected:hover {
   .center__wall,
   button.tile {
     transition: none;
+  }
+}
+
+/* ---------- Tema Hong Kong Points ---------- */
+
+/*
+ * Dipasang lewat `data-theme` di <html> (lihat components/theme.ts). Palet: Jade Green (meja),
+ * Hong Kong Red (tombol), Muted Gold (sorotan/poin), Charcoal (latar), Deep Jade (latar kedua),
+ * Warm Ivory (kartu/ubin), Slate (teks kedua). Nama variabelnya tetap mengikuti tema Normal.
+ */
+:root[data-theme='hk'] {
+  --pink: #d4a72c;
+  --pink-deep: #a67f14;
+  --cream: #f5ebd7;
+  --sage: #064e3b;
+  --green: #087f5b;
+  --green-deep: #064e3b;
+  --ink: #151a19;
+  --ink-soft: #37413e;
+  --line: #d8ccb2;
+  --tile-red: #c62828;
+  --tile-green: #087f5b;
+
+  --page: #151a19;
+  --on-page: #f5ebd7;
+  --on-page-soft: #b8b09d;
+  --on-green: #f5ebd7;
+  --tile-bg: #f5ebd7;
+  --btn-bg: #c62828;
+  --btn-hover: #d93636;
+  --btn-shadow: #8e1b1b;
+}
+
+:root[data-theme='hk'] .home {
+  color: var(--on-page);
+  background: linear-gradient(135deg, var(--page) 0%, var(--page) 55%, var(--sage) 100%);
+}
+
+:root[data-theme='hk'] .home .home__tagline,
+:root[data-theme='hk'] .home__credit {
+  color: var(--on-page-soft);
+}
+
+:root[data-theme='hk'] .home__credit strong {
+  color: var(--on-page);
+}
+
+/* Cincin fokus bawaan berwarna tinta, tidak terlihat di latar gelap */
+:root[data-theme='hk'] .home :focus-visible {
+  outline-color: var(--on-page);
+}
+
+/* Menu Local/Online: form di atas ivory supaya teks dan kolom isiannya tetap terbaca */
+:root[data-theme='hk'] .split {
+  background: var(--cream);
+}
+
+:root[data-theme='hk'] .split__tiles {
+  background: var(--sage);
+}
+
+/* Homescreen layar lebar: ubin besar tegak di kanan, kolomnya naik-turun selang-seling */
+@media (min-width: 721px) {
+  .home--hk .home__tiles {
+    inset: 0 0 0 42%;
+  }
+
+  .home--hk .home__tiles .tile-field__pile {
+    --htile-w: clamp(96px, 10.5vw, 176px);
+    --htile-gap: calc(var(--htile-w) * 0.32);
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  .home--hk .tile-field__row:nth-child(odd) {
+    margin-left: 0;
+  }
+
+  /* Digeser lewat `top`: `transform` dan `translate` ubin ditimpa GSAP saat animasinya berjalan */
+  .home--hk .htile:nth-child(even) {
+    position: relative;
+    top: calc(var(--htile-w) * -0.4);
+  }
+
+  :root[data-theme='hk'] .home__credit {
+    background: rgb(21 26 25 / 92%);
+    border: 1px solid var(--sage);
+    box-shadow: 0 8px 24px rgb(0 0 0 / 40%);
+  }
+}
+
+@media (max-width: 720px) {
+  :root[data-theme='hk'] .home__menu,
+  :root[data-theme='hk'] .home__credit {
+    background: rgb(21 26 25 / 90%);
+    box-shadow:
+      0 4px 0 var(--sage),
+      0 12px 32px rgb(0 0 0 / 35%);
   }
 }

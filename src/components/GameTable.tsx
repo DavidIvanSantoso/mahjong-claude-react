@@ -1,9 +1,17 @@
 import { useEffect, useState, type CSSProperties } from 'react'
-import { canDeclareWin, kongOptions, type Action, type Claim, type GameState } from '../game/state'
-import { sortTiles, tileDescription, tileName } from '../game/tiles'
+import { formatPoints, scoreWin } from '../game/scoring'
+import {
+  canDeclareWin,
+  kongOptions,
+  seatWind,
+  type Action,
+  type Claim,
+  type GameState,
+} from '../game/state'
+import { sortTiles, tileDescription, tileName, WIND_NAMES } from '../game/tiles'
 import { ResultDialog } from './ResultDialog'
 import { Seat } from './Seat'
-import { TileView } from './TileView'
+import { TileView, WIND_GLYPHS } from './TileView'
 import { TutorialDialog } from './TutorialScreen'
 
 interface GameTableProps {
@@ -20,7 +28,10 @@ interface GameTableProps {
   roomCode?: string
   /** Mode online: status koneksi tiap pemain. */
   connected?: boolean[]
-  /** Mode online: jumlah ronde yang sudah dimenangkan tiap pemain di room ini. */
+  /**
+   * Skor tiap pemain sejak permainan dimulai; papan skor hanya tampil kalau ini diisi.
+   * Normal: jumlah ronde yang dimenangkan. Hong Kong Points: total poin.
+   */
   scores?: number[]
   /** Batas waktu aksi yang sedang berjalan (detik); sudah dipercepat kalau `rush`. */
   turnSeconds: number
@@ -110,11 +121,12 @@ export function GameTable({
   const positions = SEAT_POSITIONS[players.length]
   const pond = POND_LAYOUT[players.length]
   const online = viewer !== undefined
-  // Urut dari kemenangan terbanyak; yang seri tetap urut kursi.
+  const hk = state.ruleset === 'hk'
+  // Urut dari skor tertinggi; yang seri tetap urut kursi.
   const ranking = scores
     ? players
-        .map((player, i) => ({ name: player.name, seat: i, wins: scores[i] ?? 0 }))
-        .sort((a, b) => b.wins - a.wins)
+        .map((player, i) => ({ name: player.name, seat: i, score: scores[i] ?? 0 }))
+        .sort((a, b) => b.score - a.score)
     : null
   const absent = players.filter((_, i) => connected?.[i] === false).map((player) => player.name)
 
@@ -282,6 +294,7 @@ export function GameTable({
 
     // phase === 'over'
     const winner = state.winner === null ? null : players[state.winner]
+    const score = scoreWin(state)
     return (
       <>
         <h2 className="dock__title">{winner ? `${winner.name} menang!` : 'Seri'}</h2>
@@ -292,6 +305,7 @@ export function GameTable({
             state.winType === 'discard' &&
             lastDiscard &&
             `Menang dari buangan ${players[lastDiscard.from].name}.`}
+          {score && ` ${score.faan} faan = ${score.base} poin dasar.`}
           {!onRestart && ' Menunggu host memulai ronde baru…'}
         </p>
         <div className="dock__actions">
@@ -320,7 +334,13 @@ export function GameTable({
     <div className={`game ${players.length === 2 ? 'game--duo' : ''}`} style={layoutVars}>
       <header className="topbar">
         <h1 className="topbar__title">Mahjong</h1>
-        {roomCode && <span className="topbar__room">Room {roomCode}</span>}
+        {(roomCode || hk) && (
+          <span className="topbar__room">
+            {[roomCode && `Room ${roomCode}`, hk && `Ronde ${WIND_NAMES[state.roundWind]}`]
+              .filter(Boolean)
+              .join(' · ')}
+          </span>
+        )}
         <button
           type="button"
           className="btn btn--small"
@@ -353,6 +373,8 @@ export function GameTable({
                       .join(' ')}
                     title={offline ? `${player.name} terputus` : undefined}
                   >
+                    {/* Hong Kong Points: angin kursi di depan nama; Timur adalah bandar. */}
+                    {hk && `${WIND_GLYPHS[seatWind(state, i)]} `}
                     {player.name}
                   </span>
                 </div>
@@ -419,7 +441,7 @@ export function GameTable({
         </span>
         <span className="help-button__label">Tutorial</span>
       </button>
-      <TutorialDialog open={tutorialOpen} onClose={() => setTutorialOpen(false)} />
+      <TutorialDialog ruleset={state.ruleset} open={tutorialOpen} onClose={() => setTutorialOpen(false)} />
       <ResultDialog
         state={state}
         open={phase === 'over' && !resultClosed}
@@ -451,7 +473,11 @@ export function GameTable({
             {ranking.map((entry) => (
               <li key={entry.seat}>
                 {entry.name}
-                {entry.wins > 0 && <span className="scoreboard__wins">+{entry.wins}</span>}
+                {(hk || entry.score > 0) && (
+                  <span className={`scoreboard__wins ${entry.score < 0 ? 'scoreboard__wins--minus' : ''}`}>
+                    {formatPoints(entry.score)}
+                  </span>
+                )}
               </li>
             ))}
           </ol>
