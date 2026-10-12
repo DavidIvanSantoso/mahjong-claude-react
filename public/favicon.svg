@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Ubin mahjong Naga Merah (中): badan hijau sebagai ketebalan, muka putih di atasnya -->
+  <rect x="11" y="9" width="42" height="53" rx="8" fill="#6b8a69" />
+  <rect x="11" y="2" width="42" height="53" rx="8" fill="#fefaf3" stroke="#c9cfc2" stroke-width="1.5" />
+  <!-- 中 digambar sebagai bentuk, supaya tidak bergantung pada font perangkat -->
+  <rect x="21" y="19" width="22" height="16" rx="1.5" fill="none" stroke="#c62828" stroke-width="5" />
+  <path d="M32 10v37" stroke="#c62828" stroke-width="5" stroke-linecap="round" />
+</svg>

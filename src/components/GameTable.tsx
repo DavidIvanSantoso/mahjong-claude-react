@@ -9,8 +9,10 @@ import {
   type GameState,
 } from '../game/state'
 import { sortTiles, tileDescription, tileName, WIND_NAMES } from '../game/tiles'
+import { MusicSlot } from './MusicPlayer'
 import { ResultDialog } from './ResultDialog'
 import { Seat } from './Seat'
+import { ThemePicker } from './ThemePicker'
 import { TileView, WIND_GLYPHS } from './TileView'
 import { TutorialDialog } from './TutorialScreen'
 
@@ -341,6 +343,10 @@ export function GameTable({
               .join(' · ')}
           </span>
         )}
+        <div className="topbar__tools">
+          <MusicSlot />
+          <ThemePicker ruleset={state.ruleset} />
+        </div>
         <button
           type="button"
           className="btn btn--small"

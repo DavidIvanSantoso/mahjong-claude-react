@@ -1,7 +1,9 @@
 import gsap from 'gsap'
 import { useLayoutEffect, useRef } from 'react'
 import type { Ruleset } from '../game/state'
+import { MusicSlot } from './MusicPlayer'
 import { SOCIAL_ICON_PATHS, type SocialIcon } from './socialIcons'
+import { ThemePicker } from './ThemePicker'
 import { TileField } from './TileField'
 
 /**
@@ -120,6 +122,11 @@ export function HomeScreen({ ruleset, onRuleset, onLocal, onOnline, onTutorial }
         rows={layout.rows}
         tileClassName={centerRowClass}
       />
+
+      <div className="home__tools">
+        <MusicSlot />
+        <ThemePicker ruleset={ruleset} />
+      </div>
 
       <footer className="home__credit">
         <span>

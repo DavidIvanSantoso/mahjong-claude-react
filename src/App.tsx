@@ -2,6 +2,7 @@ import { useEffect, useReducer, useState } from 'react'
 import { GameTable } from './components/GameTable'
 import { GuestGame, HostGame } from './components/OnlineGame'
 import { HomeScreen } from './components/HomeScreen'
+import { MusicProvider } from './components/MusicPlayer'
 import { invitedRoom, LocalSetup, OnlineSetup } from './components/SetupScreen'
 import { useRulesetTheme } from './components/theme'
 import { TutorialScreen } from './components/TutorialScreen'
@@ -79,7 +80,7 @@ function LocalGame({ names, ruleset, turnSeconds, timeAttack, onExit }: LocalGam
   )
 }
 
-export function App() {
+function Screens() {
   // Link undangan (?room=KODE) langsung membuka menu online.
   const [screen, setScreen] = useState<Screen>(() =>
     invitedRoom() ? { kind: 'online-setup' } : { kind: 'home' },
@@ -155,4 +156,13 @@ export function App() {
     case 'guest':
       return <GuestGame name={screen.name} code={screen.code} onExit={goHome} />
   }
+}
+
+export function App() {
+  return (
+    // Pemutar musik dipasang di luar layar-layarnya, supaya musik tidak terputus saat berpindah layar.
+    <MusicProvider>
+      <Screens />
+    </MusicProvider>
+  )
 }

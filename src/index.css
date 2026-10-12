@@ -440,6 +440,17 @@ p {
   outline-offset: 3px;
 }
 
+/* Tombol musik dan tema di pojok kanan atas */
+.home__tools {
+  position: absolute;
+  top: clamp(12px, 3vh, 28px);
+  right: clamp(16px, 3vw, 40px);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 /* Kredit pembuat di pojok kanan bawah: tulisan di atas, tombol sosial di bawahnya */
 .home__credit {
   position: absolute;
@@ -975,6 +986,8 @@ p {
   padding: 0 4px;
   /* Di layar bertumpuk, judul berada langsung di atas latar halaman */
   color: var(--on-page);
+  /* Acuan posisi panel musik */
+  position: relative;
 }
 
 .topbar__title {
@@ -986,6 +999,101 @@ p {
   font-family: ui-monospace, Consolas, monospace;
   font-weight: 700;
   color: var(--on-page-soft);
+}
+
+/* Tombol musik dan tema di topbar */
+.topbar__tools {
+  /* Menempel ke tombol keluar di kanan, ada atau tidak ada kode room di tengah */
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.icon-btn {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  color: var(--ink);
+  background: var(--cream);
+  border: 2px solid var(--green);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.icon-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.icon-btn:hover {
+  filter: brightness(0.96);
+}
+
+.icon-btn:focus-visible {
+  outline: 3px solid var(--on-page);
+  outline-offset: 2px;
+}
+
+/* Daftar palet tema */
+.theme-picker {
+  position: relative;
+  color: var(--ink);
+}
+
+.theme-picker__panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 30;
+  width: max-content;
+  padding: 6px;
+  display: grid;
+  gap: 2px;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 28%);
+}
+
+.theme-picker__option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px 8px 8px;
+  font: inherit;
+  font-weight: 600;
+  color: var(--ink);
+  text-align: left;
+  background: transparent;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.theme-picker__option:hover {
+  background: var(--line);
+}
+
+.theme-picker__option--active {
+  border-color: var(--green);
+}
+
+.theme-picker__option:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 1px;
+}
+
+/* Tiga warna utama palet: latar, meja, sorotan */
+.theme-picker__swatch {
+  display: flex;
+  overflow: hidden;
+  border: 1px solid rgb(0 0 0 / 25%);
+  border-radius: 6px;
+}
+
+.theme-picker__swatch span {
+  width: 14px;
+  height: 20px;
 }
 
 /* ---------- Meja ---------- */
@@ -1240,6 +1348,110 @@ p {
 
 .scoreboard__wins--minus {
   color: var(--tile-red);
+}
+
+/* ---------- Pemutar musik latar ---------- */
+
+.music-player {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  z-index: 20;
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+}
+
+.music-player__toggle,
+.music-player__icon-btn {
+  flex: none;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  color: var(--ink);
+  background: var(--cream);
+  border: 2px solid var(--green);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.music-player__toggle {
+  width: 44px;
+  height: 44px;
+  box-shadow: 0 4px 12px rgb(43 53 42 / 25%);
+}
+
+/* Di dalam tata letak layar (<MusicSlot />, mis. topbar meja): tidak melayang, panelnya menggantung dari tombol */
+.music-player--inline {
+  /* Panelnya menggantung dari topbar (bukan dari tombol), supaya rata kanan dan tidak keluar layar */
+  position: static;
+  inset: auto;
+  z-index: auto;
+  display: block;
+  color: var(--ink);
+}
+
+.music-player--inline .music-player__panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 30;
+}
+
+/* Musik dijeda: tombolnya diredupkan */
+.music-player__toggle--paused svg {
+  opacity: 0.4;
+}
+
+.music-player__icon-btn {
+  width: 36px;
+  height: 36px;
+}
+
+.music-player :is(.music-player__toggle, .music-player__icon-btn) svg {
+  width: 18px;
+  height: 18px;
+}
+
+.music-player :is(button, input):focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.music-player__panel {
+  width: min(280px, 100vw - 32px);
+  padding: 12px 14px;
+  display: grid;
+  gap: 8px;
+  box-shadow: 0 8px 24px rgb(43 53 42 / 22%);
+}
+
+.music-player__title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.music-player__controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.music-player__volume {
+  flex: 1;
+  min-width: 0;
+  accent-color: var(--green);
+}
+
+.music-player__percent {
+  min-width: 3em;
+  font-size: 0.8125rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-soft);
 }
 
 /* ---------- Tombol tutorial di meja ---------- */
@@ -1577,8 +1789,11 @@ p {
   .topbar {
     grid-area: top;
     align-self: end;
-    flex-wrap: wrap;
-    row-gap: 10px;
+    /* Baris 1: judul + tombol musik/tema. Baris 2: kode room dan angin ronde. Baris 3: tombol keluar. */
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 8px 12px;
     padding: 14px 16px;
     color: var(--ink);
     background: var(--cream);
@@ -1586,12 +1801,32 @@ p {
     box-shadow: 0 2px 0 rgb(43 53 42 / 12%);
   }
 
+  .topbar__title {
+    grid-area: 1 / 1;
+  }
+
+  .topbar__tools {
+    grid-area: 1 / 2;
+  }
+
   .topbar__room {
+    grid-column: 1 / -1;
     color: var(--ink-soft);
   }
 
   .topbar > .btn {
-    flex-basis: 100%;
+    grid-column: 1 / -1;
+  }
+
+  /* Topbar ada di pojok bawah, jadi daftar tema dan panel musik membuka ke atas */
+  .topbar .theme-picker__panel,
+  .topbar .music-player--inline .music-player__panel {
+    top: auto;
+    bottom: calc(100% + 8px);
+  }
+
+  .icon-btn:focus-visible {
+    outline-color: var(--ink);
   }
 
   .felt {
@@ -1849,7 +2084,8 @@ button.tile.tile--selected:hover {
  * Hong Kong Red (tombol), Muted Gold (sorotan/poin), Charcoal (latar), Deep Jade (latar kedua),
  * Warm Ivory (kartu/ubin), Slate (teks kedua). Nama variabelnya tetap mengikuti tema Normal.
  */
-:root[data-theme='hk'] {
+:root[data-theme='hk'],
+:root[data-palette='hk'] {
   --pink: #d4a72c;
   --pink-deep: #a67f14;
   --cream: #f5ebd7;
@@ -1924,7 +2160,7 @@ button.tile.tile--selected:hover {
   }
 
   :root[data-theme='hk'] .home__credit {
-    background: rgb(21 26 25 / 92%);
+    background: color-mix(in srgb, var(--page) 92%, transparent);
     border: 1px solid var(--sage);
     box-shadow: 0 8px 24px rgb(0 0 0 / 40%);
   }
@@ -1933,9 +2169,113 @@ button.tile.tile--selected:hover {
 @media (max-width: 720px) {
   :root[data-theme='hk'] .home__menu,
   :root[data-theme='hk'] .home__credit {
-    background: rgb(21 26 25 / 90%);
+    background: color-mix(in srgb, var(--page) 90%, transparent);
     box-shadow:
       0 4px 0 var(--sage),
       0 12px 32px rgb(0 0 0 / 35%);
   }
+}
+
+/* ---------- Palet pilihan pemain (tombol tema di homescreen dan meja) ---------- */
+
+/*
+ * Dipasang lewat `data-palette` di <html> (lihat components/ThemePicker.tsx)
+ * dan menimpa tema sistem permainan di atas. Palet Hong Kong memakai blok `data-theme='hk'`.
+ * Tiap palet mengisi semua variabel yang diubah tema lain, supaya tidak ada warna yang terbawa.
+ */
+
+/* Normal: sama dengan nilai bawaan di :root, untuk dipakai di room Hong Kong Points */
+:root[data-palette='classic'] {
+  --pink: #f6e2e9;
+  --pink-deep: #e3b7c6;
+  --cream: #fefaf3;
+  --sage: #b8cfb3;
+  --green: #84a282;
+  --green-deep: #6b8a69;
+  --ink: #2b352a;
+  --ink-soft: #566354;
+  --line: #d9dfd2;
+  --tile-red: #b0506a;
+  --tile-green: #4c7a4a;
+
+  --page: #b8cfb3;
+  --on-page: #2b352a;
+  --on-page-soft: #566354;
+  --on-green: #2b352a;
+  --tile-bg: #fff;
+  --btn-bg: #84a282;
+  --btn-hover: #b8cfb3;
+  --btn-shadow: #6b8a69;
+}
+
+/* Tokyo Mahjong: Vermillion, Sakura, Ink, Rice Paper, Matcha */
+:root[data-palette='tokyo'] {
+  --pink: #e8a0a8;
+  --pink-deep: #d64545;
+  --cream: #f5f1e8;
+  --sage: #cfd8bf;
+  --green: #718355;
+  --green-deep: #55653f;
+  --ink: #171717;
+  --ink-soft: #55514a;
+  --line: #ddd6c8;
+  --tile-red: #d64545;
+  --tile-green: #5f7245;
+
+  --page: #171717;
+  --on-page: #f5f1e8;
+  --on-page-soft: #b5b0a5;
+  --on-green: #171717;
+  --tile-bg: #fbf8f1;
+  --btn-bg: #d64545;
+  --btn-hover: #e05c5c;
+  --btn-shadow: #a83232;
+}
+
+/* Wimbledon: Green, Purple, Cream, Gold, Charcoal */
+:root[data-palette='wimbledon'] {
+  --pink: #c8a951;
+  --pink-deep: #9c8136;
+  --cream: #f4f0e6;
+  --sage: #2a6149;
+  --green: #1f4d3a;
+  --green-deep: #153628;
+  --ink: #202321;
+  --ink-soft: #4a4f4c;
+  --line: #dcd5c4;
+  --tile-red: #a83a3a;
+  --tile-green: #1f4d3a;
+
+  --page: #5a315d;
+  --on-page: #f4f0e6;
+  --on-page-soft: #cdbfd0;
+  --on-green: #f4f0e6;
+  --tile-bg: #fbf8f0;
+  --btn-bg: #1f4d3a;
+  --btn-hover: #2a6149;
+  --btn-shadow: #153628;
+}
+
+/* Brown: #dbc9b8, #a17e61, #855832, #74482a, #362925 */
+:root[data-palette='brown'] {
+  --pink: #dbc9b8;
+  --pink-deep: #855832;
+  --cream: #f3e9de;
+  --sage: #dbc9b8;
+  --green: #a17e61;
+  --green-deep: #74482a;
+  --ink: #362925;
+  --ink-soft: #6b574b;
+  --line: #e0d2c3;
+  --tile-red: #a8402e;
+  --tile-green: #5c6b3a;
+
+  --page: #362925;
+  --on-page: #efe4d8;
+  --on-page-soft: #b9a593;
+  --on-green: #362925;
+  --tile-bg: #fbf6ef;
+  --btn-bg: #a17e61;
+  --btn-hover: #b08d70;
+  --btn-shadow: #74482a;
 }
