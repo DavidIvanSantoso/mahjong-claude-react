@@ -1812,6 +1812,41 @@ p {
   }
 }
 
+/* ---------- Confetti kemenangan ---------- */
+
+.confetti {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.confetti span {
+  position: absolute;
+  top: -24px;
+  border-radius: 2px;
+  opacity: 0;
+  animation: confetti-fall linear forwards;
+}
+
+/* --drift dan --spin diacak per keping (lihat Confetti.tsx) */
+@keyframes confetti-fall {
+  0% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+
+  85% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--drift), 108vh, 0) rotate(var(--spin));
+  }
+}
+
 /* ---------- Buangan terakhir (diperbesar) ---------- */
 
 .last-discard {

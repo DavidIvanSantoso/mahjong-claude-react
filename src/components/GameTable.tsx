@@ -13,6 +13,7 @@ import { DealerRoll } from './DealerRoll'
 import { MusicSlot } from './MusicPlayer'
 import { ResultDialog } from './ResultDialog'
 import { Seat } from './Seat'
+import { useGameSfx } from './sfx'
 import { ThemePicker } from './ThemePicker'
 import { TileView, WIND_GLYPHS } from './TileView'
 import { TutorialDialog } from './TutorialScreen'
@@ -118,6 +119,7 @@ export function GameTable({
   // Modal hasil muncul otomatis saat permainan berakhir; pemain boleh menutupnya untuk melihat meja.
   const [resultClosed, setResultClosed] = useState(false)
   const { players, phase, current, lastDiscard } = state
+  useGameSfx(state)
   // Ronde baru dimulai: modal hasil ronde berikutnya harus muncul lagi.
   if (phase !== 'over' && resultClosed) setResultClosed(false)
   const claim = state.claims[0]

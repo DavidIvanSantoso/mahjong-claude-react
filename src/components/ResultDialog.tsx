@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { formatPoints, roundDeltas, scoreWin } from '../game/scoring'
 import type { GameState } from '../game/state'
+import { Confetti } from './Confetti'
 import { TileView } from './TileView'
 
 const MELD_LABELS = { pong: 'Pong', chi: 'Chi', kong: 'Kong' }
@@ -39,6 +40,8 @@ export function ResultDialog({ state, open, onClose, onExit, onRestart, viewer }
   const { players, lastDiscard } = state
   const winner = state.winner === null ? null : players[state.winner]
   const online = viewer !== undefined
+  // Confetti untuk kemenangan: di mode online hanya di perangkat pemenangnya.
+  const celebrate = winner !== null && (!online || state.winner === viewer)
   const score = scoreWin(state)
   const deltas = roundDeltas(state)
 
@@ -51,6 +54,8 @@ export function ResultDialog({ state, open, onClose, onExit, onRestart, viewer }
       // Klik di luar kartu (area gelap) menutup modal.
       onClick={(event) => event.target === event.currentTarget && onClose()}
     >
+      {/* Di dalam <dialog> supaya tampil di atas modal dan latar gelapnya. */}
+      {open && celebrate && <Confetti />}
       <div className="tutorial-dialog__scroll">
         <div className="result-dialog__card">
           <h2 id="result-dialog-title" className="result-dialog__title">
