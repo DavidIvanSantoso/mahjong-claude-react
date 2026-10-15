@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
+import { t } from '../i18n'
 
 /** Semua file musik di src/assets/music ikut dibundel dan jadi daftar putar (lihat README di sana). */
 const TRACK_URLS = import.meta.glob<string>('../assets/music/*.{mp3,ogg,wav,m4a,aac,flac,webm}', {
@@ -137,7 +138,7 @@ function MusicPlayer({ slot }: { slot: HTMLElement | null }) {
   const controls = (
     <div className={`music-player ${slot ? 'music-player--inline' : ''}`} ref={rootRef}>
       {open && (
-        <div className="card music-player__panel" role="group" aria-label="Musik latar">
+        <div className="card music-player__panel" role="group" aria-label={t('Musik latar', 'Background music')}>
           <p className="music-player__title" title={track.title}>
             {track.title}
           </p>
@@ -145,7 +146,7 @@ function MusicPlayer({ slot }: { slot: HTMLElement | null }) {
             <button
               type="button"
               className="music-player__icon-btn"
-              aria-label={playing ? 'Jeda musik' : 'Putar musik'}
+              aria-label={playing ? t('Jeda musik', 'Pause music') : t('Putar musik', 'Play music')}
               onClick={() => update({ playing: !playing })}
             >
               <Icon name={playing ? 'pause' : 'play'} />
@@ -154,7 +155,7 @@ function MusicPlayer({ slot }: { slot: HTMLElement | null }) {
               <button
                 type="button"
                 className="music-player__icon-btn"
-                aria-label="Lagu berikutnya"
+                aria-label={t('Lagu berikutnya', 'Next track')}
                 onClick={nextTrack}
               >
                 <Icon name="next" />
@@ -166,7 +167,7 @@ function MusicPlayer({ slot }: { slot: HTMLElement | null }) {
               min={0}
               max={100}
               value={percent}
-              aria-label="Volume musik"
+              aria-label={t('Volume musik', 'Music volume')}
               onChange={(event) => update({ volume: Number(event.target.value) / 100 })}
             />
             <span className="music-player__percent">{percent}%</span>
@@ -177,8 +178,8 @@ function MusicPlayer({ slot }: { slot: HTMLElement | null }) {
       <button
         type="button"
         className={`${slot ? 'icon-btn' : 'music-player__toggle'} ${playing ? '' : 'music-player__toggle--paused'}`}
-        aria-label="Musik latar"
-        title="Musik latar"
+        aria-label={t('Musik latar', 'Background music')}
+        title={t('Musik latar', 'Background music')}
         aria-expanded={open}
         onClick={() => setOpen(!open)}
       >

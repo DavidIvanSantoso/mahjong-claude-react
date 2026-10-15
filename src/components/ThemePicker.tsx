@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import type { Ruleset } from '../game/state'
+import { t } from '../i18n'
 
 /**
  * Palet warna website (nilainya di index.css, `:root[data-palette='…']`).
@@ -72,7 +73,7 @@ export function ThemePicker({ ruleset }: { ruleset: Ruleset }) {
   const active = useSyncExternalStore(subscribe, () => choice)
   const options = [
     // Tanpa pilihan, warna mengikuti sistem permainan: Normal atau Hong Kong Points.
-    { id: null, name: 'Bawaan', swatch: PALETTES.find((palette) => palette.id === ruleset)!.swatch },
+    { id: null, name: t('Bawaan', 'Default'), swatch: PALETTES.find((palette) => palette.id === ruleset)!.swatch },
     ...PALETTES,
   ]
 
@@ -96,8 +97,8 @@ export function ThemePicker({ ruleset }: { ruleset: Ruleset }) {
       <button
         type="button"
         className="icon-btn"
-        aria-label="Tema warna"
-        title="Tema warna"
+        aria-label={t('Tema warna', 'Color theme')}
+        title={t('Tema warna', 'Color theme')}
         aria-expanded={open}
         onClick={() => setOpen(!open)}
       >
@@ -107,7 +108,7 @@ export function ThemePicker({ ruleset }: { ruleset: Ruleset }) {
         </svg>
       </button>
       {open && (
-        <div className="card theme-picker__panel" role="radiogroup" aria-label="Tema warna">
+        <div className="card theme-picker__panel" role="radiogroup" aria-label={t('Tema warna', 'Color theme')}>
           {options.map((palette) => (
             <button
               key={palette.id ?? 'auto'}

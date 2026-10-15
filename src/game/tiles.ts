@@ -1,3 +1,5 @@
+import { t } from '../i18n'
+
 export type Suit = 'man' | 'pin' | 'sou' | 'wind' | 'dragon' | 'flower'
 
 export interface Tile {
@@ -75,35 +77,71 @@ export function sortTiles(tiles: Tile[]): Tile[] {
   return [...tiles].sort((a, b) => kindIndex(a) - kindIndex(b) || a.id - b.id)
 }
 
-const SUIT_NAMES: Record<'man' | 'pin' | 'sou', string> = {
-  man: 'Karakter',
-  pin: 'Bulat',
-  sou: 'Bambu',
+const SUIT_NAMES: Record<'man' | 'pin' | 'sou', [string, string]> = {
+  man: ['Karakter', 'Characters'],
+  pin: ['Bulat', 'Dots'],
+  sou: ['Bambu', 'Bamboo'],
 }
-export const WIND_NAMES = ['Timur', 'Selatan', 'Barat', 'Utara']
-const DRAGON_NAMES = ['Merah', 'Hijau', 'Putih']
-const FLOWER_NAMES = [
-  'Bunga Plum',
-  'Bunga Anggrek',
-  'Bunga Krisan',
-  'Bunga Bambu',
-  'Musim Semi',
-  'Musim Panas',
-  'Musim Gugur',
-  'Musim Dingin',
+const WIND_NAMES = [
+  ['Timur', 'East'],
+  ['Selatan', 'South'],
+  ['Barat', 'West'],
+  ['Utara', 'North'],
 ]
+const DRAGON_NAMES = [
+  ['Merah', 'Red'],
+  ['Hijau', 'Green'],
+  ['Putih', 'White'],
+]
+const FLOWER_NAMES = [
+  ['Bunga Plum', 'Plum Blossom'],
+  ['Bunga Anggrek', 'Orchid'],
+  ['Bunga Krisan', 'Chrysanthemum'],
+  ['Bunga Bambu', 'Bamboo Flower'],
+  ['Musim Semi', 'Spring'],
+  ['Musim Panas', 'Summer'],
+  ['Musim Gugur', 'Autumn'],
+  ['Musim Dingin', 'Winter'],
+]
+
+/** Nama dalam bahasa aktif dari pasangan [Indonesia, Inggris]. */
+const pick = ([id, en]: string[]) => t(id, en)
+
+/** Nama angin: 0 Timur, 1 Selatan, 2 Barat, 3 Utara. */
+export function windName(index: number): string {
+  return pick(WIND_NAMES[index])
+}
 
 /** Penjelasan singkat jenis ubin dan set apa saja yang bisa dibentuk dengannya. */
 export function tileDescription(tile: Tile): string {
-  if (tile.suit === 'wind') return 'Ubin angin. Hanya bisa dijadikan pong atau kong, tidak bisa chi.'
-  if (tile.suit === 'dragon') return 'Ubin naga. Hanya bisa dijadikan pong atau kong, tidak bisa chi.'
-  if (tile.suit === 'flower') return 'Ubin bunga. Disisihkan dan diganti ubin baru.'
-  return `Suit ${SUIT_NAMES[tile.suit]}, angka ${tile.rank}. Bisa dijadikan chi (urutan), pong, atau kong.`
+  if (tile.suit === 'wind') {
+    return t(
+      'Ubin angin. Hanya bisa dijadikan pong atau kong, tidak bisa chi.',
+      'Wind tile. Can only form a pong or kong, not a chi.',
+    )
+  }
+  if (tile.suit === 'dragon') {
+    return t(
+      'Ubin naga. Hanya bisa dijadikan pong atau kong, tidak bisa chi.',
+      'Dragon tile. Can only form a pong or kong, not a chi.',
+    )
+  }
+  if (tile.suit === 'flower') {
+    return t('Ubin bunga. Disisihkan dan diganti ubin baru.', 'Flower tile. Set aside and replaced with a new tile.')
+  }
+  const suit = pick(SUIT_NAMES[tile.suit])
+  return t(
+    `Suit ${suit}, angka ${tile.rank}. Bisa dijadikan chi (urutan), pong, atau kong.`,
+    `${suit} suit, number ${tile.rank}. Can form a chi (sequence), pong, or kong.`,
+  )
 }
 
 export function tileName(tile: Tile): string {
-  if (tile.suit === 'wind') return `Angin ${WIND_NAMES[tile.rank - 1]}`
-  if (tile.suit === 'dragon') return `Naga ${DRAGON_NAMES[tile.rank - 1]}`
-  if (tile.suit === 'flower') return FLOWER_NAMES[tile.rank - 1]
-  return `${tile.rank} ${SUIT_NAMES[tile.suit]}`
+  if (tile.suit === 'wind') return t(`Angin ${windName(tile.rank - 1)}`, `${windName(tile.rank - 1)} Wind`)
+  if (tile.suit === 'dragon') {
+    const color = pick(DRAGON_NAMES[tile.rank - 1])
+    return t(`Naga ${color}`, `${color} Dragon`)
+  }
+  if (tile.suit === 'flower') return pick(FLOWER_NAMES[tile.rank - 1])
+  return `${tile.rank} ${pick(SUIT_NAMES[tile.suit])}`
 }

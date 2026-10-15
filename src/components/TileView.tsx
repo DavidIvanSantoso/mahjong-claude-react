@@ -1,7 +1,9 @@
 import { tileName, type Tile } from '../game/tiles'
+import { t } from '../i18n'
 
 export const WIND_GLYPHS = ['東', '南', '西', '北']
-const WIND_LETTERS = ['T', 'S', 'B', 'U']
+/** Huruf pojok ubin angin: inisial nama anginnya dalam bahasa aktif. */
+const windLetter = (rank: number) => t(['T', 'S', 'B', 'U'], ['E', 'S', 'W', 'N'])[rank - 1]
 const DRAGON_GLYPHS = ['中', '發', '']
 const DRAGON_COLORS = ['red', 'green', 'blue']
 const FLOWER_GLYPHS = ['梅', '蘭', '菊', '竹', '春', '夏', '秋', '冬']
@@ -26,7 +28,7 @@ function TileFace({ tile }: { tile: Tile }) {
   if (tile.suit === 'wind') {
     return (
       <>
-        <span className="tile__corner">{WIND_LETTERS[tile.rank - 1]}</span>
+        <span className="tile__corner">{windLetter(tile.rank)}</span>
         <span className="tile__glyph">{WIND_GLYPHS[tile.rank - 1]}</span>
       </>
     )

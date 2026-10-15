@@ -8,8 +8,10 @@ import {
   type Claim,
   type GameState,
 } from '../game/state'
-import { sortTiles, tileDescription, tileName, WIND_NAMES } from '../game/tiles'
+import { sortTiles, tileDescription, tileName, windName } from '../game/tiles'
+import { t } from '../i18n'
 import { DealerRoll } from './DealerRoll'
+import { LanguagePicker } from './LanguagePicker'
 import { MusicSlot } from './MusicPlayer'
 import { ResultDialog } from './ResultDialog'
 import { Seat } from './Seat'
@@ -63,7 +65,7 @@ const POND_LAYOUT: Record<number, { cols: number; divisor: number }> = {
 }
 
 function claimLabel(claim: Claim): string {
-  if (claim.type === 'win') return 'menang (Mahjong)'
+  if (claim.type === 'win') return t('menang (Mahjong)', 'win (Mahjong)')
   if (claim.type === 'chi') return 'Chi'
   return claim.canKong ? 'Pong / Kong' : 'Pong'
 }
@@ -96,7 +98,9 @@ function TurnTimer({ deadline, total, rush }: { deadline: number; total: number;
       <span className="turn-timer__bar" aria-hidden="true">
         <span style={{ width: `${Math.min(100, (left / (total * 1000)) * 100)}%` }} />
       </span>
-      <span className="turn-timer__text">{seconds} dtk</span>
+      <span className="turn-timer__text">
+        {seconds} {t('dtk', 's')}
+      </span>
     </div>
   )
 }
@@ -153,29 +157,40 @@ export function GameTable({
 
   function renderDock() {
     if (phase === 'roll') {
-      return <p className="dock__hint">Melempar dadu untuk menentukan siapa yang jalan pertama…</p>
+      return (
+        <p className="dock__hint">
+          {t('Melempar dadu untuk menentukan siapa yang jalan pertama…', 'Rolling dice to decide who goes first…')}
+        </p>
+      )
     }
 
     // Mode online hanya berhenti di fase ini selama menunggu pemain yang terputus.
     if (phase === 'handoff' && online) {
-      return <p className="dock__hint">Menunggu {players[current].name} tersambung kembali…</p>
+      const name = players[current].name
+      return <p className="dock__hint">{t(`Menunggu ${name} tersambung kembali…`, `Waiting for ${name} to reconnect…`)}</p>
     }
 
     if (phase === 'handoff') {
       const name = players[current].name
       return (
         <>
-          <h2 className="dock__title">Giliran {name}</h2>
-          <p>Berikan perangkat ke {name}. Tangan pemain lain disembunyikan.</p>
+          <h2 className="dock__title">{t(`Giliran ${name}`, `${name}'s turn`)}</h2>
+          <p>
+            {t(
+              `Berikan perangkat ke ${name}. Tangan pemain lain disembunyikan.`,
+              `Pass the device to ${name}. Other players' hands are hidden.`,
+            )}
+          </p>
           <button type="button" className="btn btn--primary" autoFocus onClick={() => dispatch({ type: 'reveal' })}>
-            Ambil ubin & lihat tangan
+            {t('Ambil ubin & lihat tangan', 'Draw a tile & view hand')}
           </button>
         </>
       )
     }
 
     if (phase === 'turn' && !myTurn) {
-      return <p className="dock__hint">Menunggu {players[current].name} membuang ubin…</p>
+      const name = players[current].name
+      return <p className="dock__hint">{t(`Menunggu ${name} membuang ubin…`, `Waiting for ${name} to discard…`)}</p>
     }
 
     if (phase === 'turn') {
@@ -185,11 +200,21 @@ export function GameTable({
       return (
         <>
           <p className="dock__hint">
-            <strong>{online ? 'Giliranmu' : player.name}</strong> —{' '}
-            {drawn ? `kamu mengambil ${tileName(drawn)}` : 'klaim berhasil'}
-            {state.flowersDrawn > 0 && ` (+${state.flowersDrawn} bunga, sudah diganti ubin baru)`}. Pilih
-            satu ubin untuk dibuang; ketuk dua kali untuk langsung membuang. Kalau waktu habis,{' '}
-            {drawn ? 'ubin ambilan ini' : 'ubin paling kanan'} dibuang otomatis.
+            <strong>{online ? t('Giliranmu', 'Your turn') : player.name}</strong> —{' '}
+            {t(
+              <>
+                {drawn ? `kamu mengambil ${tileName(drawn)}` : 'klaim berhasil'}
+                {state.flowersDrawn > 0 && ` (+${state.flowersDrawn} bunga, sudah diganti ubin baru)`}. Pilih
+                satu ubin untuk dibuang; ketuk dua kali untuk langsung membuang. Kalau waktu habis,{' '}
+                {drawn ? 'ubin ambilan ini' : 'ubin paling kanan'} dibuang otomatis.
+              </>,
+              <>
+                {drawn ? `you drew ${tileName(drawn)}` : 'claim successful'}
+                {state.flowersDrawn > 0 && ` (+${state.flowersDrawn} flower, already replaced with a new tile)`}.
+                Pick a tile to discard; tap it twice to discard right away. If time runs out,{' '}
+                {drawn ? 'the drawn tile' : 'the rightmost tile'} is discarded automatically.
+              </>,
+            )}
           </p>
           <div className="dock__actions">
             <button
@@ -198,7 +223,7 @@ export function GameTable({
               disabled={!selected}
               onClick={() => selected && discard(selected.id)}
             >
-              {selected ? `Buang ${tileName(selected)}` : 'Buang'}
+              {selected ? t(`Buang ${tileName(selected)}`, `Discard ${tileName(selected)}`) : t('Buang', 'Discard')}
             </button>
             {kongOptions(state).map((option) => (
               <button
@@ -215,7 +240,7 @@ export function GameTable({
             ))}
             {canDeclareWin(state) && (
               <button type="button" className="btn btn--accent" onClick={() => dispatch({ type: 'declareWin' })}>
-                Mahjong! Nyatakan menang
+                {t('Mahjong! Nyatakan menang', 'Mahjong! Declare win')}
               </button>
             )}
           </div>
@@ -230,8 +255,8 @@ export function GameTable({
       if (online && !myClaim) {
         return (
           <p className="dock__hint dock__offer">
-            {lastDiscard.from === viewer ? 'Kamu' : discarder.name} membuang{' '}
-            <TileView tile={lastDiscard.tile} size="md" marked /> Menunggu pemain lain…
+            {lastDiscard.from === viewer ? t('Kamu', 'You') : discarder.name} {t('membuang', 'discarded')}{' '}
+            <TileView tile={lastDiscard.tile} size="md" marked /> {t('Menunggu pemain lain…', 'Waiting for other players…')}
           </p>
         )
       }
@@ -240,14 +265,14 @@ export function GameTable({
         return (
           <>
             <h2 className="dock__title">
-              {claimant.name} bisa {claimLabel(claim)}
+              {claimant.name} {t('bisa', 'can')} {claimLabel(claim)}
             </h2>
             <p className="dock__offer">
-              {discarder.name} membuang <TileView tile={lastDiscard.tile} size="md" marked />
-              Berikan perangkat ke {claimant.name}.
+              {discarder.name} {t('membuang', 'discarded')} <TileView tile={lastDiscard.tile} size="md" marked />
+              {t(`Berikan perangkat ke ${claimant.name}.`, `Pass the device to ${claimant.name}.`)}
             </p>
             <button type="button" className="btn btn--primary" autoFocus onClick={() => dispatch({ type: 'reveal' })}>
-              Lihat tangan
+              {t('Lihat tangan', 'View hand')}
             </button>
           </>
         )
@@ -256,13 +281,14 @@ export function GameTable({
       return (
         <>
           <p className="dock__hint dock__offer">
-            <strong>{online ? 'Kamu bisa klaim' : claimant.name}</strong> — {discarder.name} membuang{' '}
-            <TileView tile={lastDiscard.tile} size="md" marked /> Mau {claimLabel(claim)}?
+            <strong>{online ? t('Kamu bisa klaim', 'You can claim') : claimant.name}</strong> — {discarder.name}{' '}
+            {t('membuang', 'discarded')} <TileView tile={lastDiscard.tile} size="md" marked />{' '}
+            {t(`Mau ${claimLabel(claim)}?`, `Want to ${claimLabel(claim)}?`)}
           </p>
           <div className="dock__actions">
             {claim.type === 'win' && (
               <button type="button" className="btn btn--accent" onClick={() => dispatch({ type: 'claim' })}>
-                Mahjong! Nyatakan menang
+                {t('Mahjong! Nyatakan menang', 'Mahjong! Declare win')}
               </button>
             )}
             {claim.type === 'pong' && (
@@ -294,7 +320,7 @@ export function GameTable({
                 </button>
               ))}
             <button type="button" className="btn" onClick={() => dispatch({ type: 'pass' })}>
-              Lewati
+              {t('Lewati', 'Pass')}
             </button>
           </div>
         </>
@@ -306,28 +332,30 @@ export function GameTable({
     const score = scoreWin(state)
     return (
       <>
-        <h2 className="dock__title">{winner ? `${winner.name} menang!` : 'Seri'}</h2>
+        <h2 className="dock__title">
+          {winner ? t(`${winner.name} menang!`, `${winner.name} wins!`) : t('Seri', 'Draw')}
+        </h2>
         <p>
-          {!winner && 'Dinding habis tanpa pemenang.'}
-          {winner && state.winType === 'self' && 'Menang dari ubin yang diambil sendiri.'}
+          {!winner && t('Dinding habis tanpa pemenang.', 'The wall ran out with no winner.')}
+          {winner && state.winType === 'self' && t('Menang dari ubin yang diambil sendiri.', 'Won on a self-drawn tile.')}
           {winner &&
             state.winType === 'discard' &&
             lastDiscard &&
-            `Menang dari buangan ${players[lastDiscard.from].name}.`}
-          {score && ` ${score.faan} faan = ${score.base} poin dasar.`}
-          {!onRestart && ' Menunggu host memulai ronde baru…'}
+            t(`Menang dari buangan ${players[lastDiscard.from].name}.`, `Won on ${players[lastDiscard.from].name}'s discard.`)}
+          {score && t(` ${score.faan} faan = ${score.base} poin dasar.`, ` ${score.faan} faan = ${score.base} base points.`)}
+          {!onRestart && t(' Menunggu host memulai ronde baru…', ' Waiting for the host to start a new round…')}
         </p>
         <div className="dock__actions">
           {onRestart && (
             <button type="button" className="btn btn--primary" onClick={onRestart}>
-              Main lagi
+              {t('Main lagi', 'Play again')}
             </button>
           )}
           <button type="button" className="btn" onClick={() => setResultClosed(false)}>
-            Lihat hasil
+            {t('Lihat hasil', 'View result')}
           </button>
           <button type="button" className="btn" onClick={onExit}>
-            {online ? 'Keluar dari room' : 'Ganti pemain'}
+            {online ? t('Keluar dari room', 'Leave room') : t('Ganti pemain', 'Change players')}
           </button>
         </div>
       </>
@@ -345,7 +373,7 @@ export function GameTable({
         <h1 className="topbar__title">Mahjong</h1>
         {(roomCode || hk) && (
           <span className="topbar__room">
-            {[roomCode && `Room ${roomCode}`, hk && `Ronde ${WIND_NAMES[state.roundWind]}`]
+            {[roomCode && `Room ${roomCode}`, hk && t(`Ronde ${windName(state.roundWind)}`, `${windName(state.roundWind)} round`)]
               .filter(Boolean)
               .join(' · ')}
           </span>
@@ -353,18 +381,19 @@ export function GameTable({
         <div className="topbar__tools">
           <MusicSlot />
           <ThemePicker ruleset={state.ruleset} />
+          <LanguagePicker />
         </div>
         <button
           type="button"
           className="btn btn--small"
           onClick={() => {
             const question = online
-              ? 'Keluar dari room ini?'
-              : 'Akhiri permainan ini dan kembali ke menu awal?'
+              ? t('Keluar dari room ini?', 'Leave this room?')
+              : t('Akhiri permainan ini dan kembali ke menu awal?', 'End this game and return to the main menu?')
             if (phase === 'over' || window.confirm(question)) onExit()
           }}
         >
-          {online ? 'Keluar' : 'Permainan baru'}
+          {online ? t('Keluar', 'Leave') : t('Permainan baru', 'New game')}
         </button>
       </header>
 
@@ -385,7 +414,7 @@ export function GameTable({
                     ]
                       .filter(Boolean)
                       .join(' ')}
-                    title={offline ? `${player.name} terputus` : undefined}
+                    title={offline ? t(`${player.name} terputus`, `${player.name} disconnected`) : undefined}
                   >
                     {/* Hong Kong Points: angin kursi di depan nama; Timur adalah bandar. */}
                     {hk && `${WIND_GLYPHS[seatWind(state, i)]} `}
@@ -397,7 +426,7 @@ export function GameTable({
             {/* Diputar balik supaya angka sisa dinding selalu tegak. */}
             <div className="center__wall" style={{ transform: `rotate(${-rotation}deg)` }}>
               <strong>{state.wall.length}</strong>
-              <span>sisa ubin</span>
+              <span>{t('sisa ubin', 'tiles left')}</span>
             </div>
           </div>
 
@@ -429,17 +458,19 @@ export function GameTable({
       </div>
 
       {/* Hanya tampil di layar lebar (lihat index.css). */}
-      <aside className="card last-discard" aria-label="Buangan terakhir">
-        <h2 className="last-discard__title">Buangan terakhir</h2>
+      <aside className="card last-discard" aria-label={t('Buangan terakhir', 'Last discard')}>
+        <h2 className="last-discard__title">{t('Buangan terakhir', 'Last discard')}</h2>
         {lastDiscard ? (
           <>
             <TileView tile={lastDiscard.tile} size="zoom" />
             <p className="last-discard__name">{tileName(lastDiscard.tile)}</p>
-            <p>Dibuang oleh {players[lastDiscard.from].name}</p>
+            <p>
+              {t('Dibuang oleh', 'Discarded by')} {players[lastDiscard.from].name}
+            </p>
             <p className="last-discard__desc">{tileDescription(lastDiscard.tile)}</p>
           </>
         ) : (
-          <p className="last-discard__desc">Tidak ada ubin buangan yang baru.</p>
+          <p className="last-discard__desc">{t('Tidak ada ubin buangan yang baru.', 'No recent discard.')}</p>
         )}
       </aside>
 
@@ -447,7 +478,7 @@ export function GameTable({
       <button
         type="button"
         className="help-button"
-        aria-label="Buka tutorial"
+        aria-label={t('Buka tutorial', 'Open tutorial')}
         onClick={() => setTutorialOpen(true)}
       >
         <span className="help-button__icon" aria-hidden="true">
@@ -468,10 +499,10 @@ export function GameTable({
       <section className="card dock" aria-live="polite">
         {absent.length > 0 && phase !== 'over' && (
           <p className="dock__notice" role="status">
-            <strong>{absent.join(', ')}</strong> keluar dari permainan.{' '}
+            <strong>{absent.join(', ')}</strong> {t('keluar dari permainan.', 'left the game.')}{' '}
             {players.length - absent.length >= 2
-              ? 'Gilirannya dilewati sampai tersambung kembali.'
-              : 'Permainan menunggu sampai ada yang tersambung kembali.'}
+              ? t('Gilirannya dilewati sampai tersambung kembali.', 'Their turns are skipped until they reconnect.')
+              : t('Permainan menunggu sampai ada yang tersambung kembali.', 'The game is paused until someone reconnects.')}
           </p>
         )}
         {deadline !== null && phase !== 'over' && phase !== 'roll' && (
@@ -481,7 +512,7 @@ export function GameTable({
       </section>
 
       {ranking && (
-        <section className="card scoreboard" aria-label="Papan skor">
+        <section className="card scoreboard" aria-label={t('Papan skor', 'Scoreboard')}>
           <h2 className="scoreboard__title">Player Scoreboard:</h2>
           <ol className="scoreboard__list">
             {ranking.map((entry) => (

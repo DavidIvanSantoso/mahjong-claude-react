@@ -9,6 +9,7 @@ import { TutorialScreen } from './components/TutorialScreen'
 import { roundDeltas } from './game/scoring'
 import { initialState, nextDeal, reducer, rollForDealer, type Ruleset } from './game/state'
 import { isTimed, timeoutAction, turnLimit } from './game/timer'
+import { useLang } from './i18n'
 
 type Screen =
   | { kind: 'home' }
@@ -159,6 +160,8 @@ function Screens() {
 }
 
 export function App() {
+  // Berlangganan bahasa di akar: saat bahasa berganti, semua teks (`t`) dirender ulang.
+  useLang()
   return (
     // Pemutar musik dipasang di luar layar-layarnya, supaya musik tidak terputus saat berpindah layar.
     <MusicProvider>

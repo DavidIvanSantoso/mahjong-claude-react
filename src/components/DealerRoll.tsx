@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { GameState } from '../game/state'
+import { t } from '../i18n'
 
 /** Lama dadu "berputar" sebelum hasilnya ditampilkan; harus lebih pendek dari ROLL_SECONDS. */
 const SPIN_MS = 1400
@@ -17,7 +18,7 @@ const PIPS: Record<number, number[]> = {
 
 function Die({ value }: { value: number }) {
   return (
-    <span className="die" role="img" aria-label={`Dadu ${value}`}>
+    <span className="die" role="img" aria-label={t(`Dadu ${value}`, `Die showing ${value}`)}>
       {Array.from({ length: 9 }, (_, cell) => (
         <span key={cell} className={PIPS[value].includes(cell) ? 'die__pip' : ''} />
       ))}
@@ -60,7 +61,9 @@ export function DealerRoll({ state, viewer }: DealerRollProps) {
   return (
     <div className="roll-overlay" role="status">
       <div className="card roll-overlay__card">
-        <h2 className="roll-overlay__title">{hk ? 'Menentukan bandar' : 'Menentukan pemain pertama'}</h2>
+        <h2 className="roll-overlay__title">
+          {hk ? t('Menentukan bandar', 'Choosing the dealer') : t('Menentukan pemain pertama', 'Choosing who goes first')}
+        </h2>
         <ul className="roll-overlay__list">
           {state.players.map((player, i) => {
             const [a, b] = rolls[i] ?? [1, 1]
@@ -77,11 +80,17 @@ export function DealerRoll({ state, viewer }: DealerRollProps) {
           })}
         </ul>
         <p className="roll-overlay__result">
-          {spin !== null && 'Melempar dadu…'}
+          {spin !== null && t('Melempar dadu…', 'Rolling the dice…')}
           {spin === null &&
-            `${state.dealer === viewer ? 'Kamu' : winner.name} mendapat angka tertinggi dan ${
-              hk ? 'jadi bandar (Timur).' : 'jalan pertama.'
-            }`}
+            (state.dealer === viewer
+              ? t(
+                  `Kamu mendapat angka tertinggi dan ${hk ? 'jadi bandar (Timur).' : 'jalan pertama.'}`,
+                  `You rolled the highest and ${hk ? 'are the dealer (East).' : 'go first.'}`,
+                )
+              : t(
+                  `${winner.name} mendapat angka tertinggi dan ${hk ? 'jadi bandar (Timur).' : 'jalan pertama.'}`,
+                  `${winner.name} rolled the highest and ${hk ? 'is the dealer (East).' : 'goes first.'}`,
+                ))}
         </p>
       </div>
     </div>

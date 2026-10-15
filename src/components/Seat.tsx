@@ -1,4 +1,5 @@
 import type { Meld, Player } from '../game/state'
+import { t } from '../i18n'
 import { TileBack, TileView } from './TileView'
 
 function MeldView({ meld }: { meld: Meld }) {
@@ -49,7 +50,7 @@ export function Seat({
 
   return (
     <div className="seat" style={{ transform: `rotate(${-position * 90}deg)` }}>
-      <div className={`pond pond--turn-${pondFaceTurn}`} aria-label={`Buangan ${player.name}`}>
+      <div className={`pond pond--turn-${pondFaceTurn}`} aria-label={t(`Buangan ${player.name}`, `${player.name}'s discards`)}>
         {player.discards.map((tile) => (
           <TileView key={tile.id} tile={tile} size="pond" marked={tile.id === lastDiscardId} />
         ))}
@@ -59,7 +60,7 @@ export function Seat({
         {(player.flowers.length > 0 || player.melds.length > 0) && (
           <div className="seat__open">
             {player.flowers.length > 0 && (
-              <span className="meld" title="Bunga">
+              <span className="meld" title={t('Bunga', 'Flowers')}>
                 {player.flowers.map((tile) => (
                   <TileView key={tile.id} tile={tile} size="open" />
                 ))}

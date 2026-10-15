@@ -25,7 +25,15 @@ export interface LobbyInfo {
  */
 export type HostMessage =
   | { type: 'sync'; lobby: LobbyInfo; seat: number; view: GameState | null; timeLeft: number | null; rush: boolean }
-  | { type: 'rejected'; reason: string }
+  | { type: 'rejected'; reason: 'started' | 'full' }
+
+/**
+ * Alasan room tidak bisa dipakai. Dikirim sebagai kode, bukan kalimat, supaya teksnya disusun
+ * di perangkat pembaca dalam bahasanya sendiri (lihat OnlineGame).
+ */
+export type RoomError =
+  | { code: 'id-taken' | 'started' | 'full' | 'host-lost' | 'not-found' }
+  | { code: 'host-failed' | 'connect-failed'; detail: string }
 
 /** Pesan dari tamu ke host. `token` dipakai untuk kembali ke kursi yang sama setelah putus. */
 export type GuestMessage =

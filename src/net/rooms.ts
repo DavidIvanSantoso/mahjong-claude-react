@@ -21,11 +21,13 @@ import {
   type GuestMessage,
   type HostMessage,
   type LobbyInfo,
+  type RoomError,
 } from './online'
+import { t } from '../i18n'
 
 export interface RoomSnapshot {
   status: 'connecting' | 'ready' | 'error'
-  error: string | null
+  error: RoomError | null
   code: string
   lobby: LobbyInfo
   /** Kursi perangkat ini. */
@@ -95,7 +97,7 @@ class HostRoom {
   private rush = false
   private turnTimer: ReturnType<typeof setTimeout> | undefined
   private status: RoomSnapshot['status'] = 'connecting'
-  private error: string | null = null
+  private error: RoomError | null = null
 
   constructor(
     private code: string,
@@ -121,10 +123,7 @@ class HostRoom {
     this.peer.on('error', (err) => {
       if (this.status !== 'connecting') return
       this.status = 'error'
-      this.error =
-        err.type === 'unavailable-id'
-          ? 'Kode room sudah dipakai. Coba buat room lagi.'
-          : `Gagal membuat room (${err.type}). Periksa koneksi internet.`
+      this.error = err.type === 'unavailable-id' ? { code: 'id-taken' } : { code: 'host-failed', detail: err.type }
       this.publish()
     })
     this.publish()
@@ -150,13 +149,13 @@ class HostRoom {
       this.seats[returning].conn = conn
       this.seats[returning].offlineSince = null
     } else if (!token || this.game || this.seats.length >= this.capacity) {
-      const reason = this.game ? 'Permainan di room ini sudah dimulai.' : 'Room sudah penuh.'
+      const reason = this.game ? 'started' : 'full'
       conn.send({ type: 'rejected', reason } satisfies HostMessage)
       return
     } else {
       const name = String(message.name ?? '').trim().slice(0, NAME_MAX)
       this.seats.push({
-        name: name || `Pemain ${this.seats.length + 1}`,
+        name: name || t(`Pemain ${this.seats.length + 1}`, `Player ${this.seats.length + 1}`),
         token,
         conn,
         offlineSince: null,
@@ -342,7 +341,7 @@ class GuestRoom {
       })
       conn.on('data', (raw) => {
         const message = raw as HostMessage
-        if (message.type === 'rejected') this.fail(message.reason)
+        if (message.type === 'rejected') this.fail({ code: message.reason })
         else if (message.type === 'sync') {
           const { lobby, seat, view, timeLeft } = message
           const rush = message.rush === true
@@ -350,14 +349,10 @@ class GuestRoom {
           this.update({ status: 'ready', error: null, lobby, seat, view, deadline, rush })
         }
       })
-      conn.on('close', () => this.fail('Koneksi ke host terputus.'))
+      conn.on('close', () => this.fail({ code: 'host-lost' }))
     })
     this.peer.on('error', (err) => {
-      this.fail(
-        err.type === 'peer-unavailable'
-          ? 'Room tidak ditemukan. Periksa kodenya dan pastikan host masih membuka room.'
-          : `Gagal terhubung (${err.type}). Periksa koneksi internet.`,
-      )
+      this.fail(err.type === 'peer-unavailable' ? { code: 'not-found' } : { code: 'connect-failed', detail: err.type })
     })
     this.update({})
   }
@@ -367,7 +362,7 @@ class GuestRoom {
     this.onChange(this.snapshot)
   }
 
-  private fail(error: string) {
+  private fail(error: RoomError) {
     // Kesalahan pertama yang paling informatif; penutupan koneksi sesudahnya diabaikan.
     if (this.snapshot.status !== 'error') this.update({ status: 'error', error })
   }

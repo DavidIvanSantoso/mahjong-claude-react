@@ -1,6 +1,8 @@
 import gsap from 'gsap'
 import { useLayoutEffect, useRef } from 'react'
 import type { Ruleset } from '../game/state'
+import { t } from '../i18n'
+import { LanguagePicker } from './LanguagePicker'
 import { MusicSlot } from './MusicPlayer'
 import { SOCIAL_ICON_PATHS, type SocialIcon } from './socialIcons'
 import { ThemePicker } from './ThemePicker'
@@ -21,9 +23,10 @@ const RULESET_OPTIONS: { ruleset: Ruleset; label: string }[] = [
   { ruleset: 'hk', label: 'HK Points' },
 ]
 
-const TAGLINES: Record<Ruleset, string> = {
-  classic: 'Kumpulkan 4 set + 1 pair untuk menang.',
-  hk: 'Kumpulkan 4 set + 1 pair, lalu hitung faan-nya.',
+function tagline(ruleset: Ruleset): string {
+  return ruleset === 'hk'
+    ? t('Kumpulkan 4 set + 1 pair, lalu hitung faan-nya.', 'Collect 4 sets + 1 pair, then count your faan.')
+    : t('Kumpulkan 4 set + 1 pair untuk menang.', 'Collect 4 sets + 1 pair to win.')
 }
 
 /**
@@ -73,7 +76,7 @@ export function HomeScreen({ ruleset, onRuleset, onLocal, onOnline, onTutorial }
   return (
     <main className={`home home--${ruleset}`}>
       <div className="home__menu" ref={menuRef}>
-        <div className="ruleset-toggle" role="radiogroup" aria-label="Sistem permainan">
+        <div className="ruleset-toggle" role="radiogroup" aria-label={t('Sistem permainan', 'Game system')}>
           {RULESET_OPTIONS.map((option) => (
             <label
               key={option.ruleset}
@@ -93,7 +96,7 @@ export function HomeScreen({ ruleset, onRuleset, onLocal, onOnline, onTutorial }
           Mahjong
           {ruleset === 'hk' && <span className="home__title-sub">HK Points</span>}
         </h1>
-        <p className="home__tagline">{TAGLINES[ruleset]}</p>
+        <p className="home__tagline">{tagline(ruleset)}</p>
         <button type="button" className="home__btn" onClick={onLocal}>
           Local
         </button>
@@ -126,6 +129,7 @@ export function HomeScreen({ ruleset, onRuleset, onLocal, onOnline, onTutorial }
       <div className="home__tools">
         <MusicSlot />
         <ThemePicker ruleset={ruleset} />
+        <LanguagePicker />
       </div>
 
       <footer className="home__credit">
@@ -141,7 +145,7 @@ export function HomeScreen({ ruleset, onRuleset, onLocal, onOnline, onTutorial }
                 target="_blank"
                 rel="noopener noreferrer"
                 title={social.name}
-                aria-label={`${social.name} ${CREATOR} (tab baru)`}
+                aria-label={`${social.name} ${CREATOR} ${t('(tab baru)', '(new tab)')}`}
               >
                 <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
                   <path d={SOCIAL_ICON_PATHS[social.icon]} />

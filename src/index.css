@@ -440,7 +440,7 @@ p {
   outline-offset: 3px;
 }
 
-/* Tombol musik dan tema di pojok kanan atas */
+/* Tombol musik, tema, dan bahasa di pojok kanan atas; diberi kartu seperti kredit supaya kontras dengan ubin */
 .home__tools {
   position: absolute;
   top: clamp(12px, 3vh, 28px);
@@ -449,6 +449,17 @@ p {
   display: flex;
   align-items: center;
   gap: 8px;
+  padding: 6px;
+  background: rgb(254 250 243 / 92%);
+  backdrop-filter: blur(6px);
+  border-radius: 999px;
+  box-shadow: 0 6px 20px rgb(43 53 42 / 18%);
+}
+
+:root[data-theme='hk'] .home__tools {
+  background: color-mix(in srgb, var(--page) 92%, transparent);
+  border: 1px solid var(--sage);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 40%);
 }
 
 /* Kredit pembuat di pojok kanan bawah: tulisan di atas, tombol sosial di bawahnya */
@@ -1030,6 +1041,33 @@ p {
 
 .icon-btn:hover {
   filter: brightness(0.96);
+}
+
+/* Tombol bahasa: benderanya memenuhi lingkaran, cincin hijaunya tetap terlihat */
+.icon-btn--flag {
+  overflow: hidden;
+}
+
+.icon-btn.icon-btn--flag svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Bendera kecil di daftar bahasa */
+.language-picker__flag {
+  flex: none;
+  display: block;
+  width: 28px;
+  height: 20px;
+  overflow: hidden;
+  border: 1px solid rgb(0 0 0 / 25%);
+  border-radius: 4px;
+}
+
+.language-picker__flag svg {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 .icon-btn:focus-visible {

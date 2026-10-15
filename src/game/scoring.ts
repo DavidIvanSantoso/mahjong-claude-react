@@ -1,5 +1,6 @@
 import { seatWind, type GameState, type Player } from './state'
 import { KIND_COUNT, kindIndex } from './tiles'
+import { t } from '../i18n'
 
 /**
  * Penilaian Hong Kong Points: tiap pola di tangan menang bernilai sekian faan, jumlah faan
@@ -11,25 +12,33 @@ export const LIMIT_FAAN = 10
 /** Poin dasar untuk 0..LIMIT_FAAN faan. */
 export const BASE_POINTS = [1, 2, 4, 8, 16, 24, 32, 48, 64, 96, 128]
 
-/** Semua pola yang dinilai; contoh ubinnya ada di tutorial (FAAN_EXAMPLES). */
+/** Semua pola yang dinilai, dengan nama [Indonesia, Inggris]; contoh ubinnya ada di tutorial (FAAN_EXAMPLES). */
 export const FAAN = {
-  selfDraw: { label: 'Menang dari ambilan sendiri (Zimo)', faan: 1 },
-  concealed: { label: 'Tangan tertutup, tanpa set terbuka (Mun Chin)', faan: 1 },
-  allChi: { label: 'Semua chi (Ping Wu)', faan: 1 },
-  seatWind: { label: 'Pong angin kursi', faan: 1 },
-  roundWind: { label: 'Pong angin ronde', faan: 1 },
-  dragon: { label: 'Pong naga', faan: 1 },
-  noFlower: { label: 'Tanpa bunga', faan: 1 },
-  ownFlower: { label: 'Bunga kursi sendiri', faan: 1 },
-  flowerSet: { label: 'Satu set bunga atau musim lengkap', faan: 2 },
-  allPong: { label: 'Semua pong (Dui Dui Wu)', faan: 3 },
-  halfFlush: { label: 'Satu suit + angin/naga (Wan Yat Sik)', faan: 3 },
-  smallDragons: { label: 'Tiga naga kecil (Siu Sam Yun)', faan: 5 },
-  smallWinds: { label: 'Empat angin kecil (Siu Sei Hei)', faan: 6 },
-  fullFlush: { label: 'Satu suit penuh (Ching Yat Sik)', faan: 7 },
-  bigDragons: { label: 'Tiga naga besar (Dai Sam Yun)', faan: 8 },
-  bigWinds: { label: 'Empat angin besar (Dai Sei Hei)', faan: 10 },
-  allHonors: { label: 'Semua angin dan naga (Tsz Yat Sik)', faan: 10 },
+  selfDraw: { label: ['Menang dari ambilan sendiri (Zimo)', 'Self-drawn win (Zimo)'], faan: 1 },
+  concealed: { label: ['Tangan tertutup, tanpa set terbuka (Mun Chin)', 'Concealed hand, no exposed sets (Mun Chin)'], faan: 1 },
+  allChi: { label: ['Semua chi (Ping Wu)', 'All chi (Ping Wu)'], faan: 1 },
+  seatWind: { label: ['Pong angin kursi', 'Pong of your seat wind'], faan: 1 },
+  roundWind: { label: ['Pong angin ronde', 'Pong of the round wind'], faan: 1 },
+  dragon: { label: ['Pong naga', 'Dragon pong'], faan: 1 },
+  noFlower: { label: ['Tanpa bunga', 'No flowers'], faan: 1 },
+  ownFlower: { label: ['Bunga kursi sendiri', 'Own seat flower'], faan: 1 },
+  flowerSet: { label: ['Satu set bunga atau musim lengkap', 'Complete set of flowers or seasons'], faan: 2 },
+  allPong: { label: ['Semua pong (Dui Dui Wu)', 'All pongs (Dui Dui Wu)'], faan: 3 },
+  halfFlush: { label: ['Satu suit + angin/naga (Wan Yat Sik)', 'One suit + winds/dragons (Wan Yat Sik)'], faan: 3 },
+  smallDragons: { label: ['Tiga naga kecil (Siu Sam Yun)', 'Small three dragons (Siu Sam Yun)'], faan: 5 },
+  smallWinds: { label: ['Empat angin kecil (Siu Sei Hei)', 'Small four winds (Siu Sei Hei)'], faan: 6 },
+  fullFlush: { label: ['Satu suit penuh (Ching Yat Sik)', 'Full flush, one suit (Ching Yat Sik)'], faan: 7 },
+  bigDragons: { label: ['Tiga naga besar (Dai Sam Yun)', 'Big three dragons (Dai Sam Yun)'], faan: 8 },
+  bigWinds: { label: ['Empat angin besar (Dai Sei Hei)', 'Big four winds (Dai Sei Hei)'], faan: 10 },
+  allHonors: { label: ['Semua angin dan naga (Tsz Yat Sik)', 'All winds and dragons (Tsz Yat Sik)'], faan: 10 },
+}
+
+export type FaanKey = keyof typeof FAAN
+
+/** Pola `key` dengan namanya dalam bahasa aktif. */
+export function faanItem(key: FaanKey): FaanItem {
+  const [id, en] = FAAN[key].label
+  return { label: t(id, en), faan: FAAN[key].faan }
 }
 
 export interface FaanItem {
@@ -112,36 +121,36 @@ function patternItems(pair: number, sets: Shape[], seat: number, round: number):
   const dragonPongs = pongs.filter(isDragon).length
 
   const items: FaanItem[] = []
-  if (suits.size === 0) items.push(FAAN.allHonors)
-  else if (suits.size === 1) items.push(hasHonor ? FAAN.halfFlush : FAAN.fullFlush)
+  if (suits.size === 0) items.push(faanItem('allHonors'))
+  else if (suits.size === 1) items.push(hasHonor ? faanItem('halfFlush') : faanItem('fullFlush'))
 
   // Pola angin/naga besar-kecil sudah mencakup nilai pong-pongnya.
-  if (windPongs === 4) items.push(FAAN.bigWinds)
-  else if (windPongs === 3 && isWind(pair)) items.push(FAAN.smallWinds)
+  if (windPongs === 4) items.push(faanItem('bigWinds'))
+  else if (windPongs === 3 && isWind(pair)) items.push(faanItem('smallWinds'))
   else {
-    if (pongs.includes(WIND_START + seat)) items.push(FAAN.seatWind)
-    if (pongs.includes(WIND_START + round)) items.push(FAAN.roundWind)
+    if (pongs.includes(WIND_START + seat)) items.push(faanItem('seatWind'))
+    if (pongs.includes(WIND_START + round)) items.push(faanItem('roundWind'))
   }
 
-  if (dragonPongs === 3) items.push(FAAN.bigDragons)
-  else if (dragonPongs === 2 && isDragon(pair)) items.push(FAAN.smallDragons)
-  else if (dragonPongs > 0) items.push(times(FAAN.dragon, dragonPongs))
+  if (dragonPongs === 3) items.push(faanItem('bigDragons'))
+  else if (dragonPongs === 2 && isDragon(pair)) items.push(faanItem('smallDragons'))
+  else if (dragonPongs > 0) items.push(times(faanItem('dragon'), dragonPongs))
 
-  if (pongs.length === sets.length && suits.size > 0) items.push(FAAN.allPong)
-  if (pongs.length === 0) items.push(FAAN.allChi)
+  if (pongs.length === sets.length && suits.size > 0) items.push(faanItem('allPong'))
+  if (pongs.length === 0) items.push(faanItem('allChi'))
   return items
 }
 
 function flowerItems(player: Player, seat: number): FaanItem[] {
   const ranks = player.flowers.map((tile) => tile.rank)
-  if (ranks.length === 0) return [FAAN.noFlower]
+  if (ranks.length === 0) return [faanItem('noFlower')]
 
   const items: FaanItem[] = []
   // Bunga dan musim sama-sama bernomor 1-4; nomor itu berpasangan dengan angin kursi.
   const own = ranks.filter((rank) => (rank - 1) % 4 === seat).length
-  if (own > 0) items.push(times(FAAN.ownFlower, own))
+  if (own > 0) items.push(times(faanItem('ownFlower'), own))
   const fullSets = [0, 4].filter((start) => [1, 2, 3, 4].every((n) => ranks.includes(start + n))).length
-  if (fullSets > 0) items.push(times(FAAN.flowerSet, fullSets))
+  if (fullSets > 0) items.push(times(faanItem('flowerSet'), fullSets))
   return items
 }
 
@@ -167,8 +176,8 @@ export function scoreWin(state: GameState): HandScore | null {
   }
 
   const items = [...pattern]
-  if (player.melds.every((meld) => meld.concealed)) items.push(FAAN.concealed)
-  if (state.winType === 'self') items.push(FAAN.selfDraw)
+  if (player.melds.every((meld) => meld.concealed)) items.push(faanItem('concealed'))
+  if (state.winType === 'self') items.push(faanItem('selfDraw'))
   items.push(...flowerItems(player, seat))
 
   const sum = total(items)

@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { formatPoints, roundDeltas, scoreWin } from '../game/scoring'
 import type { GameState } from '../game/state'
+import { t } from '../i18n'
 import { Confetti } from './Confetti'
 import { TileView } from './TileView'
 
@@ -59,21 +60,25 @@ export function ResultDialog({ state, open, onClose, onExit, onRestart, viewer }
       <div className="tutorial-dialog__scroll">
         <div className="result-dialog__card">
           <h2 id="result-dialog-title" className="result-dialog__title">
-            {!winner ? 'Seri' : state.winner === viewer ? 'Kamu menang!' : `${winner.name} menang!`}
+            {!winner
+              ? t('Seri', 'Draw')
+              : state.winner === viewer
+                ? t('Kamu menang!', 'You win!')
+                : t(`${winner.name} menang!`, `${winner.name} wins!`)}
           </h2>
           <p className="result-dialog__how">
-            {!winner && 'Dinding habis tanpa pemenang.'}
-            {winner && state.winType === 'self' && 'Menang dari ubin yang diambil sendiri.'}
+            {!winner && t('Dinding habis tanpa pemenang.', 'The wall ran out with no winner.')}
+            {winner && state.winType === 'self' && t('Menang dari ubin yang diambil sendiri.', 'Won on a self-drawn tile.')}
             {winner &&
               state.winType === 'discard' &&
               lastDiscard &&
-              `Menang dari buangan ${players[lastDiscard.from].name}.`}
+              t(`Menang dari buangan ${players[lastDiscard.from].name}.`, `Won on ${players[lastDiscard.from].name}'s discard.`)}
           </p>
 
           {winner && (
             <div className="result-dialog__hand">
               <figure className="result-dialog__group">
-                <figcaption>Tangan</figcaption>
+                <figcaption>{t('Tangan', 'Hand')}</figcaption>
                 <div className="result-dialog__tiles">
                   {winner.hand.map((tile) => (
                     // Ubin penentu kemenangan diberi tanda.
@@ -84,7 +89,7 @@ export function ResultDialog({ state, open, onClose, onExit, onRestart, viewer }
 
               {winner.melds.length > 0 && (
                 <figure className="result-dialog__group">
-                  <figcaption>Set terbuka</figcaption>
+                  <figcaption>{t('Set terbuka', 'Exposed sets')}</figcaption>
                   <div className="result-dialog__melds">
                     {winner.melds.map((meld, i) => (
                       <div key={i} className="result-dialog__meld">
@@ -95,7 +100,7 @@ export function ResultDialog({ state, open, onClose, onExit, onRestart, viewer }
                         </div>
                         <span>
                           {MELD_LABELS[meld.type]}
-                          {meld.concealed && ' tertutup'}
+                          {meld.concealed && t(' tertutup', ' concealed')}
                         </span>
                       </div>
                     ))}
@@ -105,7 +110,7 @@ export function ResultDialog({ state, open, onClose, onExit, onRestart, viewer }
 
               {winner.flowers.length > 0 && (
                 <figure className="result-dialog__group">
-                  <figcaption>Bunga</figcaption>
+                  <figcaption>{t('Bunga', 'Flowers')}</figcaption>
                   <div className="result-dialog__tiles">
                     {winner.flowers.map((tile) => (
                       <TileView key={tile.id} tile={tile} />
@@ -127,14 +132,17 @@ export function ResultDialog({ state, open, onClose, onExit, onRestart, viewer }
                 ))}
                 {score.items.length === 0 && (
                   <li>
-                    <span>Tangan tanpa pola bernilai</span>
+                    <span>{t('Tangan tanpa pola bernilai', 'No scoring pattern')}</span>
                     <strong>0 faan</strong>
                   </li>
                 )}
               </ul>
               <p className="result-dialog__total">
                 <strong>{score.faan} faan</strong>
-                {score.limit && ' (batas)'} = <strong>{score.base} poin dasar</strong>
+                {score.limit && t(' (batas)', ' (limit)')} ={' '}
+                <strong>
+                  {score.base} {t('poin dasar', 'base points')}
+                </strong>
               </p>
               <ul className="result-dialog__rows">
                 {players.map((player, i) => (
@@ -150,20 +158,22 @@ export function ResultDialog({ state, open, onClose, onExit, onRestart, viewer }
           )}
 
           {!onRestart && online && (
-            <p className="result-dialog__how">Menunggu host memulai ronde baru…</p>
+            <p className="result-dialog__how">
+              {t('Menunggu host memulai ronde baru…', 'Waiting for the host to start a new round…')}
+            </p>
           )}
 
           <div className="result-dialog__actions">
             {onRestart && (
               <button ref={primaryRef} type="button" className="btn btn--primary" onClick={onRestart}>
-                Main lagi
+                {t('Main lagi', 'Play again')}
               </button>
             )}
             <button ref={onRestart ? undefined : primaryRef} type="button" className="btn" onClick={onClose}>
-              Lihat meja
+              {t('Lihat meja', 'View table')}
             </button>
             <button type="button" className="btn" onClick={onExit}>
-              {online ? 'Keluar dari room' : 'Ganti pemain'}
+              {online ? t('Keluar dari room', 'Leave room') : t('Ganti pemain', 'Change players')}
             </button>
           </div>
         </div>

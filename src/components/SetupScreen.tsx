@@ -8,6 +8,7 @@ import {
   parseTurnSeconds,
   rushSeconds,
 } from '../game/timer'
+import { t } from '../i18n'
 import { CODE_LENGTH, normalizeCode } from '../net/online'
 import { TileField } from './TileField'
 
@@ -42,7 +43,7 @@ function CountPicker({
 function TurnTimeField({ value, onChange }: { value: string; onChange: (value: string) => void }) {
   return (
     <label className="setup__field setup__time">
-      <span className="setup__label">Waktu per giliran (detik)</span>
+      <span className="setup__label">{t('Waktu per giliran (detik)', 'Time per turn (seconds)')}</span>
       <input
         type="text"
         inputMode="numeric"
@@ -54,8 +55,11 @@ function TurnTimeField({ value, onChange }: { value: string; onChange: (value: s
         onBlur={() => value && onChange(String(parseTurnSeconds(value)))}
       />
       <span className="setup__note">
-        {MIN_TURN_SECONDS}–{MAX_TURN_SECONDS}, kosong = {DEFAULT_TURN_SECONDS}. Waktu habis: ubin terakhir
-        otomatis dibuang.
+        {MIN_TURN_SECONDS}–{MAX_TURN_SECONDS},{' '}
+        {t(
+          `kosong = ${DEFAULT_TURN_SECONDS}. Waktu habis: ubin terakhir otomatis dibuang.`,
+          `empty = ${DEFAULT_TURN_SECONDS}. When time runs out, the last tile is discarded automatically.`,
+        )}
       </span>
     </label>
   )
@@ -96,7 +100,7 @@ function ModeField({ name, timeAttack, onChange, turnSeconds }: ModeFieldProps) 
 
   return (
     <fieldset className="setup__field setup__mode">
-      <legend>Mode permainan</legend>
+      <legend>{t('Mode permainan', 'Game mode')}</legend>
       <div className="setup__mode-row">
         <div className="setup__mode-options">
           {MODES.map((mode) => (
@@ -118,7 +122,7 @@ function ModeField({ name, timeAttack, onChange, turnSeconds }: ModeFieldProps) 
           <button
             type="button"
             className="mode-help__button"
-            aria-label="Apa bedanya Normal dan Time attack?"
+            aria-label={t('Apa bedanya Normal dan Time attack?', 'What is the difference between Normal and Time attack?')}
             aria-expanded={helpOpen}
             onClick={() => setHelpOpen(!helpOpen)}
           >
@@ -126,16 +130,31 @@ function ModeField({ name, timeAttack, onChange, turnSeconds }: ModeFieldProps) 
           </button>
           {helpOpen && (
             <div className="card mode-help__panel" role="note">
-              <p>
-                <strong>Normal</strong> — batas waktu tiap aksi tetap {turnSeconds} detik sepanjang
-                permainan.
-              </p>
-              <p>
-                <strong>Time attack</strong> — begitu ada pemain yang tinggal butuh 1 ubin untuk menang,
-                batas waktu <em>semua</em> pemain dipercepat jadi {rushSeconds(turnSeconds)} detik
-                (setengahnya, paling cepat {MIN_TURN_SECONDS} detik). Waktunya kembali normal kalau tidak
-                ada lagi yang hampir menang.
-              </p>
+              {t(
+                <>
+                  <p>
+                    <strong>Normal</strong> — batas waktu tiap aksi tetap {turnSeconds} detik sepanjang
+                    permainan.
+                  </p>
+                  <p>
+                    <strong>Time attack</strong> — begitu ada pemain yang tinggal butuh 1 ubin untuk menang,
+                    batas waktu <em>semua</em> pemain dipercepat jadi {rushSeconds(turnSeconds)} detik
+                    (setengahnya, paling cepat {MIN_TURN_SECONDS} detik). Waktunya kembali normal kalau tidak
+                    ada lagi yang hampir menang.
+                  </p>
+                </>,
+                <>
+                  <p>
+                    <strong>Normal</strong> — every action has a fixed {turnSeconds}-second limit for the
+                    whole game.
+                  </p>
+                  <p>
+                    <strong>Time attack</strong> — as soon as any player needs only 1 more tile to win, the
+                    time limit for <em>everyone</em> drops to {rushSeconds(turnSeconds)} seconds (half, but at
+                    least {MIN_TURN_SECONDS} seconds). It returns to normal once nobody is about to win.
+                  </p>
+                </>,
+              )}
             </div>
           )}
         </div>
@@ -152,7 +171,7 @@ export function invitedRoom(): string {
 function BackButton({ onBack }: { onBack: () => void }) {
   return (
     <button type="button" className="btn btn--small setup__back" onClick={onBack}>
-      ← Kembali
+      ← {t('Kembali', 'Back')}
     </button>
   )
 }
@@ -221,7 +240,7 @@ export function LocalSetup({ ruleset, onStart, onBack }: LocalSetupProps) {
     event.preventDefault()
     if (count === null) return
     onStart(
-      names.slice(0, count).map((name, i) => name.trim() || `Pemain ${i + 1}`),
+      names.slice(0, count).map((name, i) => name.trim() || t(`Pemain ${i + 1}`, `Player ${i + 1}`)),
       parseTurnSeconds(turnTime),
       timeAttack,
     )
@@ -230,26 +249,29 @@ export function LocalSetup({ ruleset, onStart, onBack }: LocalSetupProps) {
   return (
     <SplitScreen
       title="Local"
-      tagline={`Bergantian di satu perangkat. Sistem skor: ${RULESET_NAMES[ruleset]}.`}
+      tagline={t(
+        `Bergantian di satu perangkat. Sistem skor: ${RULESET_NAMES[ruleset]}.`,
+        `Take turns on one device. Scoring: ${RULESET_NAMES[ruleset]}.`,
+      )}
       onBack={onBack}
     >
       <form className="setup__form" onSubmit={handleSubmit}>
         <fieldset className="setup__field">
-          <legend>Main berapa orang?</legend>
+          <legend>{t('Main berapa orang?', 'How many players?')}</legend>
           <CountPicker name="local-count" value={count} onChange={setCount} />
         </fieldset>
 
         {count !== null && (
           <fieldset className="setup__field">
-            <legend>Nama pemain (opsional)</legend>
+            <legend>{t('Nama pemain (opsional)', 'Player names (optional)')}</legend>
             <div className="setup__names setup__names--grid">
               {Array.from({ length: count }, (_, i) => (
                 <input
                   key={i}
                   type="text"
                   maxLength={16}
-                  placeholder={`Pemain ${i + 1}`}
-                  aria-label={`Nama pemain ${i + 1}`}
+                  placeholder={t(`Pemain ${i + 1}`, `Player ${i + 1}`)}
+                  aria-label={t(`Nama pemain ${i + 1}`, `Player ${i + 1} name`)}
                   value={names[i]}
                   onChange={(event) =>
                     setNames(names.map((name, j) => (j === i ? event.target.value : name)))
@@ -269,7 +291,9 @@ export function LocalSetup({ ruleset, onStart, onBack }: LocalSetupProps) {
         />
 
         <button type="submit" className="home__btn" disabled={count === null}>
-          {count === null ? 'Pilih jumlah pemain dulu' : 'Mulai permainan'}
+          {count === null
+            ? t('Pilih jumlah pemain dulu', 'Choose the number of players first')
+            : t('Mulai permainan', 'Start game')}
         </button>
       </form>
     </SplitScreen>
@@ -302,13 +326,17 @@ export function OnlineSetup({ ruleset, onHost, onJoin, onBack }: OnlineSetupProp
   }
 
   return (
-    <SplitScreen title="Online" tagline="Tiap pemain bermain dari perangkatnya sendiri." onBack={onBack}>
+    <SplitScreen
+      title="Online"
+      tagline={t('Tiap pemain bermain dari perangkatnya sendiri.', 'Every player plays on their own device.')}
+      onBack={onBack}
+    >
       <label className="setup__field setup__names">
-        <span className="setup__label">Nama kamu</span>
+        <span className="setup__label">{t('Nama kamu', 'Your name')}</span>
         <input
           type="text"
           maxLength={16}
-          placeholder="Nama"
+          placeholder={t('Nama', 'Name')}
           value={myName}
           onChange={(event) => setMyName(event.target.value)}
         />
@@ -316,32 +344,37 @@ export function OnlineSetup({ ruleset, onHost, onJoin, onBack }: OnlineSetupProp
 
       <form className="setup__form" onSubmit={join}>
         <fieldset className="setup__field">
-          <legend>Gabung ke room</legend>
+          <legend>{t('Gabung ke room', 'Join a room')}</legend>
           <div className="setup__row">
             <input
               type="text"
               className="code-input"
-              placeholder="KODE"
-              aria-label="Kode room"
+              placeholder={t('KODE', 'CODE')}
+              aria-label={t('Kode room', 'Room code')}
               autoCapitalize="characters"
               autoComplete="off"
               value={code}
               onChange={(event) => setCode(normalizeCode(event.target.value))}
             />
             <button type="submit" className="home__btn" disabled={code.length !== CODE_LENGTH}>
-              Gabung
+              {t('Gabung', 'Join')}
             </button>
           </div>
         </fieldset>
       </form>
 
       <div className="split__divider" role="separator">
-        <span>atau</span>
+        <span>{t('atau', 'or')}</span>
       </div>
 
       <form className="setup__form" onSubmit={host}>
         <fieldset className="setup__field">
-          <legend>Buat room baru ({RULESET_NAMES[ruleset]}) — main berapa orang?</legend>
+          <legend>
+            {t(
+              `Buat room baru (${RULESET_NAMES[ruleset]}) — main berapa orang?`,
+              `Create a new room (${RULESET_NAMES[ruleset]}) — how many players?`,
+            )}
+          </legend>
           <CountPicker name="room-capacity" value={capacity} onChange={setCapacity} />
         </fieldset>
         <TurnTimeField value={turnTime} onChange={setTurnTime} />
@@ -352,7 +385,9 @@ export function OnlineSetup({ ruleset, onHost, onJoin, onBack }: OnlineSetupProp
           turnSeconds={parseTurnSeconds(turnTime)}
         />
         <button type="submit" className="home__btn" disabled={capacity === null}>
-          {capacity === null ? 'Pilih jumlah pemain dulu' : 'Buat room'}
+          {capacity === null
+            ? t('Pilih jumlah pemain dulu', 'Choose the number of players first')
+            : t('Buat room', 'Create room')}
         </button>
       </form>
     </SplitScreen>
