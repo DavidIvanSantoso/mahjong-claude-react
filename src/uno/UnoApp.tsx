@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
+import unoFavicon from '../assets/uno-favicon.svg'
 import type { RoomError } from '../net/online'
 import { MAX_PLAYERS, MIN_PLAYERS, TARGET_SCORE, useUnoGuestRoom, useUnoHostRoom, type UnoRoom } from './net'
 import { MODE_NAMES, type UnoMode } from './state'
@@ -157,18 +158,23 @@ function GuestGame({ name, code, onExit }: { name: string; code: string; onExit:
 }
 
 /**
- * Memasang palet UNO (lihat uno.css, `:root[data-game='uno']`) selama layar UNO terbuka.
+ * Memasang palet UNO (lihat uno.css, `:root[data-game='uno']`), judul tab, dan ikon tab kartu UNO
+ * selama layar UNO terbuka; semuanya dikembalikan saat pindah ke mahjong.
  * Palet ini menimpa tema mahjong dan pilihan palet pemain, jadi UNO tidak memakai tombol tema.
  */
 function useUnoTheme() {
   useEffect(() => {
     const root = document.documentElement
     const title = document.title
+    const icon = document.querySelector<HTMLLinkElement>('link[rel="icon"]')
+    const previousIcon = icon?.getAttribute('href') ?? null
     root.dataset.game = 'uno'
     document.title = 'UNO - By David Ivan'
+    icon?.setAttribute('href', unoFavicon)
     return () => {
       delete root.dataset.game
       document.title = title
+      if (icon && previousIcon !== null) icon.setAttribute('href', previousIcon)
     }
   }, [])
 }
