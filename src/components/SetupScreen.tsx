@@ -163,9 +163,11 @@ function ModeField({ name, timeAttack, onChange, turnSeconds }: ModeFieldProps) 
   )
 }
 
-/** Kode room dari link undangan (?room=KODE). */
+/** Kode room dari link undangan (?room=KODE). Link undangan UNO (?game=uno) dibuka oleh layar UNO. */
 export function invitedRoom(): string {
-  return normalizeCode(new URLSearchParams(window.location.search).get('room') ?? '')
+  const params = new URLSearchParams(window.location.search)
+  if (params.get('game') === 'uno') return ''
+  return normalizeCode(params.get('room') ?? '')
 }
 
 function BackButton({ onBack }: { onBack: () => void }) {

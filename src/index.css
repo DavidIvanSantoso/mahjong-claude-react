@@ -462,6 +462,97 @@ p {
   box-shadow: 0 8px 24px rgb(0 0 0 / 40%);
 }
 
+/* Navbar pemilih game di pojok kiri atas homescreen, berbentuk sama dengan kotak tombol di kanan */
+.game-nav {
+  position: absolute;
+  top: clamp(12px, 3vh, 28px);
+  left: clamp(16px, 3vw, 40px);
+  z-index: 3;
+  display: flex;
+  gap: 4px;
+  padding: 5px;
+  background: rgb(254 250 243 / 92%);
+  backdrop-filter: blur(6px);
+  border-radius: 999px;
+  box-shadow: 0 6px 20px rgb(43 53 42 / 18%);
+}
+
+.game-nav__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.game-nav__item svg {
+  width: 16px;
+  height: 16px;
+}
+
+.game-nav__item:hover:not(.game-nav__item--active) {
+  background: var(--line);
+}
+
+.game-nav__item--active {
+  color: var(--on-green);
+  background: var(--btn-bg);
+  cursor: default;
+}
+
+.game-nav__item:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+}
+
+:root[data-theme='hk'] .game-nav {
+  background: color-mix(in srgb, var(--page) 92%, transparent);
+  border: 1px solid var(--sage);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 40%);
+}
+
+:root[data-theme='hk'] .game-nav__item:not(.game-nav__item--active) {
+  color: var(--on-page);
+}
+
+:root[data-theme='hk'] .game-nav__item:hover:not(.game-nav__item--active) {
+  background: rgb(255 255 255 / 10%);
+}
+
+/* Ponsel sempit: ikon disembunyikan supaya navbar dan tombol di kanan tidak bertabrakan */
+@media (max-width: 420px) {
+  .game-nav__item {
+    padding: 7px 11px;
+  }
+
+  .game-nav__item svg {
+    display: none;
+  }
+}
+
+@media (max-width: 360px) {
+  .game-nav {
+    left: 12px;
+    gap: 2px;
+    padding: 4px;
+  }
+
+  .game-nav__item {
+    padding: 6px 9px;
+    font-size: 0.75rem;
+    letter-spacing: 0.02em;
+  }
+}
+
 /* Kredit pembuat di pojok kanan bawah: tulisan di atas, tombol sosial di bawahnya */
 .home__credit {
   position: absolute;

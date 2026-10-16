@@ -2,6 +2,8 @@
 
 Game mahjong 2D untuk 2–4 pemain, dibuat dengan React dan TypeScript. Bisa dimainkan bergantian di satu perangkat, atau online lewat room (PeerJS) dengan tiap pemain di perangkatnya sendiri.
 
+Situs yang sama juga memuat game kartu **UNO** (online, 2–6 pemain). Navbar di pojok kiri atas homescreen dipakai untuk berpindah game; lihat [bagian 11](#11-game-uno).
+
 - Situs: https://davidivansantoso.github.io/mahjong-claude-react/
 - Repo: https://github.com/DavidIvanSantoso/mahjong-claude-react
 
@@ -17,6 +19,7 @@ Game mahjong 2D untuk 2–4 pemain, dibuat dengan React dan TypeScript. Bisa dim
 8. [Deploy ke GitHub Pages](#8-deploy-ke-github-pages)
 9. [Batasan yang diketahui](#9-batasan-yang-diketahui)
 10. [Lisensi dan aset](#10-lisensi-dan-aset)
+11. [Game UNO](#11-game-uno)
 
 ---
 
@@ -57,8 +60,8 @@ Palet warna: `#F6E2E9` (merah muda), `#FEFAF3` (krem), `#B8CFB3` (hijau muda), `
 ```
 src/
   main.tsx                 Titik masuk React
-  App.tsx                  Memilih layar: menu, game lokal, host, atau tamu
-  index.css                Semua gaya
+  App.tsx                  Memilih game (navbar) lalu layar: menu, game lokal, host, atau tamu
+  index.css                Semua gaya mahjong dan navbar game
   game/                    Logika permainan, tanpa React dan tanpa jaringan
     tiles.ts               Jenis ubin, membuat dan mengocok dinding, nama ubin
     rules.ts               Cek menang, pong/kong, pilihan chi
@@ -74,9 +77,11 @@ src/
     Seat.tsx               Satu kursi: tangan, set terbuka, bunga, buangan
     TileView.tsx           Gambar satu ubin (muka atau telungkup)
     OnlineGame.tsx         Lobi room dan pembungkus meja untuk mode online
+    GameNav.tsx            Navbar pemilih game (Mahjong / UNO) di homescreen
   net/                     Mode online
     online.ts              Bentuk pesan, kode room, penyaringan state per pemain
     rooms.ts               Kelas HostRoom dan GuestRoom, plus hook React-nya
+  uno/                     Game UNO (lihat bagian 11)
 .github/workflows/deploy.yml   Build dan deploy otomatis ke GitHub Pages
 vite.config.ts             Konfigurasi Vite (base path relatif)
 ```
@@ -409,3 +414,61 @@ GitHub Pages hanya menyajikan file statis, dan itu cukup: aplikasi ini tidak pun
 - GSAP memakai lisensi "Standard No Charge" dari GreenSock (https://gsap.com/standard-license): gratis, termasuk untuk dipublikasikan, tetapi bukan lisensi open-source. Larangan utamanya adalah memakai GSAP di produk yang bersaing dengan Webflow, yang tidak berlaku untuk game ini.
 - Alat build: Vite (MIT), TypeScript (Apache-2.0).
 - Mahjong adalah permainan tradisional; aturan dan namanya tidak dimiliki pihak mana pun.
+- UNO adalah merek dagang Mattel. Game UNO di sini adalah projek penggemar non-komersial; kartunya digambar dengan CSS, tanpa aset gambar resmi.
+
+## 11. Game UNO
+
+### Ringkasan
+
+- Online saja, 2–6 pemain, tiap pemain di perangkatnya sendiri. Host membuat room (kapasitas tetap 6) dan bisa memulai begitu ada minimal 2 pemain.
+- Aturan dasar UNO internasional: dek 108 kartu, 7 kartu per pemain, Skip / Reverse / Draw Two / Wild / Wild Draw Four, tantangan Wild Draw Four, hukuman lupa bilang UNO, dan skor sampai 500 poin.
+- Tampilan hanya Bahasa Indonesia (tidak ada pilihan bahasa) dan tidak memakai tombol tema. Musik latar dan efek suara sama dengan mahjong.
+
+### Struktur folder
+
+```
+src/uno/
+  cards.ts         Warna, dek 108 kartu, aturan kartu yang boleh dikeluarkan, poin, nama kartu
+  state.ts         State ronde dan reducer: giliran, efek kartu aksi, tantangan, UNO/tangkap, waktu habis
+  net.ts           HostRoom/GuestRoom UNO (PeerJS), penyaringan state per kursi (`viewFor`), hook React
+  UnoApp.tsx       Layar-layar UNO, lobi room, dan pemasangan palet
+  UnoHome.tsx      Homescreen UNO dengan kipas kartu animasi (GSAP)
+  UnoSetup.tsx     Menu online: gabung dengan kode atau buat room
+  UnoTable.tsx     Meja: lawan, tumpukan ambil/buangan, panel aksi, tangan, riwayat, skor
+  UnoCard.tsx      Gambar kartu (muka dan punggung) dengan CSS
+  UnoDialogs.tsx   Pemilih warna, hasil ronde, dan cara main
+  sfx.ts           Efek suara kartu keluar/diambil
+  uno.css          Semua gaya UNO, termasuk palet
+```
+
+UNO dimuat terpisah (`React.lazy` di `App.tsx`), jadi pemain mahjong tidak ikut mengunduh kodenya.
+
+### Aturan yang dipakai
+
+| Kartu | Efek | Poin |
+|---|---|---|
+| Angka 0–9 | — | sesuai angka |
+| Skip | Pemain berikutnya dilewati | 20 |
+| Reverse | Arah berbalik; berdua sama dengan Skip | 20 |
+| Draw Two | Pemain berikutnya mengambil 2 dan dilewati | 20 |
+| Wild | Pilih warna | 50 |
+| Wild Draw Four | Pilih warna; pemain berikutnya mengambil 4 dan dilewati, kecuali menantang | 50 |
+
+- **Giliran:** keluarkan kartu dengan warna yang berlaku atau angka/simbol yang sama dengan kartu teratas, atau kartu Wild. Boleh juga mengambil 1 kartu; kalau kartu itu cocok, boleh langsung dikeluarkan (fase `drawn`), kalau tidak giliran pindah.
+- **Kartu pembuka:** Wild Draw Four dikembalikan ke tumpukan lalu dikocok ulang. Skip melewati pemain pertama, Reverse membuat pembagi jalan duluan, Draw Two membuat pemain pertama mengambil 2, Wild membuat pemain pertama memilih warna (fase `color`).
+- **Tantangan Wild Draw Four (fase `challenge`):** host mencatat apakah pengeluar kartu masih punya kartu dengan warna yang berlaku sebelumnya. Tantangan benar: pengeluar mengambil 4 dan penantang tetap mendapat gilirannya. Tantangan salah: penantang mengambil 6 dan dilewati.
+- **UNO:** tekan UNO! saat tinggal 2 kartu, sebelum mengeluarkan kartu kedua terakhir. Yang lupa (`vulnerable`) masih bisa menyusulkan UNO sampai pemain berikutnya beraksi; lawan yang lebih dulu menekan Tangkap membuatnya mengambil 2 kartu.
+- **Akhir ronde:** pemain yang menghabiskan kartunya mendapat jumlah poin kartu sisa semua lawan. Kalau kartu terakhirnya Draw Two/Wild Draw Four, pemain berikutnya tetap mengambil kartunya dulu. Skor 500 menjadi juara; permainan berikutnya dimulai dari nol. Pembagi pertama diacak, lalu bergeser ke kiri tiap ronde.
+- **Tumpukan ambil habis:** buangan (kecuali kartu teratas) dikocok jadi tumpukan baru. Stacking Draw Two/Draw Four tidak dipakai.
+
+### Perbedaan mode online dengan mahjong
+
+- ID PeerJS memakai awalan `uno-claude-room-`, jadi kode room UNO tidak bertabrakan dengan room mahjong. Link undangan berbentuk `?game=uno&room=KODE`; App langsung membuka menu online UNO.
+- Batas waktu per aksi diatur host (bawaan 20 detik). Saat habis, aksi `timeout` dijalankan: ambil 1 kartu (tanpa mengeluarkannya), menerima Wild Draw Four, atau memilih warna terbanyak di tangan. Batas waktu dihitung ulang hanya saat giliran berganti (`UnoState.step`), tidak saat ada yang bilang UNO.
+- Pemain yang terputus lebih dari 15 detik dijalankan otomatis dengan aksi `timeout`, seperti di mahjong.
+- `viewFor` hanya mengirim jumlah kartu lawan; isi tangan semua pemain baru dibuka setelah ronde selesai. Status curang tidaknya Wild Draw Four tidak pernah dikirim ke tamu.
+- Kursi pelaku aksi UNO dan Tangkap diambil host dari koneksi pengirim, bukan dari isi pesan.
+
+### Palet
+
+Dipasang lewat `data-game='uno'` di `<html>` selama layar UNO terbuka, dan menimpa tema serta palet pilihan mahjong (`uno.css` diimpor setelah `index.css`). Warna website: Charcoal `#343434`, Deep Teal `#055E68`, Sage `#62A388`, Mist `#B9D2D2`. Warna kartu mengikuti warna asli UNO: merah `#D72600`, kuning `#ECD407`, hijau `#379711`, biru `#0956BF`.

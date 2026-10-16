@@ -1,4 +1,5 @@
-import { useEffect, useReducer, useState } from 'react'
+import { lazy, Suspense, useEffect, useReducer, useState, type ReactNode } from 'react'
+import { GameNav, type GameId } from './components/GameNav'
 import { GameTable } from './components/GameTable'
 import { GuestGame, HostGame } from './components/OnlineGame'
 import { HomeScreen } from './components/HomeScreen'
@@ -20,7 +21,22 @@ type Screen =
   | { kind: 'host'; name: string; capacity: number; turnSeconds: number; timeAttack: boolean }
   | { kind: 'guest'; name: string; code: string }
 
+/** UNO dimuat terpisah, supaya pemain mahjong tidak ikut mengunduh kodenya. */
+const UnoApp = lazy(() => import('./uno/UnoApp').then((module) => ({ default: module.UnoApp })))
+
 const RULESET_KEY = 'mahjong-ruleset'
+const GAME_KEY = 'claude-games-game'
+
+/** Game yang dibuka: dari link undangan kalau ada, kalau tidak game yang terakhir dipilih di perangkat ini. */
+function initialGame(): GameId {
+  if (new URLSearchParams(window.location.search).get('game') === 'uno') return 'uno'
+  if (invitedRoom()) return 'mahjong'
+  try {
+    return localStorage.getItem(GAME_KEY) === 'uno' ? 'uno' : 'mahjong'
+  } catch {
+    return 'mahjong'
+  }
+}
 
 /** Sistem permainan yang terakhir dipilih di perangkat ini. */
 function savedRuleset(): Ruleset {
@@ -81,7 +97,7 @@ function LocalGame({ names, ruleset, turnSeconds, timeAttack, onExit }: LocalGam
   )
 }
 
-function Screens() {
+function Screens({ nav }: { nav: ReactNode }) {
   // Link undangan (?room=KODE) langsung membuka menu online.
   const [screen, setScreen] = useState<Screen>(() =>
     invitedRoom() ? { kind: 'online-setup' } : { kind: 'home' },
@@ -102,13 +118,16 @@ function Screens() {
   switch (screen.kind) {
     case 'home':
       return (
-        <HomeScreen
-          ruleset={ruleset}
-          onRuleset={chooseRuleset}
-          onLocal={() => setScreen({ kind: 'local-setup' })}
-          onOnline={() => setScreen({ kind: 'online-setup' })}
-          onTutorial={() => setScreen({ kind: 'tutorial' })}
-        />
+        <>
+          {nav}
+          <HomeScreen
+            ruleset={ruleset}
+            onRuleset={chooseRuleset}
+            onLocal={() => setScreen({ kind: 'local-setup' })}
+            onOnline={() => setScreen({ kind: 'online-setup' })}
+            onTutorial={() => setScreen({ kind: 'tutorial' })}
+          />
+        </>
       )
     case 'local-setup':
       return (
@@ -162,10 +181,28 @@ function Screens() {
 export function App() {
   // Berlangganan bahasa di akar: saat bahasa berganti, semua teks (`t`) dirender ulang.
   useLang()
+  const [game, setGame] = useState(initialGame)
+
+  function chooseGame(next: GameId) {
+    setGame(next)
+    try {
+      localStorage.setItem(GAME_KEY, next)
+    } catch {
+      // localStorage bisa diblokir; pilihannya tetap berlaku selama halaman terbuka.
+    }
+  }
+
+  const nav = <GameNav game={game} onChange={chooseGame} />
   return (
-    // Pemutar musik dipasang di luar layar-layarnya, supaya musik tidak terputus saat berpindah layar.
+    // Pemutar musik dipasang di luar layar-layarnya, supaya musik tidak terputus saat berpindah layar atau game.
     <MusicProvider>
-      <Screens />
+      {game === 'uno' ? (
+        <Suspense fallback={null}>
+          <UnoApp nav={nav} />
+        </Suspense>
+      ) : (
+        <Screens nav={nav} />
+      )}
     </MusicProvider>
   )
 }

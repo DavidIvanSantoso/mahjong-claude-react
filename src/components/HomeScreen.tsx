@@ -41,6 +41,35 @@ const SOCIALS: { name: string; icon: SocialIcon; url: string }[] = [
   { name: 'Instagram', icon: 'instagram', url: 'https://www.instagram.com/_davidivan' },
 ]
 
+/** Kredit pembuat dan tautan sosialnya, di pojok kanan bawah homescreen (dipakai juga oleh UNO). */
+export function CreatorCredit() {
+  return (
+    <footer className="home__credit">
+      <span>
+        Created by <strong>{CREATOR}</strong>
+      </span>
+      <ul className="home__socials">
+        {SOCIALS.filter((social) => social.url).map((social) => (
+          <li key={social.name}>
+            <a
+              className="social-link"
+              href={social.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              title={social.name}
+              aria-label={`${social.name} ${CREATOR} ${t('(tab baru)', '(new tab)')}`}
+            >
+              <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                <path d={SOCIAL_ICON_PATHS[social.icon]} />
+              </svg>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </footer>
+  )
+}
+
 interface HomeScreenProps {
   ruleset: Ruleset
   onRuleset: (ruleset: Ruleset) => void
@@ -132,29 +161,7 @@ export function HomeScreen({ ruleset, onRuleset, onLocal, onOnline, onTutorial }
         <LanguagePicker />
       </div>
 
-      <footer className="home__credit">
-        <span>
-          Created by <strong>{CREATOR}</strong>
-        </span>
-        <ul className="home__socials">
-          {SOCIALS.filter((social) => social.url).map((social) => (
-            <li key={social.name}>
-              <a
-                className="social-link"
-                href={social.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                title={social.name}
-                aria-label={`${social.name} ${CREATOR} ${t('(tab baru)', '(new tab)')}`}
-              >
-                <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-                  <path d={SOCIAL_ICON_PATHS[social.icon]} />
-                </svg>
-              </a>
-            </li>
-          ))}
-        </ul>
-      </footer>
+      <CreatorCredit />
     </main>
   )
 }

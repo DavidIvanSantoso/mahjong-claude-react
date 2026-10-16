@@ -1,0 +1,1160 @@
+/* ---------- Palet UNO ---------- */
+
+/*
+ * Dipasang lewat `data-game='uno'` di <html> selama layar UNO terbuka (lihat UnoApp.tsx).
+ * Diimpor setelah index.css, jadi menimpa tema dan palet pilihan mahjong.
+ * Palet website: Charcoal #343434, Deep Teal #055E68, Sage #62A388, Mist #B9D2D2.
+ * Warna kartu mengikuti warna asli UNO.
+ */
+:root[data-game='uno'] {
+  --uno-charcoal: #343434;
+  --uno-teal: #055e68;
+  --uno-teal-deep: #03434a;
+  --uno-sage: #62a388;
+  --uno-mist: #b9d2d2;
+
+  --uno-red: #d72600;
+  --uno-yellow: #ecd407;
+  --uno-green: #379711;
+  --uno-blue: #0956bf;
+  --uno-black: #1b1b1b;
+
+  /* Variabel bersama (tombol, kartu panel, form, dialog) memakai palet UNO */
+  --pink: #62a388;
+  --pink-deep: #4b8a70;
+  --cream: #eef5f5;
+  --sage: #b9d2d2;
+  --green: #055e68;
+  --green-deep: #03434a;
+  --ink: #343434;
+  --ink-soft: #566565;
+  --line: #c8dada;
+  --tile-red: #d72600;
+  --tile-green: #379711;
+  --tile-blue: #0956bf;
+
+  --page: #343434;
+  --on-page: #eef5f5;
+  --on-page-soft: #b9d2d2;
+  --on-green: #fff;
+  --tile-bg: #fff;
+  --btn-bg: #055e68;
+  --btn-hover: #0a7480;
+  --btn-shadow: #022f34;
+}
+
+:root[data-game='uno'] .tutorial-dialog::backdrop {
+  background: rgb(20 20 20 / 60%);
+}
+
+/* Kotak kaca gelap di atas latar UNO: navbar, tombol musik, kredit */
+:root[data-game='uno'] :is(.game-nav, .home__tools, .home__credit) {
+  color: var(--on-page-soft);
+  background: rgb(52 52 52 / 86%);
+  border: 1px solid rgb(185 210 210 / 22%);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 40%);
+}
+
+:root[data-game='uno'] .game-nav__item {
+  color: var(--on-page);
+}
+
+:root[data-game='uno'] .game-nav__item:hover:not(.game-nav__item--active) {
+  background: rgb(255 255 255 / 10%);
+}
+
+:root[data-game='uno'] .game-nav__item:focus-visible,
+:root[data-game='uno'] .uno-home :focus-visible {
+  outline-color: var(--on-page);
+}
+
+:root[data-game='uno'] .home__credit strong {
+  color: #fff;
+}
+
+/* ---------- Kartu ---------- */
+
+.uno-card {
+  --cw: 72px;
+  --face: var(--uno-black);
+  position: relative;
+  flex: none;
+  display: inline-block;
+  width: var(--cw);
+  height: calc(var(--cw) * 1.5);
+  padding: 0;
+  overflow: hidden;
+  font: inherit;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--face);
+  background: var(--face);
+  border: calc(var(--cw) * 0.06) solid #fff;
+  border-radius: calc(var(--cw) * 0.12);
+  box-shadow:
+    0 0 0 1px rgb(0 0 0 / 22%),
+    0 calc(var(--cw) * 0.05) calc(var(--cw) * 0.12) rgb(0 0 0 / 32%);
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.uno-card--red {
+  --face: var(--uno-red);
+}
+
+.uno-card--yellow {
+  --face: var(--uno-yellow);
+}
+
+.uno-card--green {
+  --face: var(--uno-green);
+}
+
+.uno-card--blue {
+  --face: var(--uno-blue);
+}
+
+/* Oval putih miring khas UNO */
+.uno-card__oval {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(var(--cw) * 0.8);
+  height: calc(var(--cw) * 1.22);
+  background: #fff;
+  border-radius: 50%;
+  transform: translate(-50%, -50%) rotate(28deg);
+}
+
+.uno-card--wild .uno-card__oval,
+.uno-card__quad {
+  background: conic-gradient(
+    var(--uno-red) 0 25%,
+    var(--uno-blue) 0 50%,
+    var(--uno-green) 0 75%,
+    var(--uno-yellow) 0
+  );
+}
+
+.uno-card--wild .uno-card__oval {
+  box-shadow: 0 0 0 calc(var(--cw) * 0.035) #fff;
+}
+
+.uno-card__symbol {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: calc(var(--cw) * 0.64);
+  font-style: italic;
+  letter-spacing: -0.04em;
+  color: var(--face);
+  -webkit-text-stroke: calc(var(--cw) * 0.03) var(--uno-black);
+  paint-order: stroke fill;
+  text-shadow: calc(var(--cw) * 0.035) calc(var(--cw) * 0.035) 0 var(--uno-black);
+}
+
+.uno-card--is-draw2 .uno-card__symbol,
+.uno-card--is-wild4 .uno-card__symbol {
+  font-size: calc(var(--cw) * 0.46);
+}
+
+.uno-card--wild .uno-card__symbol {
+  color: #fff;
+}
+
+.uno-card__symbol svg {
+  width: 66%;
+  height: auto;
+  filter: drop-shadow(calc(var(--cw) * 0.03) calc(var(--cw) * 0.03) 0 var(--uno-black));
+}
+
+.uno-card__corner {
+  position: absolute;
+  width: calc(var(--cw) * 0.26);
+  height: calc(var(--cw) * 0.26);
+  display: grid;
+  place-items: center;
+  font-size: calc(var(--cw) * 0.21);
+  font-style: italic;
+  letter-spacing: -0.04em;
+  color: #fff;
+  -webkit-text-stroke: calc(var(--cw) * 0.014) var(--uno-black);
+  paint-order: stroke fill;
+}
+
+.uno-card__corner svg {
+  width: 112%;
+  height: auto;
+}
+
+.uno-card__corner--top {
+  top: calc(var(--cw) * 0.03);
+  left: calc(var(--cw) * 0.04);
+}
+
+.uno-card__corner--bottom {
+  right: calc(var(--cw) * 0.04);
+  bottom: calc(var(--cw) * 0.03);
+  rotate: 180deg;
+}
+
+/* Pojok kartu Wild: oval empat warna kecil */
+.uno-card__quad {
+  width: 70%;
+  height: 100%;
+  border-radius: 50%;
+  rotate: 28deg;
+  box-shadow: 0 0 0 1px #fff;
+}
+
+/* Punggung kartu */
+.uno-card--back .uno-card__oval {
+  background: var(--uno-red);
+}
+
+.uno-card__logo {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: calc(var(--cw) * 0.36);
+  font-style: italic;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: var(--uno-yellow);
+  rotate: -22deg;
+  -webkit-text-stroke: calc(var(--cw) * 0.025) var(--uno-black);
+  paint-order: stroke fill;
+  text-shadow: calc(var(--cw) * 0.035) calc(var(--cw) * 0.035) 0 var(--uno-black);
+}
+
+/* Ukuran */
+.uno-card--hand {
+  --cw: var(--hand-cw, clamp(58px, 7vw, 88px));
+}
+
+.uno-card--pile {
+  --cw: clamp(76px, 10vw, 112px);
+}
+
+.uno-card--small {
+  --cw: 42px;
+}
+
+.uno-card--deco {
+  --cw: var(--deco-cw, clamp(84px, 9vw, 136px));
+}
+
+.uno-card--mini {
+  --cw: 18px;
+  border-width: 1.5px;
+  border-radius: 3px;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 40%);
+}
+
+.uno-card--small .uno-card__corner,
+.uno-card--mini .uno-card__logo {
+  display: none;
+}
+
+/* Kartu sebagai tombol */
+button.uno-card {
+  cursor: pointer;
+  transition:
+    translate 0.15s ease,
+    box-shadow 0.15s ease,
+    filter 0.15s ease;
+}
+
+button.uno-card:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 3px;
+}
+
+.uno-card--playable {
+  translate: 0 -10px;
+  box-shadow:
+    0 0 0 3px var(--uno-sage),
+    0 10px 18px rgb(0 0 0 / 40%);
+}
+
+/* Hover dipasang di slot pembungkus yang diam (lihat UnoTable/UnoHome), bukan di kartunya sendiri */
+@media (hover: hover) {
+  .uno-hand__slot:hover > button.uno-card {
+    translate: 0 -20px;
+  }
+
+  .uno-fan__slot:hover > button.uno-card {
+    translate: 0 -28px;
+  }
+}
+
+.uno-card--dimmed {
+  filter: brightness(0.55) saturate(0.7);
+}
+
+/* Kartu yang baru diambil dan bisa dikeluarkan */
+.uno-card--fresh {
+  box-shadow:
+    0 0 0 3px #fff,
+    0 0 0 6px var(--uno-sage),
+    0 10px 18px rgb(0 0 0 / 40%);
+}
+
+/* Kartu teratas buangan yang baru keluar */
+.uno-card--enter {
+  animation: uno-enter 0.38s cubic-bezier(0.2, 0.8, 0.3, 1.15);
+}
+
+@keyframes uno-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-48px) scale(1.25) rotate(-16deg);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes uno-pulse {
+  50% {
+    scale: 1.08;
+  }
+}
+
+@keyframes uno-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes uno-float {
+  50% {
+    transform: translateY(-14px);
+  }
+}
+
+/* ---------- Homescreen ---------- */
+
+.uno-home {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  align-items: center;
+  gap: 24px;
+  padding: 88px clamp(20px, 7vw, 120px) 72px;
+  color: var(--on-page);
+  background:
+    radial-gradient(circle at 72% 55%, rgb(98 163 136 / 32%) 0, transparent 45%),
+    linear-gradient(135deg, var(--uno-charcoal) 0%, var(--uno-charcoal) 42%, var(--uno-teal) 100%);
+}
+
+.uno-home__menu {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 320px);
+  display: grid;
+  gap: 14px;
+}
+
+.uno-home .home__tagline {
+  color: var(--on-page-soft);
+}
+
+.uno-home__note {
+  font-size: 0.875rem;
+  color: var(--on-page-soft);
+}
+
+/* Logo: tulisan UNO di oval miring */
+.uno-logo {
+  justify-self: start;
+  margin: 0 0 6px;
+}
+
+.uno-logo span {
+  display: inline-block;
+  padding: 0.12em 0.4em 0.16em;
+  font-size: clamp(3.5rem, 8vw, 6rem);
+  font-weight: 900;
+  font-style: italic;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: #fff;
+  background: var(--uno-sage);
+  border: 0.06em solid var(--uno-mist);
+  border-radius: 50%;
+  rotate: -8deg;
+  text-shadow: 0.05em 0.05em 0 var(--uno-teal);
+  box-shadow: 0 0.08em 0 var(--uno-teal-deep);
+}
+
+/* Kipas kartu hiasan */
+.uno-fan {
+  --deco-cw: clamp(92px, 10vw, 150px);
+  --spread: 0.3;
+  position: relative;
+  height: calc(var(--deco-cw) * 2.6);
+}
+
+.uno-fan__slot {
+  position: absolute;
+  left: 50%;
+  bottom: 6%;
+  margin-left: calc(var(--deco-cw) / -2);
+  transform-origin: 50% 170%;
+  rotate: calc(var(--i) * 10deg);
+  translate: calc(var(--i) * var(--deco-cw) * var(--spread)) calc(var(--i) * var(--i) * var(--deco-cw) * 0.03);
+  perspective: 800px;
+}
+
+/* ---------- Menu online ---------- */
+
+.uno-split {
+  background: linear-gradient(135deg, var(--cream) 0%, var(--cream) 45%, var(--sage) 100%);
+}
+
+.uno-split__side {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(160deg, var(--uno-teal) 0%, var(--uno-teal-deep) 100%);
+  box-shadow: inset 6px 0 12px -8px rgb(0 0 0 / 40%);
+}
+
+.uno-split__side .uno-card {
+  --deco-cw: clamp(72px, 8vw, 124px);
+  position: absolute;
+  left: 50%;
+  top: calc(var(--i) * 14% - 4%);
+  margin-left: calc(var(--cw) / -2);
+  rotate: calc((var(--i) - 3) * 11deg);
+  animation: uno-float 5s ease-in-out infinite;
+  animation-delay: calc(var(--i) * -0.7s);
+}
+
+.uno-split__side .uno-card:nth-child(odd) {
+  translate: -45% 0;
+}
+
+.uno-split__side .uno-card:nth-child(even) {
+  translate: 45% 0;
+}
+
+/* Lobi dan pesan kesalahan */
+.uno-page {
+  background: linear-gradient(135deg, var(--uno-charcoal) 0%, var(--uno-charcoal) 50%, var(--uno-teal) 100%);
+}
+
+/* ---------- Halaman permainan ---------- */
+
+.uno-game {
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 8px 12px 32px;
+  color: var(--on-page);
+  background: radial-gradient(ellipse at 50% 0%, #474747 0%, var(--uno-charcoal) 60%);
+}
+
+.uno-topbar {
+  /* Acuan posisi panel musik */
+  position: relative;
+  max-width: 1180px;
+  margin: 0 auto 10px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 4px;
+}
+
+.uno-topbar__title {
+  font-size: 1.5rem;
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: 0.02em;
+}
+
+.uno-topbar__room {
+  margin-right: auto;
+  font-family: ui-monospace, Consolas, monospace;
+  font-weight: 700;
+  color: var(--on-page-soft);
+}
+
+.uno-topbar__tools {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/*
+ * Layar sempit: semua bertumpuk. Kolom samping memakai `display: contents`, jadi panel aksi,
+ * riwayat, dan skor bisa disisipkan di antara meja dan tangan.
+ */
+.uno-game__layout {
+  max-width: 1180px;
+  margin: 0 auto;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    'opponents'
+    'felt'
+    'dock'
+    'hand'
+    'log'
+    'scores';
+}
+
+.uno-side {
+  display: contents;
+}
+
+.uno-opponents {
+  grid-area: opponents;
+}
+
+.uno-felt {
+  grid-area: felt;
+}
+
+.uno-dock {
+  grid-area: dock;
+}
+
+.uno-hand-area {
+  grid-area: hand;
+}
+
+.uno-log {
+  grid-area: log;
+}
+
+.uno-scores {
+  grid-area: scores;
+}
+
+@media (min-width: 1000px) {
+  .uno-game__layout {
+    grid-template-columns: minmax(0, 1fr) 320px;
+    /* Kalau kolom samping lebih tinggi, sisa ruangnya jatuh di bawah tangan, bukan di antara meja */
+    grid-template-rows: auto auto 1fr;
+    grid-template-areas:
+      'opponents side'
+      'felt side'
+      'hand side';
+    align-items: start;
+  }
+
+  .uno-side {
+    grid-area: side;
+    position: sticky;
+    top: 12px;
+    display: grid;
+    gap: 14px;
+  }
+
+  .uno-side > * {
+    grid-area: auto;
+  }
+}
+
+/* Lawan */
+.uno-opponents {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+
+.uno-seat {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 150px;
+  padding: 10px 14px;
+  text-align: center;
+  background: rgb(255 255 255 / 6%);
+  border: 2px solid rgb(185 210 210 / 22%);
+  border-radius: 14px;
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.uno-seat--active {
+  background: rgb(98 163 136 / 20%);
+  border-color: var(--uno-sage);
+  box-shadow: 0 0 0 4px rgb(98 163 136 / 25%);
+}
+
+.uno-seat--offline {
+  opacity: 0.55;
+}
+
+/*
+ * Kipas punggung kartu: satu kartu per kartu di tangan lawan. Jarak antar-kartu (--step) dan
+ * sudutnya (--angle) mengecil saat kartunya bertambah, supaya kipas tidak melebihi --fan-w.
+ */
+.uno-seat__fan {
+  --seat-cw: 26px;
+  --fan-w: 176px;
+  --step: min(15px, (var(--fan-w) - var(--seat-cw)) / max(var(--n) - 1, 1));
+  --angle: min(5, 60 / max(var(--n) - 1, 1));
+  position: relative;
+  flex: none;
+  width: calc(var(--seat-cw) + var(--step) * (var(--n) - 1));
+  height: calc(var(--seat-cw) * 1.5 + 18px);
+  transition: width 0.25s ease;
+}
+
+.uno-seat__fan .uno-card {
+  --cw: var(--seat-cw);
+  /* Jarak dari tengah kipas: negatif di kiri, positif di kanan */
+  --d: calc(var(--i) - (var(--n) - 1) / 2);
+  position: absolute;
+  top: 4px;
+  left: calc(var(--i) * var(--step));
+  transform-origin: 50% 100%;
+  rotate: calc(var(--d) * var(--angle) * 1deg);
+  /* Kartu di pinggir sedikit turun, membentuk lengkungan */
+  translate: 0 calc(var(--d) * var(--d) * var(--angle) * var(--angle) * 0.02px);
+  animation: uno-deal 0.3s ease-out;
+}
+
+.uno-seat__more {
+  position: absolute;
+  right: -6px;
+  bottom: 0;
+  padding: 1px 6px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--uno-charcoal);
+  background: var(--uno-mist);
+  border-radius: 999px;
+}
+
+/* Kartu baru masuk ke kipas lawan */
+@keyframes uno-deal {
+  from {
+    opacity: 0;
+    transform: translateY(-16px) scale(1.3);
+  }
+}
+
+.uno-seat__info {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.uno-seat__name {
+  justify-content: center;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+  font-weight: 800;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.uno-seat__count {
+  font-size: 0.8125rem;
+  color: var(--on-page-soft);
+}
+
+.uno-seat__offline {
+  font-size: 0.75rem;
+  color: var(--on-page-soft);
+}
+
+/* Tanda pembagi kartu */
+.uno-seat__dealer {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  font-size: 0.6875rem;
+  font-weight: 900;
+  font-style: normal;
+  color: var(--uno-charcoal);
+  background: var(--uno-mist);
+  border-radius: 50%;
+}
+
+.uno-badge {
+  position: absolute;
+  top: -10px;
+  right: -8px;
+  padding: 2px 9px;
+  font-size: 0.75rem;
+  font-weight: 900;
+  font-style: italic;
+  color: var(--uno-black);
+  background: var(--uno-yellow);
+  border-radius: 999px;
+  box-shadow: 0 2px 0 rgb(0 0 0 / 30%);
+}
+
+.uno-badge--warn {
+  color: #fff;
+  background: var(--uno-red);
+  animation: uno-pulse 1s ease-in-out infinite;
+}
+
+/* Meja: tumpukan ambil | buangan | warna dan arah */
+.uno-felt {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 20px clamp(20px, 5vw, 56px);
+  min-height: clamp(230px, 36vh, 320px);
+  padding: 24px 16px;
+  background: radial-gradient(ellipse at 50% 40%, #0b7682 0%, var(--uno-teal) 55%, var(--uno-teal-deep) 100%);
+  border-radius: 28px;
+  box-shadow:
+    inset 0 0 60px rgb(0 0 0 / 30%),
+    0 10px 30px rgb(0 0 0 / 35%);
+}
+
+/* Bingkai meja menyala dengan warna yang berlaku */
+.uno-felt::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  border-radius: inherit;
+  box-shadow:
+    inset 0 0 0 5px var(--active),
+    inset 0 0 36px -8px var(--active);
+  transition: box-shadow 0.3s ease;
+}
+
+/* Cincin panah arah permainan, berputar pelan di belakang tumpukan */
+.uno-felt__ring {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: -1;
+  width: min(92%, 400px);
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  opacity: 0.32;
+  animation: uno-spin 26s linear infinite;
+}
+
+.uno-felt__ring circle {
+  fill: none;
+  stroke: var(--uno-mist);
+  stroke-width: 3;
+  stroke-dasharray: 10 8;
+}
+
+.uno-felt__ring path {
+  fill: var(--uno-mist);
+}
+
+/* Berbalik: dicerminkan, jadi panah dan putarannya berlawanan arah jarum jam */
+.uno-felt__ring--reverse {
+  scale: -1 1;
+}
+
+.uno-pile {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 0;
+  font: inherit;
+  color: var(--on-page);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.uno-pile:disabled {
+  cursor: default;
+}
+
+/* Tebal tumpukan */
+.uno-pile .uno-card {
+  box-shadow:
+    3px 3px 0 -1px #111,
+    6px 6px 0 -2px #222,
+    9px 9px 14px rgb(0 0 0 / 40%);
+  transition: translate 0.15s ease;
+}
+
+.uno-pile:not(:disabled) .uno-card {
+  animation: uno-pulse 1.6s ease-in-out infinite;
+}
+
+.uno-pile:not(:disabled):hover .uno-card {
+  translate: 0 -5px;
+}
+
+.uno-pile:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 6px;
+  border-radius: 12px;
+}
+
+.uno-pile__label {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--uno-mist);
+}
+
+.uno-discard {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+}
+
+.uno-status {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+}
+
+.uno-status__color {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px 6px 6px;
+  font-weight: 800;
+  color: #fff;
+  background: rgb(0 0 0 / 28%);
+  border-radius: 999px;
+}
+
+.uno-status__dot {
+  width: 24px;
+  height: 24px;
+  background: var(--active);
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 2px #fff,
+    0 0 14px var(--active);
+  transition: background-color 0.3s ease;
+}
+
+.uno-status__dir {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--uno-mist);
+}
+
+/* Panel aksi */
+.uno-dock {
+  min-height: 132px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  text-align: center;
+  color: var(--ink);
+}
+
+/* Tombol UNO! dan Tangkap */
+.uno-call {
+  font: inherit;
+  font-size: 1.125rem;
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: 0.02em;
+  padding: 10px 24px;
+  color: var(--uno-black);
+  background: var(--uno-yellow);
+  border: 0;
+  border-radius: 999px;
+  box-shadow: 0 4px 0 #a39200;
+  cursor: pointer;
+  transition:
+    translate 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.uno-call:hover {
+  translate: 0 -2px;
+}
+
+.uno-call:active {
+  translate: 0 2px;
+  box-shadow: 0 2px 0 #a39200;
+}
+
+.uno-call:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 3px;
+}
+
+.uno-call--urgent {
+  color: #fff;
+  background: var(--uno-red);
+  box-shadow: 0 4px 0 #8f1900;
+  animation: uno-pulse 0.9s ease-in-out infinite;
+}
+
+.uno-call--catch {
+  color: #fff;
+  background: var(--uno-blue);
+  box-shadow: 0 4px 0 #063a80;
+}
+
+/* Tangan sendiri */
+.uno-hand-area {
+  padding: 12px 8px 8px;
+  background: rgb(0 0 0 / 20%);
+  border-radius: 20px;
+}
+
+.uno-hand-area__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px;
+  font-size: 1rem;
+}
+
+.uno-hand-area__title .uno-badge {
+  position: static;
+}
+
+.uno-hand {
+  --hand-cw: clamp(58px, 7vw, 88px);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  row-gap: 10px;
+  /* Kartu pertama tiap baris juga digeser ke kiri; dikompensasi di sini supaya tetap di tengah */
+  --hand-overlap: max(var(--overlap), var(--overlap-min, 0));
+  padding: 22px 8px 8px calc(8px + var(--hand-cw) * var(--hand-overlap));
+}
+
+.uno-hand__slot {
+  flex: none;
+  display: flex;
+}
+
+.uno-hand > .uno-hand__slot {
+  margin-left: calc(var(--hand-cw) * var(--hand-overlap) * -1);
+}
+
+/* Riwayat dan skor */
+.uno-log,
+.uno-scores {
+  padding: 12px 16px;
+  color: var(--ink);
+}
+
+.uno-log ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 4px;
+  font-size: 0.875rem;
+  color: var(--ink-soft);
+}
+
+.uno-log li:last-child {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.uno-topbar__help {
+  font: inherit;
+  font-size: 1.125rem;
+  font-weight: 800;
+}
+
+/* ---------- Dialog ---------- */
+
+.uno-color-dialog {
+  width: min(100% - 24px, 380px);
+}
+
+.uno-color-dialog__card {
+  display: grid;
+  gap: 16px;
+  padding: 24px;
+}
+
+.uno-color-dialog__title {
+  font-size: 1.5rem;
+  text-align: center;
+}
+
+.uno-color-dialog__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.uno-color-option {
+  aspect-ratio: 1.3;
+  font: inherit;
+  font-size: 1.125rem;
+  font-weight: 900;
+  color: #fff;
+  text-shadow: 0 2px 0 rgb(0 0 0 / 35%);
+  background: var(--c);
+  border: 4px solid #fff;
+  border-radius: 16px;
+  box-shadow:
+    0 0 0 2px var(--c),
+    0 6px 0 rgb(0 0 0 / 25%);
+  cursor: pointer;
+  transition:
+    translate 0.12s ease,
+    filter 0.12s ease;
+}
+
+.uno-color-option:hover {
+  translate: 0 -3px;
+  filter: brightness(1.08);
+}
+
+.uno-color-option:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 3px;
+}
+
+.uno-color-option--red {
+  --c: var(--uno-red);
+}
+
+.uno-color-option--yellow {
+  --c: var(--uno-yellow);
+  color: var(--uno-black);
+  text-shadow: none;
+}
+
+.uno-color-option--green {
+  --c: var(--uno-green);
+}
+
+.uno-color-option--blue {
+  --c: var(--uno-blue);
+}
+
+.uno-result__hands {
+  color: var(--ink);
+}
+
+.uno-result__cards {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+}
+
+.uno-rules__cards {
+  display: grid;
+  gap: 10px;
+}
+
+.uno-rules__cards figure {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+/* ---------- Layar sempit ---------- */
+
+@media (max-width: 720px) {
+  .uno-home {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    align-content: start;
+    gap: 8px;
+    padding: 76px 16px 150px;
+    text-align: center;
+  }
+
+  .uno-home__menu {
+    width: min(100%, 360px);
+  }
+
+  .uno-logo {
+    justify-self: center;
+  }
+
+  .uno-fan {
+    --deco-cw: clamp(58px, 16vw, 88px);
+    --spread: 0.22;
+    order: -1;
+    width: 100%;
+  }
+
+  .uno-split__side {
+    display: none;
+  }
+
+  .uno-seat {
+    min-width: 0;
+    padding: 8px 10px;
+  }
+
+  .uno-seat__fan {
+    --seat-cw: 22px;
+    --fan-w: 132px;
+  }
+
+  .uno-felt {
+    gap: 16px 28px;
+    padding: 20px 12px;
+  }
+
+  /* Warna dan arah pindah ke baris sendiri di bawah tumpukan */
+  .uno-status {
+    flex-basis: 100%;
+    grid-auto-flow: column;
+    justify-content: center;
+    align-items: center;
+  }
+
+  /* Kartu lebih bertumpuk supaya satu baris memuat lebih banyak kartu */
+  .uno-hand {
+    --hand-cw: clamp(50px, 15vw, 64px);
+    --overlap-min: 0.38;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .uno-card--enter,
+  .uno-felt__ring,
+  .uno-pile .uno-card,
+  .uno-badge--warn,
+  .uno-call--urgent,
+  .uno-split__side .uno-card,
+  .uno-seat__fan .uno-card {
+    animation: none !important;
+  }
+
+  button.uno-card {
+    transition: none;
+  }
+}
