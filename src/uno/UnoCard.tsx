@@ -55,6 +55,8 @@ interface UnoCardProps {
   /** Giliran sendiri: kartu yang bisa dimainkan diangkat, sisanya diredupkan. */
   playable?: boolean
   dimmed?: boolean
+  /** Dipilih untuk dikeluarkan sekaligus (Indonesian Rules). */
+  selected?: boolean
   /** Kartu yang baru diambil. */
   fresh?: boolean
   className?: string
@@ -65,7 +67,17 @@ interface UnoCardProps {
  * Kartu UNO bergambar CSS: muka berwarna dengan bingkai putih, oval putih miring di tengah,
  * dan simbol kecil di dua pojok. Wild berwarna hitam dengan oval empat warna.
  */
-export function UnoCard({ card, size = 'hand', onClick, playable, dimmed, fresh, className, style }: UnoCardProps) {
+export function UnoCard({
+  card,
+  size = 'hand',
+  onClick,
+  playable,
+  dimmed,
+  selected,
+  fresh,
+  className,
+  style,
+}: UnoCardProps) {
   const wild = card.color === null
   const classes = [
     'uno-card',
@@ -74,6 +86,7 @@ export function UnoCard({ card, size = 'hand', onClick, playable, dimmed, fresh,
     `uno-card--is-${typeof card.value === 'number' ? 'number' : card.value}`,
     playable && 'uno-card--playable',
     dimmed && 'uno-card--dimmed',
+    selected && 'uno-card--selected',
     fresh && 'uno-card--fresh',
     className,
   ]

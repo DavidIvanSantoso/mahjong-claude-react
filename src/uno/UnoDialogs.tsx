@@ -2,7 +2,8 @@ import { useEffect, useRef, type ReactNode } from 'react'
 import { Confetti } from '../components/Confetti'
 import { cardPoints, COLOR_NAMES, COLORS, sortHand, type Color } from './cards'
 import { TARGET_SCORE, type UnoLobby, type UnoView } from './net'
-import { UnoCard } from './UnoCard'
+import { MODE_NAMES } from './state'
+import { CardBack, UnoCard } from './UnoCard'
 
 /** Warna kartu asli UNO, untuk confetti kemenangan. */
 const UNO_CONFETTI = ['var(--uno-red)', 'var(--uno-yellow)', 'var(--uno-green)', 'var(--uno-blue)', '#fff']
@@ -65,6 +66,52 @@ export function ColorPicker({ open, onPick, onCancel }: ColorPickerProps) {
             Batal
           </button>
         )}
+      </div>
+    </dialog>
+  )
+}
+
+interface PlayerPickerProps {
+  open: boolean
+  players: { seat: number; name: string; count: number }[]
+  onPick: (seat: number) => void
+  onCancel: () => void
+}
+
+/** Crazy Rules, angka 7: pilih lawan untuk bertukar kartu. */
+export function PlayerPicker({ open, players, onPick, onCancel }: PlayerPickerProps) {
+  const { ref } = useModal(open)
+  return (
+    <dialog
+      ref={ref}
+      className="tutorial-dialog uno-color-dialog"
+      aria-labelledby="uno-target-title"
+      onCancel={(event) => {
+        event.preventDefault()
+        onCancel()
+      }}
+      onClick={(event) => event.target === event.currentTarget && onCancel()}
+    >
+      <div className="uno-color-dialog__card">
+        <h2 id="uno-target-title" className="uno-color-dialog__title">
+          Tukar kartu dengan siapa?
+        </h2>
+        <div className="uno-targets">
+          {players.map((player) => (
+            <button key={player.seat} type="button" className="uno-target" onClick={() => onPick(player.seat)}>
+              <span className="uno-target__cards" aria-hidden="true">
+                {Array.from({ length: Math.min(player.count, 12) }, (_, i) => (
+                  <CardBack key={i} size="mini" />
+                ))}
+              </span>
+              <span className="uno-target__name">{player.name}</span>
+              <span className="uno-target__count">{player.count} kartu</span>
+            </button>
+          ))}
+        </div>
+        <button type="button" className="btn btn--wide" onClick={onCancel}>
+          Batal
+        </button>
       </div>
     </dialog>
   )
@@ -247,9 +294,9 @@ export function RulesContent() {
             </figcaption>
           </figure>
         </div>
-        <p>Kartu Draw Two dan Wild Draw Four tidak bisa ditumpuk untuk dioper ke pemain lain.</p>
+        <p>Di mode Klasik dan Crazy, Draw Two dan Wild Draw Four tidak bisa ditumpuk untuk dioper ke pemain lain.</p>
       </Section>
-      <Section title="Menantang Wild Draw Four">
+      <Section title="Menantang Wild Draw Four (Klasik dan Crazy)">
         <p>
           Wild Draw Four seharusnya hanya dikeluarkan kalau kamu tidak punya kartu dengan <strong>warna</strong> yang
           berlaku. Pemain yang dikenai boleh <strong>menantang</strong>:
@@ -267,6 +314,44 @@ export function RulesContent() {
           <li>
             Lupa? Kamu masih bisa menekannya sebelum pemain berikutnya beraksi. Kalau ada lawan yang menekan{' '}
             <strong>Tangkap</strong> lebih dulu, kamu mengambil 2 kartu.
+          </li>
+        </ul>
+      </Section>
+      <Section title="Mode permainan">
+        <p>Mode dipilih host saat membuat room.</p>
+        <ul>
+          <li>
+            <strong>{MODE_NAMES.classic}</strong> — aturan dasar di atas.
+          </li>
+          <li>
+            <strong>{MODE_NAMES.crazy}</strong> — aturan klasik, ditambah: mengeluarkan angka <strong>0</strong> membuat
+            semua pemain mengoper kartunya ke pemain berikutnya searah arah permainan saat itu; mengeluarkan angka{' '}
+            <strong>7</strong> membuatmu bertukar kartu dengan pemain pilihanmu. Kalau 0/7 adalah kartu terakhirmu, kamu
+            langsung menang tanpa bertukar.
+          </li>
+          <li>
+            <strong>{MODE_NAMES.indonesian}</strong>:
+            <ul>
+              <li>
+                <strong>+2 dan +4 bisa dibalas</strong>: +2 dibalas +2 atau +4, sedangkan +4 hanya bisa dibalas +4.
+                Hukumannya menumpuk, dan pemain pertama yang tidak bisa (atau tidak mau) membalas mengambil semuanya lalu
+                dilewati.
+              </li>
+              <li>
+                <strong>Kartu bernilai sama boleh dikeluarkan sekaligus</strong>, baik angka maupun kartu aksi (warna boleh
+                beda). Kartu paling bawah harus cocok dengan buangan, dan kartu terakhir yang kamu pilih jadi kartu
+                teratas. +2 tidak bisa dicampur +4.
+              </li>
+              <li>
+                Efeknya ikut berlipat: 2 Reverse membalik arah dua kali (kembali seperti semula), 2 Skip melewati 2
+                pemain, 2 × +2 jadi +4, 2 × +4 jadi +8. Warna untuk beberapa Wild/+4 cukup dipilih sekali.
+              </li>
+              <li>
+                Tidak punya kartu yang cocok? <strong>Ambil terus sampai dapat kartu yang cocok</strong>, lalu kartu itu
+                wajib dikeluarkan. Selama masih punya kartu yang cocok, kamu tidak boleh mengambil kartu.
+              </li>
+              <li>Tantangan Wild Draw Four tidak dipakai di mode ini.</li>
+            </ul>
           </li>
         </ul>
       </Section>

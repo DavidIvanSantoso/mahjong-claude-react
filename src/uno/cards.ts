@@ -80,6 +80,11 @@ const VALUE_NAMES: Record<ActionValue, string> = {
   wild4: 'Wild Draw Four',
 }
 
+/** Nilai kartu tanpa warna, mis. "angka 7" atau "Skip". */
+export function valueName(card: Card): string {
+  return typeof card.value === 'number' ? `angka ${card.value}` : VALUE_NAMES[card.value]
+}
+
 /** Nama kartu untuk pesan dan pembaca layar, mis. "Merah 7" atau "Draw Two Biru". */
 export function cardName(card: Card): string {
   if (typeof card.value === 'number') return `${COLOR_NAMES[card.color!]} ${card.value}`

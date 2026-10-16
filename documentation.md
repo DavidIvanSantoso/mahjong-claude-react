@@ -421,6 +421,7 @@ GitHub Pages hanya menyajikan file statis, dan itu cukup: aplikasi ini tidak pun
 ### Ringkasan
 
 - Online saja, 2–6 pemain, tiap pemain di perangkatnya sendiri. Host membuat room (kapasitas tetap 6) dan bisa memulai begitu ada minimal 2 pemain.
+- Tiga mode, dipilih host saat membuat room: **Klasik**, **Crazy Rules**, dan **Indonesian Rules** (lihat [Mode permainan](#mode-permainan)).
 - Aturan dasar UNO internasional: dek 108 kartu, 7 kartu per pemain, Skip / Reverse / Draw Two / Wild / Wild Draw Four, tantangan Wild Draw Four, hukuman lupa bilang UNO, dan skor sampai 500 poin.
 - Tampilan hanya Bahasa Indonesia (tidak ada pilihan bahasa) dan tidak memakai tombol tema. Musik latar dan efek suara sama dengan mahjong.
 
@@ -460,6 +461,24 @@ UNO dimuat terpisah (`React.lazy` di `App.tsx`), jadi pemain mahjong tidak ikut 
 - **UNO:** tekan UNO! saat tinggal 2 kartu, sebelum mengeluarkan kartu kedua terakhir. Yang lupa (`vulnerable`) masih bisa menyusulkan UNO sampai pemain berikutnya beraksi; lawan yang lebih dulu menekan Tangkap membuatnya mengambil 2 kartu.
 - **Akhir ronde:** pemain yang menghabiskan kartunya mendapat jumlah poin kartu sisa semua lawan. Kalau kartu terakhirnya Draw Two/Wild Draw Four, pemain berikutnya tetap mengambil kartunya dulu. Skor 500 menjadi juara; permainan berikutnya dimulai dari nol. Pembagi pertama diacak, lalu bergeser ke kiri tiap ronde.
 - **Tumpukan ambil habis:** buangan (kecuali kartu teratas) dikocok jadi tumpukan baru. Stacking Draw Two/Draw Four tidak dipakai.
+
+### Mode permainan
+
+Mode disimpan di `UnoState.mode` dan dikirim ke tamu lewat `UnoLobby.mode` dan `UnoView.mode`.
+
+- **Klasik (`classic`)**: aturan di atas.
+- **Crazy Rules (`crazy`)**: aturan klasik, ditambah aturan 7-0.
+  - Angka **0**: semua tangan pindah ke pemain berikutnya searah arah permainan saat itu (`rotateHands`).
+  - Angka **7**: pemain memilih lawan untuk bertukar tangan (`swapHands`). Aksi `play` membawa `target`; tanpa target yang sah, aksinya ditolak.
+  - Kalau 0/7 adalah kartu terakhir, pemain langsung menang tanpa bertukar. Kartu pembuka 0/7 tidak menjalankan aturan ini.
+  - Setelah tangan berpindah, status UNO semua pemain direset.
+- **Indonesian Rules (`indonesian`)**:
+  - **Tumpukan +2/+4 (fase `stack`)**: setelah +2/+4, pemain berikutnya boleh membalas. +2 dibalas +2 atau +4, sedangkan +4 hanya dibalas +4 (`canStack`). Jumlahnya menumpuk di `pendingDraw`. Pemain yang tidak membalas (aksi `draw`, atau waktu habis) mengambil semuanya lalu dilewati. Kartu pembuka +2 juga langsung masuk fase ini.
+  - **Keluar sekaligus**: beberapa kartu bernilai sama, baik angka maupun kartu aksi (warna boleh beda; +2 tidak bisa dicampur +4), dikeluarkan dalam satu aksi. `play.cardId` adalah kartu teratas pilihan pemain dan `play.under` kartu lainnya. `playOrder` memastikan kartu paling bawah cocok dengan buangan; di fase `stack` semuanya harus bisa membalas, dan di fase `drawn` kartu yang baru diambil harus ikut. Di layar, kartu dipilih satu per satu dan kartu terakhir yang dipilih jadi kartu teratas.
+  - **Efek berlipat** sesuai jumlah kartu k: Reverse membalik arah k kali (genap = kembali ke arah semula), Skip melewati k pemain (`skip`), +2 menambah 2k, +4 menambah 4k. Warna Wild/+4 dipilih sekali. Berdua, tiap Reverse dihitung sebagai Skip.
+  - **Ambil sampai dapat** (`drawUntilPlayable`): aksi `draw` hanya sah kalau tidak ada kartu yang cocok. Pemain mengambil terus sampai dapat kartu yang cocok, lalu wajib mengeluarkannya (fase `drawn` tanpa `pass`). Saat waktu habis, kartu diambil sampai dapat lalu dikeluarkan otomatis.
+  - Tombol UNO! juga muncul kalau pilihan kartu akan menyisakan satu kartu.
+  - Tantangan Wild Draw Four tidak dipakai.
 
 ### Perbedaan mode online dengan mahjong
 

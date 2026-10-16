@@ -1,15 +1,16 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import type { RoomError } from '../net/online'
 import { MAX_PLAYERS, MIN_PLAYERS, TARGET_SCORE, useUnoGuestRoom, useUnoHostRoom, type UnoRoom } from './net'
+import { MODE_NAMES, type UnoMode } from './state'
 import { RulesDialog } from './UnoDialogs'
 import { UnoHome } from './UnoHome'
-import { unoInvitedRoom, UnoSetup } from './UnoSetup'
+import { MODE_SUMMARIES, unoInvitedRoom, UnoSetup } from './UnoSetup'
 import { UnoTable } from './UnoTable'
 
 type Screen =
   | { kind: 'home' }
   | { kind: 'setup' }
-  | { kind: 'host'; name: string; turnSeconds: number }
+  | { kind: 'host'; name: string; turnSeconds: number; mode: UnoMode }
   | { kind: 'guest'; name: string; code: string }
 
 function errorMessage(error: RoomError | null): string {
@@ -61,7 +62,7 @@ function RoomView({ room, onExit }: { room: UnoRoom; onExit: () => void }) {
 
   if (room.view) return <UnoTable room={room} onExit={onExit} />
 
-  const { players, turnSeconds } = room.lobby
+  const { players, turnSeconds, mode } = room.lobby
   const ready = players.length >= MIN_PLAYERS
   const link = inviteLink(room.code)
 
@@ -115,8 +116,11 @@ function RoomView({ room, onExit }: { room: UnoRoom; onExit: () => void }) {
             </div>
 
             <p className="setup__lead">
-              Aturan UNO internasional, 7 kartu per pemain, target <strong>{TARGET_SCORE} poin</strong>. Waktu per
-              giliran: <strong>{turnSeconds} detik</strong>; kalau habis, otomatis mengambil 1 kartu.
+              Mode <strong>{MODE_NAMES[mode]}</strong>: {MODE_SUMMARIES[mode]}
+            </p>
+            <p className="setup__lead">
+              7 kartu per pemain, target <strong>{TARGET_SCORE} poin</strong>. Waktu per giliran:{' '}
+              <strong>{turnSeconds} detik</strong>; kalau habis, otomatis mengambil 1 kartu.
             </p>
 
             {room.isHost ? (
@@ -137,8 +141,15 @@ function RoomView({ room, onExit }: { room: UnoRoom; onExit: () => void }) {
   )
 }
 
-function HostGame({ name, turnSeconds, onExit }: { name: string; turnSeconds: number; onExit: () => void }) {
-  return <RoomView room={useUnoHostRoom(name, turnSeconds)} onExit={onExit} />
+interface HostGameProps {
+  name: string
+  turnSeconds: number
+  mode: UnoMode
+  onExit: () => void
+}
+
+function HostGame({ name, turnSeconds, mode, onExit }: HostGameProps) {
+  return <RoomView room={useUnoHostRoom(name, turnSeconds, mode)} onExit={onExit} />
 }
 
 function GuestGame({ name, code, onExit }: { name: string; code: string; onExit: () => void }) {
@@ -180,13 +191,13 @@ export function UnoApp({ nav }: { nav: ReactNode }) {
     case 'setup':
       return (
         <UnoSetup
-          onHost={(name, turnSeconds) => setScreen({ kind: 'host', name, turnSeconds })}
+          onHost={(name, turnSeconds, mode) => setScreen({ kind: 'host', name, turnSeconds, mode })}
           onJoin={(name, code) => setScreen({ kind: 'guest', name, code })}
           onBack={goHome}
         />
       )
     case 'host':
-      return <HostGame name={screen.name} turnSeconds={screen.turnSeconds} onExit={goHome} />
+      return <HostGame name={screen.name} turnSeconds={screen.turnSeconds} mode={screen.mode} onExit={goHome} />
     case 'guest':
       return <GuestGame name={screen.name} code={screen.code} onExit={goHome} />
   }

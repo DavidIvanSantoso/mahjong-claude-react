@@ -288,6 +288,10 @@ button.uno-card:focus-visible {
   .uno-fan__slot:hover > button.uno-card {
     translate: 0 -28px;
   }
+
+  .uno-hand__slot:hover > button.uno-card--selected {
+    translate: 0 -26px;
+  }
 }
 
 .uno-card--dimmed {
@@ -467,8 +471,9 @@ button.uno-card:focus-visible {
   max-width: 1180px;
   margin: 0 auto 10px;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
+  gap: 6px 12px;
   padding: 0 4px;
 }
 
@@ -479,8 +484,20 @@ button.uno-card:focus-visible {
   letter-spacing: 0.02em;
 }
 
+.uno-topbar__mode {
+  padding: 3px 10px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  color: var(--uno-charcoal);
+  background: var(--uno-sage);
+  border-radius: 999px;
+}
+
 .uno-topbar__room {
   margin-right: auto;
+  white-space: nowrap;
   font-family: ui-monospace, Consolas, monospace;
   font-weight: 700;
   color: var(--on-page-soft);
@@ -824,9 +841,34 @@ button.uno-card:focus-visible {
 }
 
 .uno-discard {
+  position: relative;
   display: grid;
   justify-items: center;
   gap: 10px;
+}
+
+/* Indonesian Rules: jumlah hukuman +2/+4 yang menumpuk */
+.uno-stack-badge {
+  position: absolute;
+  top: -14px;
+  right: -22px;
+  z-index: 2;
+  padding: 4px 12px;
+  font-size: 1.25rem;
+  font-weight: 900;
+  font-style: italic;
+  color: #fff;
+  background: var(--uno-red);
+  border: 3px solid #fff;
+  border-radius: 999px;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 40%);
+  animation: uno-bump 0.35s ease-out;
+}
+
+@keyframes uno-bump {
+  from {
+    transform: scale(1.6);
+  }
 }
 
 .uno-status {
@@ -949,12 +991,41 @@ button.uno-card:focus-visible {
   row-gap: 10px;
   /* Kartu pertama tiap baris juga digeser ke kiri; dikompensasi di sini supaya tetap di tengah */
   --hand-overlap: max(var(--overlap), var(--overlap-min, 0));
-  padding: 22px 8px 8px calc(8px + var(--hand-cw) * var(--hand-overlap));
+  padding: 36px 8px 8px calc(8px + var(--hand-cw) * var(--hand-overlap));
 }
 
 .uno-hand__slot {
+  position: relative;
   flex: none;
   display: flex;
+}
+
+/* Indonesian Rules: kartu yang dipilih untuk dikeluarkan sekaligus */
+.uno-card--selected {
+  translate: 0 -22px;
+  box-shadow:
+    0 0 0 3px #fff,
+    0 0 0 6px var(--uno-yellow),
+    0 12px 20px rgb(0 0 0 / 45%);
+}
+
+/* Urutan pilihan di atas kartu; diletakkan di bagian kartu yang tidak tertutup kartu sebelahnya */
+.uno-hand__order {
+  position: absolute;
+  top: -34px;
+  left: calc(var(--hand-cw) * (1 - var(--hand-overlap)) / 2);
+  z-index: 2;
+  translate: -50% 0;
+  padding: 1px 8px;
+  font-size: 0.6875rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--uno-black);
+  background: var(--uno-yellow);
+  border-radius: 999px;
+  box-shadow: 0 2px 0 rgb(0 0 0 / 30%);
+  pointer-events: none;
 }
 
 .uno-hand > .uno-hand__slot {
@@ -1059,6 +1130,80 @@ button.uno-card:focus-visible {
   --c: var(--uno-blue);
 }
 
+/* Pilihan lawan untuk tukar kartu (angka 7, Crazy Rules) */
+.uno-targets {
+  display: grid;
+  gap: 10px;
+}
+
+.uno-target {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  font: inherit;
+  color: var(--ink);
+  text-align: left;
+  background: #fff;
+  border: 2px solid var(--line);
+  border-radius: 14px;
+  cursor: pointer;
+  transition:
+    border-color 0.12s ease,
+    background-color 0.12s ease;
+}
+
+.uno-target:hover {
+  background: rgb(98 163 136 / 12%);
+  border-color: var(--uno-sage);
+}
+
+.uno-target:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.uno-target__cards {
+  display: flex;
+  min-width: 40px;
+}
+
+.uno-target__cards .uno-card + .uno-card {
+  margin-left: -12px;
+}
+
+.uno-target__name {
+  font-weight: 800;
+}
+
+.uno-target__count {
+  font-size: 0.875rem;
+  color: var(--ink-soft);
+}
+
+/* Pilihan mode di menu online */
+.uno-modes {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.uno-modes .count-option.mode-option {
+  padding: 8px 4px;
+  font-size: 0.9375rem;
+  text-align: center;
+}
+
+.uno-modes__note {
+  margin-top: 8px;
+}
+
+/* Desktop pendek menyembunyikan .setup__note; penjelasan mode tetap perlu terlihat */
+.split .setup__note.uno-modes__note {
+  display: block;
+}
+
 .uno-result__hands {
   color: var(--ink);
 }
@@ -1113,6 +1258,10 @@ button.uno-card:focus-visible {
     display: none;
   }
 
+  .uno-modes {
+    grid-template-columns: 1fr;
+  }
+
   .uno-seat {
     min-width: 0;
     padding: 8px 10px;
@@ -1150,7 +1299,8 @@ button.uno-card:focus-visible {
   .uno-badge--warn,
   .uno-call--urgent,
   .uno-split__side .uno-card,
-  .uno-seat__fan .uno-card {
+  .uno-seat__fan .uno-card,
+  .uno-stack-badge {
     animation: none !important;
   }
 

@@ -4,6 +4,7 @@ import { MAX_TURN_SECONDS, MIN_TURN_SECONDS } from '../game/timer'
 import { CODE_LENGTH, normalizeCode } from '../net/online'
 import type { Card } from './cards'
 import { DEFAULT_UNO_TURN_SECONDS, MAX_PLAYERS } from './net'
+import { MODE_NAMES, type UnoMode } from './state'
 import { CardBack, UnoCard } from './UnoCard'
 
 /** Kode room dari link undangan UNO (?game=uno&room=KODE). */
@@ -19,6 +20,16 @@ function parseSeconds(input: string): number {
   return Math.min(MAX_TURN_SECONDS, Math.max(MIN_TURN_SECONDS, value))
 }
 
+const MODES: UnoMode[] = ['classic', 'crazy', 'indonesian']
+
+/** Penjelasan singkat tiap mode, untuk menu online dan lobi. */
+export const MODE_SUMMARIES: Record<UnoMode, string> = {
+  classic: 'aturan dasar UNO internasional.',
+  crazy: 'angka 0 membuat semua pemain mengoper kartunya searah permainan; angka 7 menukar kartu dengan pemain pilihan.',
+  indonesian:
+    '+2/+4 bisa dibalas dan hukumannya menumpuk; kartu bernilai sama (angka atau kartu aksi) boleh dikeluarkan sekaligus; tidak punya kartu cocok berarti ambil terus sampai dapat.',
+}
+
 /** Tumpukan kartu hiasan di kolom kanan. */
 const SIDE_CARDS: (Card | null)[] = [
   { id: -1, color: 'red', value: 5 },
@@ -31,7 +42,7 @@ const SIDE_CARDS: (Card | null)[] = [
 ]
 
 interface UnoSetupProps {
-  onHost: (name: string, turnSeconds: number) => void
+  onHost: (name: string, turnSeconds: number, mode: UnoMode) => void
   onJoin: (name: string, code: string) => void
   onBack: () => void
 }
@@ -41,6 +52,7 @@ export function UnoSetup({ onHost, onJoin, onBack }: UnoSetupProps) {
   const [myName, setMyName] = useState('')
   const [code, setCode] = useState(unoInvitedRoom)
   const [turnTime, setTurnTime] = useState('')
+  const [mode, setMode] = useState<UnoMode>('classic')
 
   useLayoutEffect(() => {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
@@ -60,7 +72,7 @@ export function UnoSetup({ onHost, onJoin, onBack }: UnoSetupProps) {
 
   function host(event: FormEvent) {
     event.preventDefault()
-    onHost(myName.trim() || 'Host', parseSeconds(turnTime))
+    onHost(myName.trim() || 'Host', parseSeconds(turnTime), mode)
   }
 
   function join(event: FormEvent) {
@@ -117,6 +129,23 @@ export function UnoSetup({ onHost, onJoin, onBack }: UnoSetupProps) {
           </div>
 
           <form className="setup__form" onSubmit={host}>
+            <fieldset className="setup__field">
+              <legend>Buat room baru — pilih mode</legend>
+              <div className="uno-modes">
+                {MODES.map((option) => (
+                  <label
+                    key={option}
+                    className={`count-option mode-option ${mode === option ? 'count-option--active' : ''}`}
+                  >
+                    <input type="radio" name="uno-mode" checked={mode === option} onChange={() => setMode(option)} />
+                    {MODE_NAMES[option]}
+                  </label>
+                ))}
+              </div>
+              <p className="setup__note uno-modes__note">
+                <strong>{MODE_NAMES[mode]}:</strong> {MODE_SUMMARIES[mode]}
+              </p>
+            </fieldset>
             <label className="setup__field setup__time">
               <span className="setup__label">Waktu per giliran (detik)</span>
               <input

@@ -2,7 +2,16 @@ import Peer, { type DataConnection } from 'peerjs'
 import { useEffect, useRef, useState } from 'react'
 import { randomCode, type RoomError } from '../net/online'
 import { COLORS, type Card, type Color } from './cards'
-import { reducer, roundPoints, startRound, topCard, type Action, type Phase, type UnoState } from './state'
+import {
+  reducer,
+  roundPoints,
+  startRound,
+  topCard,
+  type Action,
+  type Phase,
+  type UnoMode,
+  type UnoState,
+} from './state'
 
 export const MIN_PLAYERS = 2
 export const MAX_PLAYERS = 6
@@ -11,6 +20,8 @@ export const TARGET_SCORE = 500
 export const DEFAULT_UNO_TURN_SECONDS = 20
 
 export interface UnoLobby {
+  /** Mode aturan room ini, ditentukan host saat membuat room. */
+  mode: UnoMode
   /** Batas waktu per aksi (detik), ditentukan host saat membuat room. */
   turnSeconds: number
   /** `score`: total poin selama permainan menuju TARGET_SCORE. */
@@ -21,6 +32,7 @@ export interface UnoLobby {
 
 /** State permainan yang dilihat satu kursi: tangan lawan hanya berupa jumlah kartu. */
 export interface UnoView {
+  mode: UnoMode
   phase: Phase
   current: number
   direction: 1 | -1
@@ -35,6 +47,8 @@ export interface UnoView {
   /** Fase `challenge`: siapa yang mengeluarkan Wild Draw Four, dan warna yang berlaku sebelumnya. */
   challengeFrom: number | null
   challengeColor: Color | null
+  /** Fase `stack`: jumlah kartu hukuman +2/+4 yang menumpuk. */
+  pendingDraw: number
   dealer: number
   winner: number | null
   /** Setelah ronde berakhir, semua tangan dibuka untuk perhitungan poin. */
@@ -81,6 +95,7 @@ function peerId(code: string): string {
 export function viewFor(s: UnoState, seat: number): UnoView {
   const over = s.phase === 'over'
   return {
+    mode: s.mode,
     phase: s.phase,
     current: s.current,
     direction: s.direction,
@@ -93,6 +108,7 @@ export function viewFor(s: UnoState, seat: number): UnoView {
     vulnerable: s.vulnerable,
     challengeFrom: s.challenge?.from ?? null,
     challengeColor: s.challenge?.color ?? null,
+    pendingDraw: s.pendingDraw,
     dealer: s.dealer,
     winner: s.winner,
     hands: over ? s.players.map((player) => player.hand) : null,
@@ -105,9 +121,15 @@ export function viewFor(s: UnoState, seat: number): UnoView {
 function isAllowed(s: UnoState, seat: number, action: Action): boolean {
   switch (action.type) {
     case 'play':
-      return (s.phase === 'turn' || s.phase === 'drawn') && s.current === seat && Number.isInteger(action.cardId)
+      return (
+        (s.phase === 'turn' || s.phase === 'drawn' || s.phase === 'stack') &&
+        s.current === seat &&
+        Number.isInteger(action.cardId) &&
+        (action.under === undefined || (Array.isArray(action.under) && action.under.every(Number.isInteger))) &&
+        (action.target === undefined || Number.isInteger(action.target))
+      )
     case 'draw':
-      return s.phase === 'turn' && s.current === seat
+      return (s.phase === 'turn' || s.phase === 'stack') && s.current === seat
     case 'pass':
       return s.phase === 'drawn' && s.current === seat
     case 'chooseColor':
@@ -125,12 +147,12 @@ function isAllowed(s: UnoState, seat: number, action: Action): boolean {
   }
 }
 
-function emptySnapshot(code: string, turnSeconds: number): UnoRoomSnapshot {
+function emptySnapshot(code: string, turnSeconds: number, mode: UnoMode = 'classic'): UnoRoomSnapshot {
   return {
     status: 'connecting',
     error: null,
     code,
-    lobby: { turnSeconds, players: [], champion: null },
+    lobby: { mode, turnSeconds, players: [], champion: null },
     seat: 0,
     view: null,
     deadline: null,
@@ -165,6 +187,7 @@ class HostRoom {
     private code: string,
     hostName: string,
     private turnSeconds: number,
+    private mode: UnoMode,
     private onChange: (snapshot: UnoRoomSnapshot) => void,
   ) {
     this.seats = [{ name: hostName, token: '', conn: null, offlineSince: null, score: 0 }]
@@ -246,7 +269,7 @@ class HostRoom {
     const names = this.seats.map((seat) => seat.name)
     // Pembagi pertama diacak; ronde berikutnya pindah ke pemain di sebelah kirinya.
     const dealer = this.game ? (this.game.dealer + 1) % names.length : Math.floor(Math.random() * names.length)
-    this.game = startRound(names, dealer)
+    this.game = startRound(names, dealer, this.mode)
     this.update()
   }
 
@@ -311,6 +334,7 @@ class HostRoom {
   private publish() {
     const timeLeft = this.deadline === null ? null : Math.max(0, this.deadline - Date.now())
     const lobby: UnoLobby = {
+      mode: this.mode,
       turnSeconds: this.turnSeconds,
       champion: this.champion,
       players: this.seats.map((seat, i) => ({
@@ -411,16 +435,16 @@ class GuestRoom {
   }
 }
 
-export function useUnoHostRoom(name: string, turnSeconds: number): UnoRoom {
-  const [snapshot, setSnapshot] = useState(() => emptySnapshot('', turnSeconds))
+export function useUnoHostRoom(name: string, turnSeconds: number, mode: UnoMode): UnoRoom {
+  const [snapshot, setSnapshot] = useState(() => emptySnapshot('', turnSeconds, mode))
   const roomRef = useRef<HostRoom | null>(null)
 
   useEffect(() => {
     // Kode dibuat di sini supaya tiap pemasangan efek memakai ID baru (lihat net/rooms.ts).
-    const room = new HostRoom(randomCode(), name, turnSeconds, setSnapshot)
+    const room = new HostRoom(randomCode(), name, turnSeconds, mode, setSnapshot)
     roomRef.current = room
     return () => room.destroy()
-  }, [name, turnSeconds])
+  }, [name, turnSeconds, mode])
 
   return {
     ...snapshot,

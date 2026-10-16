@@ -1,10 +1,11 @@
 import { useEffect, useState, type CSSProperties } from 'react'
 import { MusicSlot } from '../components/MusicPlayer'
-import { canPlay, COLOR_NAMES, sortHand, type Card, type Color } from './cards'
+import { canPlay, cardName, COLOR_NAMES, sortHand, valueName, type Card, type Color } from './cards'
 import { TARGET_SCORE, type UnoRoom, type UnoView } from './net'
 import { useUnoSfx } from './sfx'
+import { canStack, MODE_NAMES, playOrder } from './state'
 import { CardBack, UnoCard } from './UnoCard'
-import { ColorPicker, RulesDialog, UnoResultDialog } from './UnoDialogs'
+import { ColorPicker, PlayerPicker, RulesDialog, UnoResultDialog } from './UnoDialogs'
 
 /**
  * Semua kartu lawan digambar sebagai kipas punggung kartu, supaya jumlahnya terlihat sekilas.
@@ -88,48 +89,125 @@ function Opponent({
   )
 }
 
+/** Kartu yang menunggu pilihan warna (Wild) atau lawan (angka 7 di Crazy Rules) sebelum dikirim. */
+interface PendingPlay {
+  cardId: number
+  under: number[]
+  need: 'color' | 'target'
+}
+
 export function UnoTable({ room, onExit }: { room: UnoRoom; onExit: () => void }) {
   const view = room.view!
   const { lobby, seat: me } = room
-  const [pendingWild, setPendingWild] = useState<number | null>(null)
+  const [pending, setPending] = useState<PendingPlay | null>(null)
+  /** Indonesian Rules: kartu angka sama yang dipilih untuk dikeluarkan sekaligus; terakhir = teratas. */
+  const [selected, setSelected] = useState<number[]>([])
+  const [turnKey, setTurnKey] = useState('')
   const [rulesOpen, setRulesOpen] = useState(false)
   const [resultClosed, setResultClosed] = useState(false)
   useUnoSfx(view)
 
-  const { players, phase, current, top, color } = view
+  const { players, phase, current, top, color, mode } = view
   if (phase !== 'over' && resultClosed) setResultClosed(false)
+  // Pilihan kartu hanya berlaku untuk giliran yang sama; giliran berganti (mis. waktu habis) mengosongkannya.
+  const key = `${current}:${phase}:${top.id}:${view.hand.length}`
+  if (key !== turnKey) {
+    setTurnKey(key)
+    setSelected([])
+    setPending(null)
+  }
+
   const myTurn = phase !== 'over' && current === me
   const hand = sortHand(view.hand)
+  const canAct = myTurn && (phase === 'turn' || phase === 'drawn' || phase === 'stack')
   const playable = new Set(
-    myTurn && (phase === 'turn' || phase === 'drawn')
+    canAct
       ? hand
-          .filter((card) => (phase === 'drawn' ? card.id === view.drawnId : true) && canPlay(card, top, color))
+          .filter((card) =>
+            phase === 'stack'
+              ? canStack(card, top)
+              : (phase !== 'drawn' || card.id === view.drawnId) && canPlay(card, top, color),
+          )
           .map((card) => card.id)
       : [],
   )
-  // Pilihan warna untuk Wild hanya berlaku selama kartunya masih bisa dikeluarkan (mis. belum habis waktu).
-  const wildPending = pendingWild !== null && playable.has(pendingWild)
+  const indonesian = mode === 'indonesian'
+  const multi = indonesian && canAct
+  const selection = selected.map((id) => hand.find((card) => card.id === id)).filter((card): card is Card => !!card)
+  // Setelah kartu pertama dipilih, yang bisa ditambahkan hanya kartu dengan nilai (angka/simbol) yang sama.
+  const selectable = selection.length
+    ? new Set(hand.filter((card) => card.value === selection[0].value).map((card) => card.id))
+    : playable
+  const order = selection.length ? playOrder(selection, top, color, phase, view.drawnId) : null
+  // Indonesian Rules: kartu hanya boleh diambil kalau tidak ada yang cocok.
+  const canDraw = myTurn && (phase === 'stack' || (phase === 'turn' && !(indonesian && playable.size > 0)))
   const connected = lobby.players.map((player) => player.connected)
   const absent = players.filter((_, i) => connected[i] === false).map((player) => player.name)
   const others = Array.from({ length: players.length - 1 }, (_, i) => (me + 1 + i) % players.length)
   const declared = players[me]?.declared ?? false
-  const canCallUno = phase !== 'over' && (view.vulnerable === me || (hand.length === 2 && !declared))
+  // UNO dibilang sebelum mengeluarkan kartu yang menyisakan satu kartu, termasuk beberapa kartu sekaligus.
+  const leavesOne = hand.length === 2 || (selection.length >= 2 && hand.length - selection.length === 1)
+  const canCallUno = phase !== 'over' && (view.vulnerable === me || (!declared && leavesOne))
   const catchable = view.vulnerable !== null && view.vulnerable !== me ? view.vulnerable : null
   const name = (seat: number) => players[seat]?.name ?? ''
 
-  function playCard(card: Card) {
-    if (!playable.has(card.id)) return
-    if (card.color === null) setPendingWild(card.id)
-    else room.send({ type: 'play', cardId: card.id })
+  /** Mengirim kartu, atau menahannya dulu kalau masih perlu pilihan warna/lawan. */
+  function playCards(card: Card, under: number[] = []) {
+    const remaining = hand.length - 1 - under.length
+    if (card.color === null) setPending({ cardId: card.id, under, need: 'color' })
+    else if (mode === 'crazy' && card.value === 7 && remaining > 0) setPending({ cardId: card.id, under, need: 'target' })
+    else room.send({ type: 'play', cardId: card.id, under: under.length ? under : undefined })
+  }
+
+  function clickCard(card: Card) {
+    if (multi) {
+      if (selected.includes(card.id)) {
+        setSelected(selected.filter((id) => id !== card.id))
+        return
+      }
+      if (selection.length) {
+        if (selectable.has(card.id)) setSelected([...selected, card.id])
+        return
+      }
+      const hasTwin = hand.some((c) => c.id !== card.id && c.value === card.value)
+      if (playable.has(card.id) && hasTwin) {
+        setSelected([card.id])
+        return
+      }
+    }
+    if (playable.has(card.id)) playCards(card)
+  }
+
+  function playSelection() {
+    if (!order) return
+    const chosen = selection[selection.length - 1]
+    playCards(
+      chosen,
+      selection.slice(0, -1).map((card) => card.id),
+    )
+    setSelected([])
   }
 
   function pickColor(chosen: Color) {
-    if (wildPending) room.send({ type: 'play', cardId: pendingWild!, color: chosen })
-    else room.send({ type: 'chooseColor', color: chosen })
-    setPendingWild(null)
+    if (pending?.need === 'color') {
+      room.send({
+        type: 'play',
+        cardId: pending.cardId,
+        color: chosen,
+        under: pending.under.length ? pending.under : undefined,
+      })
+    } else room.send({ type: 'chooseColor', color: chosen })
+    setPending(null)
+  }
+
+  function pickTarget(target: number) {
+    if (pending?.need !== 'target') return
+    room.send({ type: 'play', cardId: pending.cardId, target, under: pending.under.length ? pending.under : undefined })
+    setPending(null)
   }
 
   const drawnCard = view.drawnId === null ? null : hand.find((card) => card.id === view.drawnId) ?? null
+  const answer = top.value === 'draw2' ? '+2 atau +4' : '+4'
 
   function renderDock() {
     if (phase === 'over') {
@@ -160,6 +238,7 @@ export function UnoTable({ room, onExit }: { room: UnoRoom; onExit: () => void }
         drawn: 'sedang memutuskan kartu yang baru diambil.',
         color: 'sedang memilih warna pembuka.',
         challenge: `memutuskan menantang Wild Draw Four dari ${name(view.challengeFrom ?? 0)} atau tidak.`,
+        stack: `harus membalas dengan ${answer} atau mengambil ${view.pendingDraw} kartu.`,
       }
       return (
         <>
@@ -171,19 +250,85 @@ export function UnoTable({ room, onExit }: { room: UnoRoom; onExit: () => void }
       )
     }
 
+    if (selection.length) {
+      const chosen = selection[selection.length - 1]
+      return (
+        <>
+          <h2 className="dock__title">Keluarkan sekaligus</h2>
+          <p className="dock__hint">
+            {!order ? (
+              phase === 'drawn' ? (
+                'Kartu yang baru kamu ambil harus ikut dikeluarkan.'
+              ) : (
+                'Kartu paling bawah harus cocok dengan buangan. Pilih dulu kartu yang cocok, lalu kartu lainnya.'
+              )
+            ) : chosen.color === null ? (
+              <>
+                {selection.length} kartu {valueName(chosen)}. Warnanya cukup dipilih sekali setelah ini.
+              </>
+            ) : (
+              <>
+                {selection.length} kartu {valueName(chosen)}. Kartu terakhir yang kamu pilih jadi kartu teratas:{' '}
+                <strong>{cardName(chosen)}</strong>.
+              </>
+            )}
+          </p>
+          <div className="dock__actions">
+            <button type="button" className="btn btn--primary" disabled={!order} onClick={playSelection}>
+              Keluarkan {selection.length} kartu
+            </button>
+            <button type="button" className="btn" onClick={() => setSelected([])}>
+              Batal
+            </button>
+          </div>
+        </>
+      )
+    }
+
     switch (phase) {
-      case 'turn':
+      case 'turn': {
         return (
           <>
             <h2 className="dock__title">Giliranmu</h2>
             <p className="dock__hint">
+              {indonesian
+                ? playable.size > 0
+                  ? 'Klik kartu yang menyala untuk mengeluarkannya. Punya kartu bernilai sama (angka atau simbol)? Pilih beberapa untuk dikeluarkan sekaligus.'
+                  : 'Tidak ada kartu yang cocok. Ambil kartu terus sampai dapat yang cocok, lalu keluarkan.'
+                : playable.size > 0
+                  ? 'Klik kartu yang menyala untuk mengeluarkannya, atau ambil 1 kartu.'
+                  : 'Tidak ada kartu yang cocok. Ambil 1 kartu dari tumpukan.'}
+            </p>
+            {canDraw && (
+              <div className="dock__actions">
+                <button
+                  type="button"
+                  className={`btn ${playable.size ? '' : 'btn--primary'}`}
+                  onClick={() => room.send({ type: 'draw' })}
+                >
+                  {indonesian ? 'Ambil sampai dapat' : 'Ambil 1 kartu'}
+                </button>
+              </div>
+            )}
+          </>
+        )
+      }
+      case 'stack':
+        return (
+          <>
+            <h2 className="dock__title">Kena +{view.pendingDraw}!</h2>
+            <p className="dock__hint">
               {playable.size > 0
-                ? 'Klik kartu yang menyala untuk mengeluarkannya, atau ambil 1 kartu.'
-                : 'Tidak ada kartu yang cocok. Ambil 1 kartu dari tumpukan.'}
+                ? `Balas dengan ${answer} supaya hukumannya menumpuk ke pemain berikutnya, atau terima.`
+                : `Tidak ada ${answer} untuk membalas.`}
             </p>
             <div className="dock__actions">
-              <button type="button" className={`btn ${playable.size ? '' : 'btn--primary'}`} onClick={() => room.send({ type: 'draw' })}>
-                Ambil 1 kartu
+              <button
+                type="button"
+                className={`btn ${playable.size ? '' : 'btn--primary'}`}
+                onClick={() => room.send({ type: 'draw' })}
+              >
+                Ambil {view.pendingDraw} kartu
               </button>
             </div>
           </>
@@ -191,20 +336,33 @@ export function UnoTable({ room, onExit }: { room: UnoRoom; onExit: () => void }
       case 'drawn':
         return (
           <>
-            <h2 className="dock__title">Kartu barumu cocok!</h2>
+            <h2 className="dock__title">{indonesian ? 'Dapat kartu yang cocok!' : 'Kartu barumu cocok!'}</h2>
             <p className="dock__hint">
-              Keluarkan <strong>{drawnCard ? 'kartu yang baru diambil' : 'kartunya'}</strong> sekarang, atau simpan dan
-              akhiri giliran.
+              {indonesian ? (
+                <>
+                  Kartu yang baru diambil <strong>wajib dikeluarkan</strong>.
+                  {drawnCard &&
+                    hand.some((c) => c.id !== drawnCard.id && c.value === drawnCard.value) &&
+                    ' Klik kartunya untuk ikut mengeluarkan kartu lain yang bernilai sama.'}
+                </>
+              ) : (
+                <>
+                  Keluarkan <strong>{drawnCard ? 'kartu yang baru diambil' : 'kartunya'}</strong> sekarang, atau simpan
+                  dan akhiri giliran.
+                </>
+              )}
             </p>
             <div className="dock__actions">
               {drawnCard && (
-                <button type="button" className="btn btn--primary" onClick={() => playCard(drawnCard)}>
+                <button type="button" className="btn btn--primary" onClick={() => playCards(drawnCard)}>
                   Keluarkan
                 </button>
               )}
-              <button type="button" className="btn" onClick={() => room.send({ type: 'pass' })}>
-                Simpan
-              </button>
+              {!indonesian && (
+                <button type="button" className="btn" onClick={() => room.send({ type: 'pass' })}>
+                  Simpan
+                </button>
+              )}
             </div>
           </>
         )
@@ -241,6 +399,7 @@ export function UnoTable({ room, onExit }: { room: UnoRoom; onExit: () => void }
     <div className="uno-game">
       <header className="uno-topbar">
         <h1 className="uno-topbar__title">UNO</h1>
+        <span className="uno-topbar__mode">{MODE_NAMES[mode]}</span>
         <span className="uno-topbar__room">Room {room.code}</span>
         <div className="uno-topbar__tools">
           <MusicSlot />
@@ -291,9 +450,13 @@ export function UnoTable({ room, onExit }: { room: UnoRoom; onExit: () => void }
           <button
             type="button"
             className="uno-pile"
-            disabled={!(myTurn && phase === 'turn')}
+            disabled={!canDraw}
             onClick={() => room.send({ type: 'draw' })}
-            aria-label={`Tumpukan ambil, ${view.drawCount} kartu`}
+            aria-label={
+              myTurn && phase === 'stack'
+                ? `Ambil ${view.pendingDraw} kartu hukuman`
+                : `Tumpukan ambil, ${view.drawCount} kartu`
+            }
           >
             <span className="uno-pile__stack">
               <CardBack size="pile" />
@@ -310,6 +473,11 @@ export function UnoTable({ room, onExit }: { room: UnoRoom; onExit: () => void }
               // Tiap kartu buangan sedikit miring, supaya tumpukannya terlihat alami.
               style={{ rotate: `${(Math.abs(top.id * 37) % 15) - 7}deg` }}
             />
+            {view.pendingDraw > 0 && (
+              <span key={view.pendingDraw} className="uno-stack-badge" title="Hukuman yang menumpuk">
+                +{view.pendingDraw}
+              </span>
+            )}
             <span className="uno-pile__label">Buangan</span>
           </div>
 
@@ -323,7 +491,6 @@ export function UnoTable({ room, onExit }: { room: UnoRoom; onExit: () => void }
             </span>
           </div>
         </section>
-
 
         <section className="uno-hand-area" aria-label="Kartumu">
           <h2 className="uno-hand-area__title">
@@ -339,23 +506,33 @@ export function UnoTable({ room, onExit }: { room: UnoRoom; onExit: () => void }
             className={`uno-hand ${myTurn ? 'uno-hand--turn' : ''}`}
             style={{ '--overlap': handOverlap(hand.length) } as CSSProperties}
           >
-            {hand.map((card) => (
-              // Slot tidak ikut terangkat saat kartu di-hover, supaya kartu tidak naik-turun di bawah kursor.
-              // Klik di celah bawah kartu yang terangkat mengenai slot, jadi tetap mengeluarkan kartunya.
-              <span
-                key={card.id}
-                className="uno-hand__slot"
-                onClick={(event) => event.target === event.currentTarget && playCard(card)}
-              >
-                <UnoCard
-                  card={card}
-                  onClick={playable.has(card.id) ? () => playCard(card) : undefined}
-                  playable={playable.has(card.id)}
-                  dimmed={myTurn && (phase === 'turn' || phase === 'drawn') && !playable.has(card.id)}
-                  fresh={card.id === view.drawnId}
-                />
-              </span>
-            ))}
+            {hand.map((card) => {
+              const position = selected.indexOf(card.id)
+              const clickable = multi ? selectable.has(card.id) || position >= 0 : playable.has(card.id)
+              return (
+                // Slot tidak ikut terangkat saat kartu di-hover, supaya kartu tidak naik-turun di bawah kursor.
+                // Klik di celah bawah kartu yang terangkat mengenai slot, jadi tetap memilih kartunya.
+                <span
+                  key={card.id}
+                  className="uno-hand__slot"
+                  onClick={(event) => event.target === event.currentTarget && clickable && clickCard(card)}
+                >
+                  <UnoCard
+                    card={card}
+                    onClick={clickable ? () => clickCard(card) : undefined}
+                    playable={clickable && position < 0}
+                    selected={position >= 0}
+                    dimmed={canAct && !clickable}
+                    fresh={card.id === view.drawnId}
+                  />
+                  {position >= 0 && (
+                    <span className="uno-hand__order" aria-hidden="true">
+                      {position === selected.length - 1 ? 'atas' : position + 1}
+                    </span>
+                  )}
+                </span>
+              )
+            })}
           </div>
         </section>
 
@@ -424,9 +601,15 @@ export function UnoTable({ room, onExit }: { room: UnoRoom; onExit: () => void }
       </div>
 
       <ColorPicker
-        open={wildPending || (myTurn && phase === 'color')}
+        open={pending?.need === 'color' || (myTurn && phase === 'color')}
         onPick={pickColor}
-        onCancel={wildPending ? () => setPendingWild(null) : undefined}
+        onCancel={pending?.need === 'color' ? () => setPending(null) : undefined}
+      />
+      <PlayerPicker
+        open={pending?.need === 'target'}
+        players={others.map((seat) => ({ seat, name: name(seat), count: players[seat].count }))}
+        onPick={pickTarget}
+        onCancel={() => setPending(null)}
       />
       <RulesDialog open={rulesOpen} onClose={() => setRulesOpen(false)} />
       <UnoResultDialog
