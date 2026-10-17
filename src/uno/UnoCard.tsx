@@ -118,12 +118,16 @@ export function UnoCard({
   )
 }
 
-/** Punggung kartu: hitam dengan oval merah dan tulisan UNO. */
+/** Punggung kartu: teal bergaris dengan lambang belah ketupat empat warna (gayanya di uno.css). */
 export function CardBack({ size = 'hand', className, style }: { size?: CardSize; className?: string; style?: CSSProperties }) {
   return (
     <span className={`uno-card uno-card--${size} uno-card--back ${className ?? ''}`} style={style} aria-hidden="true">
-      <span className="uno-card__oval" />
-      <span className="uno-card__logo">UNO</span>
+      <span className="uno-card__emblem">
+        <span />
+        <span />
+        <span />
+        <span />
+      </span>
     </span>
   )
 }
