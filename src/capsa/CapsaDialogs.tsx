@@ -86,7 +86,10 @@ export function GuideContent() {
             Yang sudah lewat tidak bisa ikut lagi sampai meja dibersihkan. Kalau semua lawan lewat, pemain terakhir yang
             mengeluarkan kartu bebas memulai kombinasi baru.
           </li>
-          <li>Waktu habis: otomatis lewat, atau kalau sedang memimpin, kartu terkecil dikeluarkan.</li>
+          <li>
+            Tidak ada batas waktu giliran. Pemain yang terputus lebih dari 15 detik otomatis lewat (atau kalau sedang
+            memimpin, kartu terkecilnya dikeluarkan) sampai tersambung kembali.
+          </li>
         </ul>
       </Section>
       <Section title="Memilih dan menyusun kartu">

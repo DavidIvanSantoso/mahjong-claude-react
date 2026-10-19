@@ -1,2 +1,5 @@
 node_modules
 dist
+
+# Kredensial TURN untuk dev lokal (lihat src/net/ice.ts)
+.env.local

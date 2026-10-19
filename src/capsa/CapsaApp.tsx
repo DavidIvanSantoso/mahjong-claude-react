@@ -10,7 +10,7 @@ import { MAX_PLAYERS, MIN_PLAYERS, useCapsaGuestRoom, useCapsaHostRoom, type Cap
 type Screen =
   | { kind: 'home' }
   | { kind: 'setup' }
-  | { kind: 'host'; name: string; turnSeconds: number }
+  | { kind: 'host'; name: string }
   | { kind: 'guest'; name: string; code: string }
 
 function errorMessage(error: RoomError | null): string {
@@ -27,6 +27,8 @@ function errorMessage(error: RoomError | null): string {
       return 'Koneksi ke host terputus.'
     case 'not-found':
       return 'Room tidak ditemukan. Periksa kodenya dan pastikan host masih membuka room.'
+    case 'unreachable':
+      return 'Tidak bisa tersambung ke host. Biasanya karena jaringan (data seluler, WiFi kantor/kampus) menghalangi koneksi langsung antarperangkat. Coba jaringan lain, mis. WiFi yang sama dengan host.'
     case 'connect-failed':
       return `Gagal terhubung (${error.detail}). Periksa koneksi internet.`
     default:
@@ -47,6 +49,9 @@ function RoomView({ room, onExit }: { room: CapsaRoom; onExit: () => void }) {
         <div className="card setup__card">
           <h1 className="setup__title">Tidak terhubung</h1>
           <p className="setup__lead">{errorMessage(room.error)}</p>
+          {room.error?.code === 'unreachable' && room.error.detail && (
+            <p className="setup__note">Detail teknis: {room.error.detail}</p>
+          )}
           {!room.isHost && (
             <button type="button" className="btn btn--primary btn--wide" onClick={room.retry}>
               Coba sambung lagi
@@ -62,7 +67,7 @@ function RoomView({ room, onExit }: { room: CapsaRoom; onExit: () => void }) {
 
   if (room.view) return <CapsaTable room={room} onExit={onExit} />
 
-  const { players, turnSeconds } = room.lobby
+  const { players } = room.lobby
   const ready = players.length >= MIN_PLAYERS
   const link = inviteLink(room.code)
 
@@ -116,8 +121,7 @@ function RoomView({ room, onExit }: { room: CapsaRoom; onExit: () => void }) {
             </div>
 
             <p className="setup__lead">
-              52 kartu tanpa Joker, 13 kartu per pemain. Waktu per giliran: <strong>{turnSeconds} detik</strong>; kalau
-              habis, otomatis lewat.
+              52 kartu tanpa Joker, 13 kartu per pemain. Tanpa batas waktu giliran.
             </p>
 
             {room.isHost ? (
@@ -138,8 +142,8 @@ function RoomView({ room, onExit }: { room: CapsaRoom; onExit: () => void }) {
   )
 }
 
-function HostGame({ name, turnSeconds, onExit }: { name: string; turnSeconds: number; onExit: () => void }) {
-  return <RoomView room={useCapsaHostRoom(name, turnSeconds)} onExit={onExit} />
+function HostGame({ name, onExit }: { name: string; onExit: () => void }) {
+  return <RoomView room={useCapsaHostRoom(name)} onExit={onExit} />
 }
 
 function GuestGame({ name, code, onExit }: { name: string; code: string; onExit: () => void }) {
@@ -185,13 +189,13 @@ export function CapsaApp({ nav }: { nav: ReactNode }) {
     case 'setup':
       return (
         <CapsaSetup
-          onHost={(name, turnSeconds) => setScreen({ kind: 'host', name, turnSeconds })}
+          onHost={(name) => setScreen({ kind: 'host', name })}
           onJoin={(name, code) => setScreen({ kind: 'guest', name, code })}
           onBack={goHome}
         />
       )
     case 'host':
-      return <HostGame name={screen.name} turnSeconds={screen.turnSeconds} onExit={goHome} />
+      return <HostGame name={screen.name} onExit={goHome} />
     case 'guest':
       return <GuestGame name={screen.name} code={screen.code} onExit={goHome} />
   }

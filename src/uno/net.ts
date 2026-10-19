@@ -1,5 +1,6 @@
 import Peer, { type DataConnection } from 'peerjs'
 import { useEffect, useRef, useState } from 'react'
+import { CONNECT_TIMEOUT_MS, iceDetail, PEER_OPTIONS } from '../net/ice'
 import { randomCode, type RoomError } from '../net/online'
 import { COLORS, type Card, type Color } from './cards'
 import {
@@ -191,7 +192,7 @@ class HostRoom {
     private onChange: (snapshot: UnoRoomSnapshot) => void,
   ) {
     this.seats = [{ name: hostName, token: '', conn: null, offlineSince: null, score: 0 }]
-    this.peer = new Peer(peerId(code))
+    this.peer = new Peer(peerId(code), PEER_OPTIONS)
     this.peer.on('open', () => {
       this.status = 'ready'
       this.publish()
@@ -384,6 +385,7 @@ function guestToken(code: string): string {
 class GuestRoom {
   private peer: Peer
   private conn: DataConnection | null = null
+  private connectTimer: ReturnType<typeof setTimeout> | undefined
   private snapshot: UnoRoomSnapshot
 
   constructor(
@@ -392,11 +394,16 @@ class GuestRoom {
     private onChange: (snapshot: UnoRoomSnapshot) => void,
   ) {
     this.snapshot = emptySnapshot(code, DEFAULT_UNO_TURN_SECONDS)
-    this.peer = new Peer()
+    // Koneksi yang tidak pernah terbuka (biasanya karena jaringan) dilaporkan, bukan ditunggu terus.
+    this.connectTimer = setTimeout(() => {
+      void iceDetail(this.conn).then((detail) => this.fail({ code: 'unreachable', detail }))
+    }, CONNECT_TIMEOUT_MS)
+    this.peer = new Peer(PEER_OPTIONS)
     this.peer.on('open', () => {
       const conn = this.peer.connect(peerId(code), { reliable: true, serialization: 'json' })
       this.conn = conn
       conn.on('open', () => {
+        clearTimeout(this.connectTimer)
         conn.send({ type: 'join', name, token: guestToken(code) } satisfies UnoGuestMessage)
       })
       conn.on('data', (raw) => {
@@ -430,6 +437,7 @@ class GuestRoom {
   }
 
   destroy() {
+    clearTimeout(this.connectTimer)
     this.onChange = () => {}
     this.peer.destroy()
   }

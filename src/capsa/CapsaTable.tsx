@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties } from 'react'
+import { useState, type CSSProperties } from 'react'
 import { MusicSlot } from '../components/MusicPlayer'
 import { cardLabel, cardName, comboLabel, evaluate, sortByRank, sortBySuit, type Card } from './cards'
 import { CapsaCard, CardBack } from './CapsaCard'
@@ -10,24 +10,6 @@ import { useCapsaSfx } from './sfx'
 
 /** Jumlah kartu yang dikeluarkan sebelumnya di putaran ini yang masih ditampilkan di meja. */
 const TRICK_SHOWN = 3
-
-function TurnTimer({ deadline, total }: { deadline: number; total: number }) {
-  const [now, setNow] = useState(Date.now)
-  useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 250)
-    return () => clearInterval(id)
-  }, [])
-  const left = Math.max(0, deadline - now)
-  const seconds = Math.ceil(left / 1000)
-  return (
-    <div className={`turn-timer ${seconds <= 5 ? 'turn-timer--low' : ''}`} role="timer">
-      <span className="turn-timer__bar" aria-hidden="true">
-        <span style={{ width: `${Math.min(100, (left / (total * 1000)) * 100)}%` }} />
-      </span>
-      <span className="turn-timer__text">{seconds} dtk</span>
-    </div>
-  )
-}
 
 function Opponent({ view, seat, offline, score }: { view: CapsaView; seat: number; offline: boolean; score: number }) {
   const player = view.players[seat]
@@ -276,9 +258,6 @@ export function CapsaTable({ room, onExit }: { room: CapsaRoom; onExit: () => vo
                   ? 'Gilirannya dijalankan otomatis sampai tersambung kembali.'
                   : 'Permainan menunggu sampai ada yang tersambung kembali.'}
               </p>
-            )}
-            {room.deadline !== null && phase !== 'over' && (
-              <TurnTimer key={room.deadline} deadline={room.deadline} total={lobby.turnSeconds} />
             )}
             {renderDock()}
           </section>

@@ -47,6 +47,11 @@ function errorMessage(error: RoomError | null): string {
         'Room tidak ditemukan. Periksa kodenya dan pastikan host masih membuka room.',
         'Room not found. Check the code and make sure the host still has the room open.',
       )
+    case 'unreachable':
+      return t(
+        'Tidak bisa tersambung ke host. Biasanya karena jaringan (data seluler, WiFi kantor/kampus) menghalangi koneksi langsung antarperangkat. Coba jaringan lain, mis. WiFi yang sama dengan host.',
+        'Could not reach the host. This is usually because the network (mobile data, office/campus WiFi) blocks direct connections between devices. Try another network, e.g. the same WiFi as the host.',
+      )
     case 'connect-failed':
       return t(
         `Gagal terhubung (${error.detail}). Periksa koneksi internet.`,
@@ -72,6 +77,9 @@ function RoomView({ room, onExit }: { room: Room } & ExitProps) {
         <div className="card setup__card">
           <h1 className="setup__title">{t('Tidak terhubung', 'Not connected')}</h1>
           <p className="setup__lead">{errorMessage(room.error)}</p>
+          {room.error?.code === 'unreachable' && room.error.detail && (
+            <p className="setup__note">Detail teknis: {room.error.detail}</p>
+          )}
           {!room.isHost && (
             <button type="button" className="btn btn--primary btn--wide" onClick={room.retry}>
               {t('Coba sambung lagi', 'Try reconnecting')}

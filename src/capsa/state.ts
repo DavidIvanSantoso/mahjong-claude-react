@@ -26,7 +26,7 @@ export interface CapsaState {
   mustInclude: number | null
   phase: 'play' | 'over'
   winner: number | null
-  /** Bertambah tiap aksi, supaya batas waktu hanya diulang saat ada aksi. */
+  /** Bertambah tiap aksi. */
   step: number
   log: string[]
 }
@@ -145,9 +145,9 @@ function pass(s: CapsaState): boolean {
   return true
 }
 
-/** Waktu habis atau terputus: lewat, atau kalau sedang memimpin, keluarkan kartu terkecil. */
+/** Pemain terputus terlalu lama: lewat, atau kalau sedang memimpin, keluarkan kartu terkecil. */
 function timeout(s: CapsaState) {
-  log(s, `Waktu ${s.players[s.current].name} habis.`)
+  log(s, `${s.players[s.current].name} terputus; gilirannya dijalankan otomatis.`)
   if (tableCombo(s)) {
     pass(s)
     return

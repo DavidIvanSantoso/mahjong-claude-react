@@ -1,16 +1,15 @@
 import Peer, { type DataConnection } from 'peerjs'
 import { useEffect, useRef, useState } from 'react'
+import { CONNECT_TIMEOUT_MS, iceDetail, PEER_OPTIONS } from '../net/ice'
 import { randomCode, type RoomError } from '../net/online'
 import type { Card } from './cards'
 import { reducer, roundDeltas, startRound, type Action, type CapsaState, type Play } from './state'
 
 export const MIN_PLAYERS = 2
 export const MAX_PLAYERS = 4
-export const DEFAULT_CAPSA_TURN_SECONDS = 30
 
+/** Capsa tidak memakai batas waktu giliran; pemain berpikir selama yang dibutuhkan. */
 export interface CapsaLobby {
-  /** Batas waktu per aksi (detik), ditentukan host saat membuat room. */
-  turnSeconds: number
   /** `score`: total poin selama room ini dibuka, bisa negatif. */
   players: { name: string; connected: boolean; score: number }[]
 }
@@ -33,7 +32,7 @@ export interface CapsaView {
 }
 
 export type CapsaHostMessage =
-  | { type: 'sync'; lobby: CapsaLobby; seat: number; view: CapsaView | null; timeLeft: number | null }
+  | { type: 'sync'; lobby: CapsaLobby; seat: number; view: CapsaView | null }
   | { type: 'rejected'; reason: 'started' | 'full' }
 
 export type CapsaGuestMessage = { type: 'join'; name: string; token: string } | { type: 'action'; action: Action }
@@ -45,8 +44,6 @@ export interface CapsaRoomSnapshot {
   lobby: CapsaLobby
   seat: number
   view: CapsaView | null
-  /** Kapan waktu aksi yang sedang ditunggu habis (jam perangkat ini, ms). */
-  deadline: number | null
 }
 
 export interface CapsaRoom extends CapsaRoomSnapshot {
@@ -91,20 +88,19 @@ function isAllowed(s: CapsaState, seat: number, action: Action): boolean {
   return action.type === 'play' && Array.isArray(action.cardIds) && action.cardIds.every(Number.isInteger)
 }
 
-function emptySnapshot(code: string, turnSeconds: number): CapsaRoomSnapshot {
+function emptySnapshot(code: string): CapsaRoomSnapshot {
   return {
     status: 'connecting',
     error: null,
     code,
-    lobby: { turnSeconds, players: [] },
+    lobby: { players: [] },
     seat: 0,
     view: null,
-    deadline: null,
   }
 }
 
 /**
- * Host memegang state asli: mengocok, memvalidasi aksi tiap kursi, menjalankan batas waktu,
+ * Host memegang state asli: mengocok, memvalidasi aksi tiap kursi, menjalankan pemain yang terputus,
  * lalu mengirim ke tiap pemain versi state yang hanya memuat tangannya sendiri.
  */
 class HostRoom {
@@ -119,21 +115,16 @@ class HostRoom {
   private game: CapsaState | null = null
   private scoredGame: CapsaState | null = null
   private graceTimer: ReturnType<typeof setTimeout> | undefined
-  /** State yang batas waktunya sedang berjalan; dibandingkan lewat `step`. */
-  private timedGame: CapsaState | null = null
-  private deadline: number | null = null
-  private turnTimer: ReturnType<typeof setTimeout> | undefined
   private status: CapsaRoomSnapshot['status'] = 'connecting'
   private error: RoomError | null = null
 
   constructor(
     private code: string,
     hostName: string,
-    private turnSeconds: number,
     private onChange: (snapshot: CapsaRoomSnapshot) => void,
   ) {
     this.seats = [{ name: hostName, token: '', conn: null, offlineSince: null, score: 0 }]
-    this.peer = new Peer(peerId(code))
+    this.peer = new Peer(peerId(code), PEER_OPTIONS)
     this.peer.on('open', () => {
       this.status = 'ready'
       this.publish()
@@ -212,7 +203,8 @@ class HostRoom {
   }
 
   /**
-   * Pemain yang terputus lebih lama dari GRACE_MS dijalankan otomatis (seperti waktu habis).
+   * Pemain yang terputus lebih lama dari GRACE_MS dijalankan otomatis: lewat, atau kalau sedang
+   * memimpin, kartu terkecilnya dikeluarkan (aksi `timeout`).
    * Kalau yang tersambung tinggal satu orang, permainan menunggu.
    */
   private advance() {
@@ -231,23 +223,6 @@ class HostRoom {
     }
   }
 
-  private armTimer() {
-    const game = this.game
-    if (game && this.timedGame && game.step === this.timedGame.step && game.phase === this.timedGame.phase) return
-    clearTimeout(this.turnTimer)
-    this.timedGame = game
-    this.deadline = null
-    if (!game || game.phase === 'over') return
-    this.deadline = Date.now() + this.turnSeconds * 1000
-    this.turnTimer = setTimeout(() => this.expire(), this.turnSeconds * 1000)
-  }
-
-  private expire() {
-    if (!this.game || this.game.phase === 'over') return
-    this.game = reducer(this.game, { type: 'timeout' })
-    this.update()
-  }
-
   private score() {
     const game = this.game
     if (!game || game.phase !== 'over' || game === this.scoredGame) return
@@ -258,14 +233,11 @@ class HostRoom {
   private update() {
     this.advance()
     this.score()
-    this.armTimer()
     this.publish()
   }
 
   private publish() {
-    const timeLeft = this.deadline === null ? null : Math.max(0, this.deadline - Date.now())
     const lobby: CapsaLobby = {
-      turnSeconds: this.turnSeconds,
       players: this.seats.map((seat, i) => ({
         name: seat.name,
         connected: i === 0 || Boolean(seat.conn?.open),
@@ -275,7 +247,7 @@ class HostRoom {
     this.seats.forEach((seat, i) => {
       if (!seat.conn?.open) return
       const view = this.game ? viewFor(this.game, i) : null
-      seat.conn.send({ type: 'sync', lobby, seat: i, view, timeLeft } satisfies CapsaHostMessage)
+      seat.conn.send({ type: 'sync', lobby, seat: i, view } satisfies CapsaHostMessage)
     })
     this.onChange({
       status: this.status,
@@ -284,13 +256,11 @@ class HostRoom {
       lobby,
       seat: 0,
       view: this.game ? viewFor(this.game, 0) : null,
-      deadline: this.deadline,
     })
   }
 
   destroy() {
     clearTimeout(this.graceTimer)
-    clearTimeout(this.turnTimer)
     this.onChange = () => {}
     this.peer.destroy()
   }
@@ -313,6 +283,7 @@ function guestToken(code: string): string {
 class GuestRoom {
   private peer: Peer
   private conn: DataConnection | null = null
+  private connectTimer: ReturnType<typeof setTimeout> | undefined
   private snapshot: CapsaRoomSnapshot
 
   constructor(
@@ -320,21 +291,25 @@ class GuestRoom {
     name: string,
     private onChange: (snapshot: CapsaRoomSnapshot) => void,
   ) {
-    this.snapshot = emptySnapshot(code, DEFAULT_CAPSA_TURN_SECONDS)
-    this.peer = new Peer()
+    this.snapshot = emptySnapshot(code)
+    // Koneksi yang tidak pernah terbuka (biasanya karena jaringan) dilaporkan, bukan ditunggu terus.
+    this.connectTimer = setTimeout(() => {
+      void iceDetail(this.conn).then((detail) => this.fail({ code: 'unreachable', detail }))
+    }, CONNECT_TIMEOUT_MS)
+    this.peer = new Peer(PEER_OPTIONS)
     this.peer.on('open', () => {
       const conn = this.peer.connect(peerId(code), { reliable: true, serialization: 'json' })
       this.conn = conn
       conn.on('open', () => {
+        clearTimeout(this.connectTimer)
         conn.send({ type: 'join', name, token: guestToken(code) } satisfies CapsaGuestMessage)
       })
       conn.on('data', (raw) => {
         const message = raw as CapsaHostMessage
         if (message.type === 'rejected') this.fail({ code: message.reason })
         else if (message.type === 'sync') {
-          const { lobby, seat, view, timeLeft } = message
-          const deadline = typeof timeLeft === 'number' ? Date.now() + timeLeft : null
-          this.update({ status: 'ready', error: null, lobby, seat, view, deadline })
+          const { lobby, seat, view } = message
+          this.update({ status: 'ready', error: null, lobby, seat, view })
         }
       })
       conn.on('close', () => this.fail({ code: 'host-lost' }))
@@ -359,20 +334,21 @@ class GuestRoom {
   }
 
   destroy() {
+    clearTimeout(this.connectTimer)
     this.onChange = () => {}
     this.peer.destroy()
   }
 }
 
-export function useCapsaHostRoom(name: string, turnSeconds: number): CapsaRoom {
-  const [snapshot, setSnapshot] = useState(() => emptySnapshot('', turnSeconds))
+export function useCapsaHostRoom(name: string): CapsaRoom {
+  const [snapshot, setSnapshot] = useState(() => emptySnapshot(''))
   const roomRef = useRef<HostRoom | null>(null)
 
   useEffect(() => {
-    const room = new HostRoom(randomCode(), name, turnSeconds, setSnapshot)
+    const room = new HostRoom(randomCode(), name, setSnapshot)
     roomRef.current = room
     return () => room.destroy()
-  }, [name, turnSeconds])
+  }, [name])
 
   return {
     ...snapshot,
@@ -384,7 +360,7 @@ export function useCapsaHostRoom(name: string, turnSeconds: number): CapsaRoom {
 }
 
 export function useCapsaGuestRoom(code: string, name: string): CapsaRoom {
-  const [snapshot, setSnapshot] = useState(() => emptySnapshot(code, DEFAULT_CAPSA_TURN_SECONDS))
+  const [snapshot, setSnapshot] = useState(() => emptySnapshot(code))
   const [attempt, setAttempt] = useState(0)
   const roomRef = useRef<GuestRoom | null>(null)
 

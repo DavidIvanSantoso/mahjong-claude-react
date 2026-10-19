@@ -33,6 +33,7 @@ export type HostMessage =
  */
 export type RoomError =
   | { code: 'id-taken' | 'started' | 'full' | 'host-lost' | 'not-found' }
+  | { code: 'unreachable'; detail?: string }
   | { code: 'host-failed' | 'connect-failed'; detail: string }
 
 /** Pesan dari tamu ke host. `token` dipakai untuk kembali ke kursi yang sama setelah putus. */

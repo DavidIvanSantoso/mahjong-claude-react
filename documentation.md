@@ -361,6 +361,26 @@ Jadi isi tangan lawan memang tidak pernah sampai ke perangkat tamu. Setelah perm
 
 **Pengecualian: host.** State asli ada di memori browser host. Tampilan host juga disaring sehingga ia tidak melihat tangan lawan saat bermain biasa, tetapi host yang sengaja membongkar lewat DevTools bisa membacanya. Ini dianggap wajar untuk permainan antar teman. Menutup celah ini sepenuhnya butuh server netral.
 
+### Server STUN dan TURN (`net/ice.ts`)
+
+Semua room (mahjong, UNO, Capsa) memakai pengaturan ICE yang sama dari `src/net/ice.ts`.
+
+- **STUN** (Google, Cloudflare, Metered) membantu dua perangkat menemukan alamat publiknya lalu tersambung langsung. Ini cukup untuk sebagian besar WiFi rumah.
+- **TURN** menjadi perantara kalau koneksi langsung dihalangi jaringan, misalnya data seluler dengan CGNAT, atau WiFi kantor/kampus. TURN bawaan PeerJS (`eu-0`/`us-0.turn.peerjs.com`) dan kredensial publik Open Relay sudah tidak berfungsi, jadi TURN harus diisi sendiri.
+- Tamu yang belum tersambung ke host dalam 20 detik (`CONNECT_TIMEOUT_MS`) mendapat pesan bahwa jaringannya menghalangi koneksi, bukan menunggu tanpa akhir.
+
+**Memasang TURN sendiri:**
+
+1. Buat akun di layanan TURN yang menyediakan kredensial tetap, misalnya Metered atau ExpressTURN (keduanya punya paket gratis), lalu salin URL server, username, dan credential-nya.
+2. Di GitHub: **Settings → Secrets and variables → Actions → New repository secret**, buat tiga secret:
+   - `VITE_TURN_URLS`: URL server, beberapa URL dipisah koma, mis. `turn:a.relay.metered.ca:80,turn:a.relay.metered.ca:443,turns:a.relay.metered.ca:443?transport=tcp`
+   - `VITE_TURN_USERNAME`
+   - `VITE_TURN_CREDENTIAL`
+3. Jalankan ulang workflow deploy (tab Actions → Deploy ke GitHub Pages → Run workflow).
+4. Untuk mencoba di komputer sendiri, tulis ketiga nilai itu di file `.env.local` di akar projek (sudah diabaikan git), lalu jalankan ulang `npm run dev`.
+
+Kredensial TURN ikut terbawa ke kode di browser (wajar untuk situs statis), jadi pakai kredensial khusus untuk situs ini dan batasi kuotanya di dasbor layanannya.
+
 ### Putus dan sambung ulang
 
 - Tiap tamu punya token acak yang disimpan di `sessionStorage` per kode room. Kalau tamu refresh atau terputus lalu masuk lagi dengan kode yang sama dari tab yang sama, host mengenali tokennya dan mengembalikannya ke kursi semula dengan tangan yang sama.
@@ -403,6 +423,7 @@ GitHub Pages hanya menyajikan file statis, dan itu cukup: aplikasi ini tidak pun
 - **Host secara teknis bisa mengintip** lewat DevTools (lihat bagian 7).
 - **Tidak semua jaringan bisa tersambung.** Koneksi langsung antarbrowser bisa gagal di sebagian jaringan kantor, kampus, atau operator seluler.
 - **Bergantung pada server PeerJS publik** untuk mempertemukan pemain. Kalau server itu sedang bermasalah, room tidak bisa dibuat atau dimasuki.
+- **Tanpa TURN, sebagian jaringan tidak bisa tersambung** (data seluler/CGNAT, WiFi kantor atau kampus). Lihat "Server STUN dan TURN" di bagian 7 untuk memasang TURN sendiri.
 - **Tidak ada batas waktu giliran.** Pemain yang terputus dilewati otomatis, tetapi pemain yang masih tersambung dan diam saja tetap ditunggu.
 - **Ubin pemain yang keluar ikut terkunci.** Tangan dan set terbukanya tetap di kursinya, jadi ubin itu tidak bisa didapat pemain lain.
 - **Layar ponsel sempit.** Ubin di tangan menjadi kecil karena 14 ubin harus muat di satu sisi meja. Paling nyaman di tablet atau laptop.
@@ -529,7 +550,7 @@ src/capsa/
 - **Giliran:** ronde pertama dimulai pemegang kartu terkecil yang dibagikan (3♦ kalau berempat), dan kartu itu wajib ikut keluar (`mustInclude`). Ronde berikutnya dimulai pemenang ronde sebelumnya, bebas.
 - **Lewat:** pemain yang lewat tidak ikut lagi sampai meja dibersihkan. Kalau giliran berputar kembali ke pemain terakhir yang mengeluarkan kartu (`leader`), meja dibersihkan dan ia bebas memulai kombinasi apa saja.
 - **Skor:** ronde selesai saat ada yang menghabiskan kartu. Tiap pemain lain kehilangan poin sebanyak sisa kartunya, pemenang mendapat jumlahnya (`roundDeltas`). Skor terkumpul selama room dibuka.
-- **Waktu habis / terputus:** lewat; kalau sedang memimpin, kartu terkecil (atau kartu wajib) dikeluarkan.
+- **Tanpa batas waktu giliran.** Hanya pemain yang terputus lebih dari 15 detik yang dijalankan otomatis: lewat, atau kalau sedang memimpin, kartu terkecil (atau kartu wajib) dikeluarkan.
 
 ### Tampilan
 
@@ -540,4 +561,4 @@ src/capsa/
 
 ### Online
 
-Sama dengan UNO: ID PeerJS berawalan `capsa-claude-room-`, link undangan `?game=capsa&room=KODE`, batas waktu per aksi diatur host (bawaan 30 detik), dan pemain yang terputus lebih dari 15 detik dijalankan otomatis. `viewFor` hanya mengirim jumlah kartu lawan; semua tangan baru dibuka setelah ronde selesai.
+Sama dengan UNO: ID PeerJS berawalan `capsa-claude-room-`, link undangan `?game=capsa&room=KODE`, dan pemain yang terputus lebih dari 15 detik dijalankan otomatis. Bedanya, Capsa tidak memakai batas waktu giliran. `viewFor` hanya mengirim jumlah kartu lawan; semua tangan baru dibuka setelah ronde selesai.
