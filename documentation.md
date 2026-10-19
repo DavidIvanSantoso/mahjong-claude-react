@@ -2,7 +2,7 @@
 
 Game mahjong 2D untuk 2–4 pemain, dibuat dengan React dan TypeScript. Bisa dimainkan bergantian di satu perangkat, atau online lewat room (PeerJS) dengan tiap pemain di perangkatnya sendiri.
 
-Situs yang sama juga memuat game kartu **UNO** (online, 2–6 pemain). Navbar di pojok kiri atas homescreen dipakai untuk berpindah game; lihat [bagian 11](#11-game-uno).
+Situs yang sama juga memuat game kartu **UNO** (online, 2–6 pemain; [bagian 11](#11-game-uno)) dan **Capsa** (online, 2–4 pemain; [bagian 12](#12-game-capsa)). Navbar di pojok kiri atas homescreen dipakai untuk berpindah game.
 
 - Situs: https://davidivansantoso.github.io/mahjong-claude-react/
 - Repo: https://github.com/DavidIvanSantoso/mahjong-claude-react
@@ -20,6 +20,7 @@ Situs yang sama juga memuat game kartu **UNO** (online, 2–6 pemain). Navbar di
 9. [Batasan yang diketahui](#9-batasan-yang-diketahui)
 10. [Lisensi dan aset](#10-lisensi-dan-aset)
 11. [Game UNO](#11-game-uno)
+12. [Game Capsa](#12-game-capsa)
 
 ---
 
@@ -77,11 +78,12 @@ src/
     Seat.tsx               Satu kursi: tangan, set terbuka, bunga, buangan
     TileView.tsx           Gambar satu ubin (muka atau telungkup)
     OnlineGame.tsx         Lobi room dan pembungkus meja untuk mode online
-    GameNav.tsx            Navbar pemilih game (Mahjong / UNO) di homescreen
+    GameNav.tsx            Navbar pemilih game (Mahjong / UNO / Capsa) di homescreen
   net/                     Mode online
     online.ts              Bentuk pesan, kode room, penyaringan state per pemain
     rooms.ts               Kelas HostRoom dan GuestRoom, plus hook React-nya
   uno/                     Game UNO (lihat bagian 11)
+  capsa/                   Game Capsa (lihat bagian 12)
 .github/workflows/deploy.yml   Build dan deploy otomatis ke GitHub Pages
 vite.config.ts             Konfigurasi Vite (base path relatif)
 ```
@@ -491,3 +493,51 @@ Mode disimpan di `UnoState.mode` dan dikirim ke tamu lewat `UnoLobby.mode` dan `
 ### Palet
 
 Dipasang lewat `data-game='uno'` di `<html>` selama layar UNO terbuka, dan menimpa tema serta palet pilihan mahjong (`uno.css` diimpor setelah `index.css`). Warna website: Charcoal `#343434`, Deep Teal `#055E68`, Sage `#62A388`, Mist `#B9D2D2`. Warna kartu mengikuti warna asli UNO: merah `#D72600`, kuning `#ECD407`, hijau `#379711`, biru `#0956BF`.
+
+## 12. Game Capsa
+
+### Ringkasan
+
+- Capsa Banting (Big Two) online, 2–4 pemain, tiap pemain di perangkatnya sendiri. Host membuat room (kapasitas 4) dan bisa memulai begitu ada minimal 2 pemain.
+- 52 kartu tanpa Joker, 13 kartu per pemain; kalau pemainnya kurang dari 4, sisa kartu tidak dipakai.
+- Tampilan hanya Bahasa Indonesia, tanpa tombol tema. Musik latar dan efek suara sama dengan game lain.
+
+### Struktur folder
+
+```
+src/capsa/
+  cards.ts         Kartu (ID = kekuatan), urutan angka/bunga, penilaian kombinasi (`evaluate`) dan perbandingannya (`beats`)
+  state.ts         State ronde dan reducer: keluarkan kartu, lewat, waktu habis, skor ronde
+  net.ts           HostRoom/GuestRoom Capsa (PeerJS), penyaringan state per kursi (`viewFor`), hook React
+  CapsaApp.tsx     Layar-layar Capsa, lobi room, dan pemasangan palet/ikon tab
+  CapsaHome.tsx    Homescreen dengan kipas kartu animasi (GSAP)
+  CapsaSetup.tsx   Menu online: gabung dengan kode atau buat room
+  CapsaTable.tsx   Meja: lawan, kartu di meja (bisa disorot), panel aksi, tangan, riwayat, skor
+  CapsaHand.tsx    Tangan sendiri: pilih kartu dan seret untuk mengubah urutan
+  CapsaCard.tsx    Gambar kartu remi dan punggungnya; bunga digambar SVG
+  CapsaDialogs.tsx Panduan cara main dan hasil ronde
+  sfx.ts           Efek suara kartu dikeluarkan/dibagikan
+  capsa.css        Semua gaya Capsa, termasuk palet
+```
+
+### Aturan yang dipakai
+
+- **Urutan angka:** 3 < 4 < … < 10 < J < Q < K < A < 2. **Urutan bunga:** ♦ Wajik < ♣ Keriting < ♥ Hati < ♠ Sekop. ID kartu adalah `(angka - 3) * 4 + urutan bunga`, jadi 3♦ = 0 dan 2♠ = 51; membandingkan kartu tunggal cukup membandingkan ID.
+- **Kombinasi:** single, pair, tris, dan 5 kartu (straight < flush < full house < four of a kind + 1 < straight flush). Kombinasi hanya bisa dilawan dengan jumlah kartu yang sama. Untuk 5 kartu, jenis yang lebih tinggi selalu menang; jenis yang sama dibandingkan lewat `Combo.key`.
+  - Single: ID. Pair: kartu tertinggi (angka lalu bunga). Tris, full house, four of a kind: angka tris/empat kartunya.
+  - Straight dan straight flush: angka tertinggi menurut urutan biasa (A boleh 1 atau 14, tidak boleh J-Q-K-A-2), lalu bunga kartu tertingginya. Flush: kartu-kartunya dari yang tertinggi.
+- **Giliran:** ronde pertama dimulai pemegang kartu terkecil yang dibagikan (3♦ kalau berempat), dan kartu itu wajib ikut keluar (`mustInclude`). Ronde berikutnya dimulai pemenang ronde sebelumnya, bebas.
+- **Lewat:** pemain yang lewat tidak ikut lagi sampai meja dibersihkan. Kalau giliran berputar kembali ke pemain terakhir yang mengeluarkan kartu (`leader`), meja dibersihkan dan ia bebas memulai kombinasi apa saja.
+- **Skor:** ronde selesai saat ada yang menghabiskan kartu. Tiap pemain lain kehilangan poin sebanyak sisa kartunya, pemenang mendapat jumlahnya (`roundDeltas`). Skor terkumpul selama room dibuka.
+- **Waktu habis / terputus:** lewat; kalau sedang memimpin, kartu terkecil (atau kartu wajib) dikeluarkan.
+
+### Tampilan
+
+- **Kartu di meja:** sampai 3 kombinasi terakhir di putaran itu ditampilkan; yang lama diperkecil dan diredupkan. Disorot (atau diketuk di layar sentuh), kombinasi membesar, kartunya terbuka lebar, dan tooltip menampilkan nama kombinasi, kartunya, dan siapa yang mengeluarkan.
+- **Tangan:** klik untuk memilih beberapa kartu; preview di panel aksi menampilkan jenis kombinasi dan apakah bisa dikeluarkan (`playProblem`). Tekan lalu seret untuk memindahkan kartu ke posisi lain (garis emas menandai tempat jatuhnya). Memakai pointer events, jadi berlaku untuk mouse maupun layar sentuh. Urutan tangan hanya disimpan di perangkat itu; tombol Urut angka / Urut bunga menyusun ulang sekaligus.
+- **Palet** (`data-game='capsa'`): Background `#0D0D0F`, Surface `#18181B`, Gold `#D4AF37`, Bright Gold `#F5D76E`, Text `#F4F4F5`, Muted `#A1A1AA`, Red `#B91C1C` (bunga merah).
+- **Panduan** (tombol "?" di meja dan "Cara Main" di homescreen): cara main, cara memilih/menyusun kartu, urutan angka, urutan bunga, dan semua jenis kombinasi dengan contoh kartunya.
+
+### Online
+
+Sama dengan UNO: ID PeerJS berawalan `capsa-claude-room-`, link undangan `?game=capsa&room=KODE`, batas waktu per aksi diatur host (bawaan 30 detik), dan pemain yang terputus lebih dari 15 detik dijalankan otomatis. `viewFor` hanya mengirim jumlah kartu lawan; semua tangan baru dibuka setelah ronde selesai.

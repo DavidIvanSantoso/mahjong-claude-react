@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Kartu As sekop: muka gelap, bingkai dan sekop emas -->
+  <rect x="11" y="2" width="42" height="60" rx="7" fill="#18181b" stroke="#d4af37" stroke-width="3" />
+  <path d="M32 15c-3.6 5.6-12 9.6-12 16.6a6 6 0 0 0 10.2 4.3L28.5 46h7l-1.7-10.1A6 6 0 0 0 44 31.6C44 24.6 35.6 20.6 32 15Z" fill="#f5d76e" />
+</svg>

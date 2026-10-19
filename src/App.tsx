@@ -21,18 +21,27 @@ type Screen =
   | { kind: 'host'; name: string; capacity: number; turnSeconds: number; timeAttack: boolean }
   | { kind: 'guest'; name: string; code: string }
 
-/** UNO dimuat terpisah, supaya pemain mahjong tidak ikut mengunduh kodenya. */
+/** UNO dan Capsa dimuat terpisah, supaya pemain satu game tidak ikut mengunduh kode game lain. */
 const UnoApp = lazy(() => import('./uno/UnoApp').then((module) => ({ default: module.UnoApp })))
+const CapsaApp = lazy(() => import('./capsa/CapsaApp').then((module) => ({ default: module.CapsaApp })))
+
+const GAMES: GameId[] = ['mahjong', 'uno', 'capsa']
+
+function isGame(value: string | null): value is GameId {
+  return GAMES.includes(value as GameId)
+}
 
 const RULESET_KEY = 'mahjong-ruleset'
 const GAME_KEY = 'claude-games-game'
 
 /** Game yang dibuka: dari link undangan kalau ada, kalau tidak game yang terakhir dipilih di perangkat ini. */
 function initialGame(): GameId {
-  if (new URLSearchParams(window.location.search).get('game') === 'uno') return 'uno'
+  const linked = new URLSearchParams(window.location.search).get('game')
+  if (isGame(linked)) return linked
   if (invitedRoom()) return 'mahjong'
   try {
-    return localStorage.getItem(GAME_KEY) === 'uno' ? 'uno' : 'mahjong'
+    const saved = localStorage.getItem(GAME_KEY)
+    return isGame(saved) ? saved : 'mahjong'
   } catch {
     return 'mahjong'
   }
@@ -196,12 +205,10 @@ export function App() {
   return (
     // Pemutar musik dipasang di luar layar-layarnya, supaya musik tidak terputus saat berpindah layar atau game.
     <MusicProvider>
-      {game === 'uno' ? (
-        <Suspense fallback={null}>
-          <UnoApp nav={nav} />
-        </Suspense>
-      ) : (
+      {game === 'mahjong' ? (
         <Screens nav={nav} />
+      ) : (
+        <Suspense fallback={null}>{game === 'uno' ? <UnoApp nav={nav} /> : <CapsaApp nav={nav} />}</Suspense>
       )}
     </MusicProvider>
   )

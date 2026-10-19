@@ -1,6 +1,6 @@
 import { t } from '../i18n'
 
-export type GameId = 'mahjong' | 'uno'
+export type GameId = 'mahjong' | 'uno' | 'capsa'
 
 const GAMES: { id: GameId; label: string; icon: string }[] = [
   // Ubin tegak dengan lingkaran (ubin bulat)
@@ -14,6 +14,12 @@ const GAMES: { id: GameId; label: string; icon: string }[] = [
     id: 'uno',
     label: 'UNO',
     icon: 'M4 1h8a1.5 1.5 0 0 1 1.5 1.5v11A1.5 1.5 0 0 1 12 15H4a1.5 1.5 0 0 1-1.5-1.5v-11A1.5 1.5 0 0 1 4 1Zm6.3 3.2c-1-.6-2.9.3-4.1 2.2-1.2 1.9-1.4 3.9-.5 4.4 1 .6 2.9-.3 4.1-2.2 1.2-1.9 1.4-3.9.5-4.4Z',
+  },
+  // Sekop
+  {
+    id: 'capsa',
+    label: 'Capsa',
+    icon: 'M8 1.5C6.2 4.3 2 6.3 2 9.8a3 3 0 0 0 5.1 2.15L6.3 15h3.4l-.8-3.05A3 3 0 0 0 14 9.8c0-3.5-4.2-5.5-6-8.3Z',
   },
 ]
 
@@ -29,12 +35,13 @@ export function GameNav({ game, onChange }: { game: GameId; onChange: (game: Gam
             type="button"
             className={`game-nav__item ${active ? 'game-nav__item--active' : ''}`}
             aria-current={active ? 'page' : undefined}
+            title={option.label}
             onClick={() => onChange(option.id)}
           >
             <svg viewBox="0 0 16 16" fill="currentColor" fillRule="evenodd" aria-hidden="true">
               <path d={option.icon} />
             </svg>
-            {option.label}
+            <span className="game-nav__label">{option.label}</span>
           </button>
         )
       })}

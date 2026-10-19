@@ -1,0 +1,1005 @@
+/* ---------- Palet Capsa ---------- */
+
+/*
+ * Dipasang lewat `data-game='capsa'` di <html> selama layar Capsa terbuka (lihat CapsaApp.tsx).
+ * Diimpor setelah index.css, jadi menimpa tema dan palet pilihan mahjong.
+ * Background #0D0D0F, Surface #18181B, Gold #D4AF37, Bright Gold #F5D76E, Text #F4F4F5,
+ * Muted #A1A1AA, Red #B91C1C.
+ */
+:root[data-game='capsa'] {
+  --cp-bg: #0d0d0f;
+  --cp-surface: #18181b;
+  --cp-surface-2: #222226;
+  --cp-line: #2e2e34;
+  --cp-gold: #d4af37;
+  --cp-gold-bright: #f5d76e;
+  --cp-gold-deep: #9c7d1f;
+  --cp-text: #f4f4f5;
+  --cp-muted: #a1a1aa;
+  --cp-red: #b91c1c;
+
+  /* Variabel bersama (tombol, panel, form, dialog) memakai palet Capsa */
+  --pink: #2a2414;
+  --pink-deep: #d4af37;
+  --cream: #18181b;
+  --sage: #222226;
+  --green: #d4af37;
+  --green-deep: #c9a434;
+  --ink: #f4f4f5;
+  --ink-soft: #a1a1aa;
+  --line: #2e2e34;
+  --tile-red: #b91c1c;
+  --tile-green: #d4af37;
+  --tile-blue: #a1a1aa;
+
+  --page: #0d0d0f;
+  --on-page: #f4f4f5;
+  --on-page-soft: #a1a1aa;
+  --on-green: #0d0d0f;
+  --tile-bg: #18181b;
+  --btn-bg: #d4af37;
+  --btn-hover: #f5d76e;
+  --btn-shadow: #8a6d18;
+}
+
+:root[data-game='capsa'] .tutorial-dialog {
+  border: 1px solid rgb(212 175 55 / 35%);
+  box-shadow: 0 16px 48px rgb(0 0 0 / 60%);
+}
+
+:root[data-game='capsa'] .tutorial-dialog::backdrop {
+  background: rgb(0 0 0 / 70%);
+}
+
+/* Kolom isian bawaan berlatar putih; di Capsa dibuat gelap */
+:root[data-game='capsa'] :is(.setup__card, .split__form) input[type='text'] {
+  color: var(--cp-text);
+  background: var(--cp-bg);
+  border-color: var(--cp-line);
+}
+
+:root[data-game='capsa'] :is(.setup__card, .split__form) input[type='text']:focus {
+  border-color: var(--cp-gold);
+}
+
+:root[data-game='capsa'] .setup__card {
+  border: 1px solid rgb(212 175 55 / 25%);
+}
+
+/* Kotak kaca gelap: navbar, tombol musik, kredit */
+:root[data-game='capsa'] :is(.game-nav, .home__tools, .home__credit) {
+  color: var(--cp-muted);
+  background: rgb(24 24 27 / 88%);
+  border: 1px solid rgb(212 175 55 / 30%);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 50%);
+}
+
+:root[data-game='capsa'] .game-nav__item {
+  color: var(--cp-text);
+}
+
+:root[data-game='capsa'] .game-nav__item--active {
+  color: var(--cp-bg);
+}
+
+:root[data-game='capsa'] .game-nav__item:hover:not(.game-nav__item--active) {
+  background: rgb(255 255 255 / 8%);
+}
+
+/* ---------- Kartu remi ---------- */
+
+.pc {
+  --pw: 64px;
+  position: relative;
+  flex: none;
+  display: inline-block;
+  width: var(--pw);
+  height: calc(var(--pw) * 1.4);
+  padding: 0;
+  font: inherit;
+  line-height: 1;
+  color: #18181b;
+  background: linear-gradient(160deg, #fff 0%, #f1f1f2 100%);
+  border: 1px solid rgb(0 0 0 / 35%);
+  border-radius: calc(var(--pw) * 0.1);
+  box-shadow: 0 calc(var(--pw) * 0.04) calc(var(--pw) * 0.1) rgb(0 0 0 / 50%);
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pc--red {
+  color: var(--cp-red);
+}
+
+.pc__corner {
+  position: absolute;
+  display: grid;
+  justify-items: center;
+  gap: calc(var(--pw) * 0.02);
+  font-size: calc(var(--pw) * 0.24);
+  font-weight: 800;
+  letter-spacing: -0.05em;
+}
+
+.pc__corner--top {
+  top: calc(var(--pw) * 0.06);
+  left: calc(var(--pw) * 0.07);
+}
+
+.pc__corner--bottom {
+  right: calc(var(--pw) * 0.07);
+  bottom: calc(var(--pw) * 0.06);
+  rotate: 180deg;
+}
+
+.pc__pip {
+  width: calc(var(--pw) * 0.17);
+  height: calc(var(--pw) * 0.17);
+}
+
+.pc__center {
+  position: absolute;
+  inset: 22% 20%;
+  display: grid;
+  place-items: center;
+}
+
+.pc__big {
+  width: calc(var(--pw) * 0.46);
+  height: calc(var(--pw) * 0.46);
+}
+
+/* J, Q, K: huruf besar di dalam bingkai emas */
+.pc--court .pc__center {
+  background: linear-gradient(160deg, #fff8dc 0%, #f3e3ad 100%);
+  border: calc(var(--pw) * 0.025) solid var(--cp-gold);
+  border-radius: calc(var(--pw) * 0.06);
+}
+
+.pc__court {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: calc(var(--pw) * 0.46);
+  font-weight: 700;
+}
+
+/* Punggung kartu: hitam dengan kisi dan bingkai emas */
+.pc--back {
+  background:
+    repeating-linear-gradient(45deg, rgb(212 175 55 / 20%) 0 1px, transparent 1px calc(var(--pw) * 0.09)),
+    repeating-linear-gradient(-45deg, rgb(212 175 55 / 20%) 0 1px, transparent 1px calc(var(--pw) * 0.09)),
+    var(--cp-surface);
+  border: 1px solid rgb(0 0 0 / 60%);
+  box-shadow:
+    inset 0 0 0 calc(var(--pw) * 0.05) var(--cp-surface),
+    inset 0 0 0 calc(var(--pw) * 0.075) var(--cp-gold),
+    0 calc(var(--pw) * 0.04) calc(var(--pw) * 0.1) rgb(0 0 0 / 50%);
+}
+
+.pc__back-mark {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--cp-gold);
+}
+
+.pc__back-mark svg {
+  width: calc(var(--pw) * 0.34);
+  height: calc(var(--pw) * 0.34);
+}
+
+/* Ukuran */
+.pc--hand {
+  --pw: var(--hand-pw, clamp(54px, 6.4vw, 86px));
+}
+
+.pc--table {
+  --pw: clamp(52px, 5.6vw, 76px);
+}
+
+.pc--small {
+  --pw: 40px;
+}
+
+.pc--mini {
+  --pw: 18px;
+}
+
+.pc--deco {
+  --pw: var(--deco-pw, clamp(84px, 9vw, 136px));
+}
+
+.pc--small .pc__corner--bottom,
+.pc--mini .pc__back-mark {
+  display: none;
+}
+
+/* Kartu di tangan: tekan untuk memilih, seret untuk memindah */
+button.pc {
+  cursor: grab;
+  touch-action: none;
+  transition:
+    translate 0.15s ease,
+    box-shadow 0.15s ease,
+    scale 0.15s ease;
+}
+
+button.pc:focus-visible {
+  outline: 3px solid var(--cp-gold-bright);
+  outline-offset: 3px;
+}
+
+.pc--selected {
+  translate: 0 -20px;
+  box-shadow:
+    0 0 0 3px var(--cp-gold-bright),
+    0 12px 22px rgb(0 0 0 / 60%);
+}
+
+/* Kartu yang wajib ikut dikeluarkan di giliran pertama */
+.pc--must::after {
+  content: '';
+  position: absolute;
+  inset: -5px;
+  border: 2px dashed var(--cp-gold-bright);
+  border-radius: calc(var(--pw) * 0.14);
+  pointer-events: none;
+}
+
+.pc--dragging {
+  z-index: 10;
+  cursor: grabbing;
+  scale: 1.06;
+  transition: none;
+  box-shadow:
+    0 0 0 2px var(--cp-gold),
+    0 20px 32px rgb(0 0 0 / 65%);
+}
+
+@media (hover: hover) {
+  .capsa-hand:not(.capsa-hand--dragging) .capsa-hand__slot:hover > .pc:not(.pc--selected) {
+    translate: 0 -8px;
+  }
+
+  .capsa-fan__slot:hover > button.pc {
+    translate: 0 -28px;
+  }
+}
+
+@keyframes capsa-in {
+  from {
+    opacity: 0;
+    transform: translateY(-36px) scale(1.15);
+  }
+}
+
+@keyframes capsa-deal {
+  from {
+    opacity: 0;
+    transform: translateY(-14px) scale(1.3);
+  }
+}
+
+@keyframes capsa-float {
+  50% {
+    transform: translateY(-14px);
+  }
+}
+
+/* ---------- Homescreen ---------- */
+
+.capsa-home {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  align-items: center;
+  gap: 24px;
+  padding: 88px clamp(20px, 7vw, 120px) 72px;
+  color: var(--cp-text);
+  background:
+    radial-gradient(circle at 72% 55%, rgb(212 175 55 / 16%) 0, transparent 45%),
+    linear-gradient(135deg, var(--cp-bg) 0%, var(--cp-bg) 45%, #1a1609 100%);
+}
+
+.capsa-home__menu {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 320px);
+  display: grid;
+  gap: 14px;
+}
+
+.capsa-home .home__tagline,
+.capsa-home__note {
+  color: var(--cp-muted);
+}
+
+.capsa-home__note {
+  font-size: 0.875rem;
+}
+
+.capsa-home :focus-visible {
+  outline-color: var(--cp-gold-bright);
+}
+
+/* Logo: huruf serif bergradasi emas */
+.capsa-logo {
+  margin: 0 0 4px;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(3.5rem, 8vw, 6rem);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--cp-gold);
+  background: linear-gradient(180deg, var(--cp-gold-bright) 0%, var(--cp-gold) 55%, var(--cp-gold-deep) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.capsa-fan {
+  --deco-pw: clamp(92px, 10vw, 150px);
+  --spread: 0.34;
+  position: relative;
+  height: calc(var(--deco-pw) * 2.5);
+}
+
+.capsa-fan__slot {
+  position: absolute;
+  left: 50%;
+  bottom: 8%;
+  margin-left: calc(var(--deco-pw) / -2);
+  transform-origin: 50% 170%;
+  rotate: calc(var(--i) * 11deg);
+  translate: calc(var(--i) * var(--deco-pw) * var(--spread)) calc(var(--i) * var(--i) * var(--deco-pw) * 0.03);
+  perspective: 800px;
+}
+
+/* ---------- Menu online dan lobi ---------- */
+
+.capsa-split {
+  background: linear-gradient(135deg, var(--cp-surface) 0%, var(--cp-surface) 50%, #1f1a0c 100%);
+}
+
+.capsa-split__side {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 40%, rgb(212 175 55 / 14%) 0, transparent 60%),
+    var(--cp-bg);
+  border-left: 1px solid rgb(212 175 55 / 25%);
+}
+
+.capsa-split__side .pc {
+  --deco-pw: clamp(72px, 8vw, 124px);
+  position: absolute;
+  left: 50%;
+  top: calc(var(--i) * 14% - 4%);
+  margin-left: calc(var(--pw) / -2);
+  rotate: calc((var(--i) - 3) * 11deg);
+  animation: capsa-float 5s ease-in-out infinite;
+  animation-delay: calc(var(--i) * -0.7s);
+}
+
+.capsa-split__side .pc:nth-child(odd) {
+  translate: -45% 0;
+}
+
+.capsa-split__side .pc:nth-child(even) {
+  translate: 45% 0;
+}
+
+.capsa-page {
+  background: linear-gradient(135deg, var(--cp-bg) 0%, var(--cp-bg) 50%, #1a1609 100%);
+}
+
+/* ---------- Halaman permainan ---------- */
+
+.capsa-game {
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 8px 12px 32px;
+  color: var(--cp-text);
+  background: radial-gradient(ellipse at 50% 0%, #1c1c20 0%, var(--cp-bg) 60%);
+}
+
+.capsa-topbar {
+  /* Acuan posisi panel musik */
+  position: relative;
+  max-width: 1180px;
+  margin: 0 auto 10px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  padding: 0 4px;
+}
+
+.capsa-topbar__title {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.5rem;
+  letter-spacing: 0.08em;
+  color: var(--cp-gold);
+}
+
+.capsa-topbar__room {
+  margin-right: auto;
+  font-family: ui-monospace, Consolas, monospace;
+  font-weight: 700;
+  white-space: nowrap;
+  color: var(--cp-muted);
+}
+
+.capsa-topbar__tools {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.capsa-topbar__help {
+  font: inherit;
+  font-size: 1.125rem;
+  font-weight: 800;
+}
+
+/*
+ * Layar sempit: semua bertumpuk; kolom samping memakai `display: contents` supaya panel aksi
+ * bisa disisipkan di antara meja dan tangan.
+ */
+.capsa-game__layout {
+  max-width: 1180px;
+  margin: 0 auto;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    'opponents'
+    'felt'
+    'dock'
+    'hand'
+    'log'
+    'scores';
+}
+
+.capsa-side {
+  display: contents;
+}
+
+.capsa-opponents {
+  grid-area: opponents;
+}
+
+.capsa-felt {
+  grid-area: felt;
+}
+
+.capsa-dock {
+  grid-area: dock;
+}
+
+.capsa-hand-area {
+  grid-area: hand;
+}
+
+.capsa-log {
+  grid-area: log;
+}
+
+.capsa-scores {
+  grid-area: scores;
+}
+
+@media (min-width: 1000px) {
+  .capsa-game__layout {
+    grid-template-columns: minmax(0, 1fr) 320px;
+    grid-template-rows: auto auto 1fr;
+    grid-template-areas:
+      'opponents side'
+      'felt side'
+      'hand side';
+    align-items: start;
+  }
+
+  .capsa-side {
+    grid-area: side;
+    position: sticky;
+    top: 12px;
+    display: grid;
+    gap: 14px;
+  }
+
+  .capsa-side > * {
+    grid-area: auto;
+  }
+}
+
+/* Lawan */
+.capsa-opponents {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+
+.capsa-seat {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 150px;
+  padding: 10px 14px;
+  text-align: center;
+  background: var(--cp-surface);
+  border: 2px solid var(--cp-line);
+  border-radius: 14px;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.capsa-seat--active {
+  border-color: var(--cp-gold);
+  box-shadow: 0 0 0 4px rgb(212 175 55 / 22%);
+}
+
+.capsa-seat--offline {
+  opacity: 0.55;
+}
+
+/* Kipas punggung kartu: satu per kartu di tangan lawan (lihat juga kipas di UNO) */
+.capsa-seat__fan {
+  --seat-pw: 24px;
+  --fan-w: 156px;
+  --step: min(12px, (var(--fan-w) - var(--seat-pw)) / max(var(--n) - 1, 1));
+  --angle: min(4, 50 / max(var(--n) - 1, 1));
+  position: relative;
+  width: calc(var(--seat-pw) + var(--step) * (var(--n) - 1));
+  height: calc(var(--seat-pw) * 1.4 + 16px);
+  transition: width 0.25s ease;
+}
+
+.capsa-seat__fan .pc {
+  --pw: var(--seat-pw);
+  --d: calc(var(--i) - (var(--n) - 1) / 2);
+  position: absolute;
+  top: 4px;
+  left: calc(var(--i) * var(--step));
+  transform-origin: 50% 100%;
+  rotate: calc(var(--d) * var(--angle) * 1deg);
+  translate: 0 calc(var(--d) * var(--d) * var(--angle) * var(--angle) * 0.02px);
+  animation: capsa-deal 0.3s ease-out;
+}
+
+.capsa-seat__name {
+  font-weight: 800;
+}
+
+.capsa-seat__info,
+.capsa-seat__offline {
+  font-size: 0.8125rem;
+  color: var(--cp-muted);
+}
+
+.capsa-badge {
+  position: absolute;
+  top: -10px;
+  right: -8px;
+  padding: 2px 9px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--cp-text);
+  background: var(--cp-surface-2);
+  border: 1px solid var(--cp-muted);
+  border-radius: 999px;
+}
+
+/* Meja */
+.capsa-felt {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: clamp(230px, 34vh, 310px);
+  padding: 48px 16px 24px;
+  background: radial-gradient(ellipse at 50% 40%, #222227 0%, #151518 60%, #0f0f11 100%);
+  border: 1px solid rgb(212 175 55 / 40%);
+  border-radius: 28px;
+  box-shadow:
+    inset 0 0 60px rgb(0 0 0 / 55%),
+    0 10px 30px rgb(0 0 0 / 50%);
+}
+
+.capsa-felt::before {
+  content: '';
+  position: absolute;
+  inset: 12px;
+  border: 1px dashed rgb(212 175 55 / 22%);
+  border-radius: 20px;
+  pointer-events: none;
+}
+
+.capsa-felt__empty {
+  color: var(--cp-muted);
+  font-style: italic;
+  text-align: center;
+}
+
+.capsa-trick {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: center;
+  gap: clamp(8px, 3vw, 32px);
+}
+
+/* Satu kombinasi di meja; yang lama diperkecil dan diredupkan, membesar lagi saat disorot */
+.capsa-play {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 6px;
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  border-radius: 12px;
+  cursor: help;
+  opacity: 0.45;
+  scale: 0.8;
+  transform-origin: 50% 100%;
+  transition:
+    opacity 0.2s ease,
+    scale 0.2s ease;
+}
+
+.capsa-play--latest,
+.capsa-play:hover,
+.capsa-play:focus-visible,
+.capsa-play--peek {
+  opacity: 1;
+  scale: 1;
+}
+
+.capsa-play:hover,
+.capsa-play:focus-visible,
+.capsa-play--peek {
+  z-index: 3;
+}
+
+.capsa-play:focus-visible {
+  outline: 2px solid var(--cp-gold-bright);
+  outline-offset: 2px;
+}
+
+.capsa-play__cards {
+  display: flex;
+}
+
+.capsa-play__cards .pc {
+  animation: capsa-in 0.35s cubic-bezier(0.2, 0.8, 0.3, 1.15);
+}
+
+/* Kartu saling menumpuk, lalu terbuka lebar saat disorot supaya semua kartunya terlihat */
+.capsa-play__cards .pc + .pc {
+  margin-left: calc(var(--pw) * -0.55);
+  transition: margin-left 0.2s ease;
+}
+
+.capsa-play:is(:hover, :focus-visible, .capsa-play--peek) .capsa-play__cards .pc + .pc {
+  margin-left: calc(var(--pw) * 0.08);
+}
+
+.capsa-play__label {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--cp-gold-bright);
+}
+
+.capsa-play__tip {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 50%;
+  z-index: 4;
+  translate: -50% 0;
+  display: grid;
+  gap: 2px;
+  padding: 8px 12px;
+  font-size: 0.8125rem;
+  white-space: nowrap;
+  color: var(--cp-text);
+  background: var(--cp-surface);
+  border: 1px solid var(--cp-gold);
+  border-radius: 10px;
+  box-shadow: 0 8px 20px rgb(0 0 0 / 55%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+.capsa-play__tip strong {
+  color: var(--cp-gold-bright);
+}
+
+.capsa-play:is(:hover, :focus-visible, .capsa-play--peek) .capsa-play__tip {
+  opacity: 1;
+}
+
+/* Panel aksi */
+.capsa-dock {
+  min-height: 132px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  text-align: center;
+  border: 1px solid var(--cp-line);
+}
+
+.capsa-preview {
+  padding: 4px 12px;
+  font-size: 0.875rem;
+  color: var(--cp-bg);
+  background: var(--cp-gold-bright);
+  border-radius: 999px;
+}
+
+.capsa-preview--bad {
+  color: #fff;
+  background: var(--cp-red);
+}
+
+/* Tangan sendiri */
+.capsa-hand-area {
+  padding: 12px 8px 8px;
+  background: rgb(255 255 255 / 3%);
+  border: 1px solid var(--cp-line);
+  border-radius: 20px;
+}
+
+.capsa-hand-area__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  padding: 0 8px;
+}
+
+.capsa-hand-area__title {
+  font-size: 1rem;
+}
+
+.capsa-hand-area__hint {
+  font-size: 0.8125rem;
+  color: var(--cp-muted);
+}
+
+.capsa-hand-area__sort {
+  margin-left: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.capsa-hand {
+  --hand-pw: clamp(54px, 6.4vw, 86px);
+  --overlap: 0.36;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  row-gap: 14px;
+  /* Kartu pertama tiap baris juga digeser ke kiri; dikompensasi di sini supaya tetap di tengah */
+  padding: 30px 8px 10px calc(8px + var(--hand-pw) * var(--overlap));
+}
+
+.capsa-hand__slot {
+  position: relative;
+  flex: none;
+  display: flex;
+  margin-left: calc(var(--hand-pw) * var(--overlap) * -1);
+}
+
+.capsa-hand__slot--dragged {
+  z-index: 10;
+}
+
+/* Penanda tempat jatuhnya kartu yang diseret */
+.capsa-hand__slot--caret-before::before,
+.capsa-hand__slot--caret-after::after {
+  content: '';
+  position: absolute;
+  top: -8px;
+  bottom: -8px;
+  z-index: 11;
+  width: 4px;
+  background: var(--cp-gold-bright);
+  border-radius: 2px;
+  box-shadow: 0 0 12px var(--cp-gold);
+}
+
+.capsa-hand__slot--caret-before::before {
+  left: -4px;
+}
+
+.capsa-hand__slot--caret-after::after {
+  right: -6px;
+}
+
+/* Riwayat dan skor */
+.capsa-log,
+.capsa-scores {
+  padding: 12px 16px;
+  border: 1px solid var(--cp-line);
+}
+
+.capsa-scores {
+  margin: 0;
+}
+
+.capsa-log ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 4px;
+  font-size: 0.875rem;
+  color: var(--cp-muted);
+}
+
+.capsa-log li:last-child {
+  font-weight: 700;
+  color: var(--cp-text);
+}
+
+/* ---------- Dialog ---------- */
+
+.capsa-result__hands {
+  color: var(--cp-text);
+}
+
+.capsa-delta {
+  font-size: 0.875rem;
+  color: var(--cp-gold-bright);
+}
+
+.capsa-delta--minus {
+  color: #f87171;
+}
+
+.capsa-guide__cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.capsa-guide__suits {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.capsa-guide__suits li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-weight: 700;
+  color: var(--cp-text);
+  background: var(--cp-surface-2);
+  border: 1px solid var(--cp-line);
+  border-radius: 999px;
+}
+
+/* Tanda "<" di antara bunga, karena urutannya dari yang terendah */
+.capsa-guide__suits li + li::before {
+  content: '<';
+  margin: 0 8px 0 -14px;
+  color: var(--cp-muted);
+}
+
+.capsa-guide__suits svg {
+  width: 18px;
+  height: 18px;
+}
+
+.capsa-guide__suit--red svg {
+  color: #ef4444;
+}
+
+.tutorial__section .capsa-guide__combos {
+  padding: 0;
+  list-style: none;
+  gap: 0;
+}
+
+.capsa-guide__combos li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px 16px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--cp-line);
+}
+
+.capsa-guide__combos p {
+  font-size: 0.875rem;
+  color: var(--cp-muted);
+}
+
+/* ---------- Layar sempit ---------- */
+
+@media (max-width: 720px) {
+  .capsa-home {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    align-content: start;
+    gap: 8px;
+    padding: 76px 16px 150px;
+    text-align: center;
+  }
+
+  .capsa-home__menu {
+    width: min(100%, 360px);
+  }
+
+  .capsa-fan {
+    --deco-pw: clamp(58px, 16vw, 88px);
+    --spread: 0.24;
+    order: -1;
+    width: 100%;
+  }
+
+  .capsa-split__side {
+    display: none;
+  }
+
+  .capsa-seat {
+    min-width: 0;
+    padding: 8px 10px;
+  }
+
+  .capsa-seat__fan {
+    --seat-pw: 20px;
+    --fan-w: 120px;
+  }
+
+  .capsa-hand {
+    --hand-pw: clamp(46px, 13vw, 60px);
+    --overlap: 0.48;
+  }
+
+  .capsa-hand-area__sort {
+    margin-left: 0;
+  }
+
+  .capsa-guide__combos li {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .capsa-play__cards .pc,
+  .capsa-seat__fan .pc,
+  .capsa-split__side .pc {
+    animation: none !important;
+  }
+
+  button.pc,
+  .capsa-play,
+  .capsa-play__cards .pc + .pc {
+    transition: none;
+  }
+}
