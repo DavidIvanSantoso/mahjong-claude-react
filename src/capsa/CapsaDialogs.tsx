@@ -75,8 +75,8 @@ export function GuideContent() {
         <ul>
           <li>Dek 52 kartu tanpa Joker; tiap pemain mendapat 13 kartu (2–4 pemain).</li>
           <li>
-            Ronde pertama dimulai pemegang kartu terkecil (3♦ kalau berempat), dan kartu itu wajib ikut dikeluarkan.
-            Ronde berikutnya dimulai pemenang ronde sebelumnya.
+            Setiap ronde dimulai pemegang <strong>3♦</strong>, dan 3♦ wajib ikut dikeluarkan di giliran pertama. Kalau
+            pemainnya kurang dari 4 dan 3♦ tidak terbagi, pemegang kartu terkecil yang memulai.
           </li>
           <li>
             Yang memimpin bebas mengeluarkan kombinasi apa saja. Pemain berikutnya harus mengeluarkan kombinasi dengan
@@ -122,6 +122,21 @@ export function GuideContent() {
           Jadi 3♦ adalah kartu terkecil dan 2♠ kartu terbesar. Contoh: {rankLabel(13)}♠ mengalahkan {rankLabel(13)}♥.
         </p>
       </Section>
+      <Section title="Walik">
+        <p>
+          Pemain yang mengeluarkan <strong>four of a kind</strong> boleh memilih <strong>walik</strong> (tombol
+          &quot;Keluarkan &amp; Walik&quot;). Walik bersifat opsional.
+        </p>
+        <ul>
+          <li>
+            Sesudah walik, urutan angka terbalik: <strong>3 terbesar, 2 terkecil</strong>. Urutan bunga juga terbalik:
+            <strong> ♦ Wajik terbesar, ♠ Sekop terkecil</strong>.
+          </li>
+          <li>Walik berlaku sampai ada pemain yang menang di ronde itu. Ronde berikutnya kembali normal.</li>
+          <li>Four of a kind lain yang memilih walik lagi akan mengembalikan urutan ke normal.</li>
+          <li>Urutan jenis kombo 5 kartu (straight sampai straight flush) tidak ikut terbalik.</li>
+        </ul>
+      </Section>
       <Section title="Jenis kombinasi">
         <ul className="capsa-guide__combos">
           {COMBOS.map((combo) => (
@@ -134,6 +149,10 @@ export function GuideContent() {
             </li>
           ))}
         </ul>
+        <p>
+          Begitu ada kombo 5 kartu yang keluar, <strong>tris tidak boleh dikeluarkan lagi</strong> sampai ronde
+          selesai, walaupun meja sudah bersih. Single, pair, dan kombo 5 kartu tetap boleh.
+        </p>
         <p>
           Kombinasi 5 kartu dari yang terendah: <strong>Straight &lt; Flush &lt; Full House &lt; Four of a Kind &lt;
           Straight Flush</strong>. Jenis yang lebih tinggi selalu menang, apa pun angkanya.

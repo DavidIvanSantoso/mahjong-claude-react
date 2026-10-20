@@ -20,10 +20,17 @@ export interface CapsaState {
   /** Pemain yang terakhir mengeluarkan kartu; kalau semua lawan lewat, ia bebas memulai lagi. */
   leader: number
   /**
-   * Giliran pertama ronde pertama: kartu terkecil yang dibagikan (3♦ kalau berempat) wajib ikut
-   * dikeluarkan. null kalau aturan itu tidak berlaku (lagi).
+   * Giliran pertama tiap ronde: kartu terkecil yang dibagikan (3♦ kalau berempat) wajib ikut
+   * dikeluarkan. null setelah kartu itu keluar.
    */
   mustInclude: number | null
+  /** Kombo 5 kartu sudah pernah keluar di ronde ini; sejak itu tris tidak boleh dikeluarkan lagi. */
+  fiveCardPlayed: boolean
+  /**
+   * Walik sedang berlaku: urutan angka dan bunga terbalik (3 terbesar, 2 terkecil, ♦ terbesar,
+   * ♠ terkecil) sampai ronde selesai. Dipicu pemain yang mengeluarkan four of a kind dan memilih walik.
+   */
+  reversed: boolean
   phase: 'play' | 'over'
   winner: number | null
   /** Bertambah tiap aksi. */
@@ -31,7 +38,11 @@ export interface CapsaState {
   log: string[]
 }
 
-export type Action = { type: 'play'; cardIds: number[] } | { type: 'pass' } | { type: 'timeout' }
+export type Action =
+  /** `walik`: hanya untuk four of a kind; membalik urutan kartu setelah kartu ini keluar. */
+  | { type: 'play'; cardIds: number[]; walik?: boolean }
+  | { type: 'pass' }
+  | { type: 'timeout' }
 
 const LOG_SIZE = 6
 
@@ -45,10 +56,10 @@ export function tableCombo(s: { trick: Play[] }): Combo | null {
 
 /**
  * Mulai ronde: 13 kartu per pemain (sisa kartu tidak dipakai kalau pemainnya kurang dari 4).
- * `starter` null berarti ronde pertama: pemegang kartu terkecil jalan duluan dan wajib mengeluarkannya.
- * Ronde berikutnya dimulai pemenang ronde sebelumnya, bebas mengeluarkan apa saja.
+ * Di setiap ronde, pemegang 3♦ jalan duluan dan wajib mengeluarkannya. Kalau pemainnya kurang
+ * dari 4 dan 3♦ tidak terbagi, pemegang kartu terkecil yang menggantikannya.
  */
-export function startRound(names: string[], starter: number | null): CapsaState {
+export function startRound(names: string[]): CapsaState {
   const deck = shuffle(buildDeck())
   const players = names.map((name, i) => ({
     name,
@@ -56,21 +67,21 @@ export function startRound(names: string[], starter: number | null): CapsaState 
     passed: false,
   }))
   const lowest = Math.min(...players.flatMap((player) => player.hand.map((card) => card.id)))
-  const first = starter ?? players.findIndex((player) => player.hand.some((card) => card.id === lowest))
+  const first = players.findIndex((player) => player.hand.some((card) => card.id === lowest))
   const s: CapsaState = {
     players,
     current: first,
     trick: [],
     leader: first,
-    mustInclude: starter === null ? lowest : null,
+    mustInclude: lowest,
+    fiveCardPlayed: false,
+    reversed: false,
     phase: 'play',
     winner: null,
     step: 0,
     log: [],
   }
-  if (starter === null) {
-    log(s, `${names[first]} memegang ${cardLabel(players[first].hand[0])} dan jalan duluan.`)
-  } else log(s, `${names[first]} menang ronde sebelumnya dan jalan duluan.`)
+  log(s, `${names[first]} memegang ${cardLabel(players[first].hand[0])} dan jalan duluan.`)
   return s
 }
 
@@ -96,35 +107,54 @@ function advance(s: CapsaState) {
 
 /** Kenapa kartu-kartu ini tidak boleh dikeluarkan sekarang, atau null kalau boleh. */
 export function playProblem(
-  s: { trick: Play[]; mustInclude: number | null },
+  s: { trick: Play[]; mustInclude: number | null; fiveCardPlayed: boolean; reversed: boolean },
   cards: Card[],
 ): string | null {
-  const combo = evaluate(cards)
+  const combo = evaluate(cards, s.reversed)
   if (!combo) return 'Bukan kombinasi yang sah.'
+  if (combo.kind === 'triple' && s.fiveCardPlayed) {
+    return 'Tris tidak boleh dikeluarkan lagi setelah kombo 5 kartu keluar di ronde ini.'
+  }
   if (s.mustInclude !== null && !cards.some((card) => card.id === s.mustInclude)) {
     return 'Giliran pertama wajib mengeluarkan kartu terkecil.'
   }
-  const table = tableCombo(s)
-  if (!table) return null
+  const played = tableCombo(s)
+  if (!played) return null
+  // Kartu di meja dinilai ulang dengan urutan yang berlaku sekarang (bisa sudah walik).
+  const table = evaluate(played.cards, s.reversed)!
   if (combo.cards.length !== table.cards.length) return `Harus ${table.cards.length} kartu, sama dengan di meja.`
   if (!beats(combo, table)) return `Belum bisa mengalahkan ${comboLabel(table)}.`
   return null
 }
 
-function play(s: CapsaState, cardIds: number[]): boolean {
+function play(s: CapsaState, cardIds: number[], walik = false): boolean {
   const player = s.players[s.current]
   if (!Array.isArray(cardIds) || cardIds.length === 0 || new Set(cardIds).size !== cardIds.length) return false
   const cards = cardIds.map((id) => player.hand.find((card) => card.id === id))
   if (cards.some((card) => !card)) return false
   if (playProblem(s, cards as Card[])) return false
 
-  const combo = evaluate(cards as Card[])!
+  const combo = evaluate(cards as Card[], s.reversed)!
+  if (walik && combo.kind !== 'fourkind') return false
   const played = new Set(cardIds)
   player.hand = player.hand.filter((card) => !played.has(card.id))
   s.trick.push({ by: s.current, combo })
   s.leader = s.current
   s.mustInclude = null
+  if (combo.cards.length === 5 && !s.fiveCardPlayed) {
+    s.fiveCardPlayed = true
+    log(s, 'Kombo 5 kartu sudah keluar: tris terkunci sampai ronde selesai.')
+  }
   log(s, `${player.name} mengeluarkan ${comboLabel(combo)}${combo.cards.length > 1 ? ` (${combo.cards.map(cardLabel).join(' ')})` : ''}.`)
+  if (walik) {
+    s.reversed = !s.reversed
+    log(
+      s,
+      s.reversed
+        ? `${player.name} melakukan WALIK! Sekarang 3 terbesar dan 2 terkecil; ♦ terbesar dan ♠ terkecil.`
+        : `${player.name} melakukan walik lagi: urutan kartu kembali normal.`,
+    )
+  }
 
   if (player.hand.length === 0) {
     s.phase = 'over'
@@ -152,7 +182,7 @@ function timeout(s: CapsaState) {
     pass(s)
     return
   }
-  const lowest = sortByRank(s.players[s.current].hand)[0]
+  const lowest = sortByRank(s.players[s.current].hand, s.reversed)[0]
   play(s, [s.mustInclude ?? lowest.id])
 }
 
@@ -161,7 +191,7 @@ export function reducer(state: CapsaState, action: Action): CapsaState {
   const s = structuredClone(state)
   switch (action.type) {
     case 'play':
-      if (!play(s, action.cardIds)) return state
+      if (!play(s, action.cardIds, action.walik === true)) return state
       break
     case 'pass':
       if (!pass(s)) return state

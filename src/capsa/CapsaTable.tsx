@@ -61,7 +61,8 @@ export function CapsaTable({ room, onExit }: { room: CapsaRoom; onExit: () => vo
   const chosen = selected.filter((id) => handIds.has(id))
   const chosenCards = chosen.map((id) => hand.find((card) => card.id === id)!)
   const myTurn = phase === 'play' && current === me
-  const combo = chosenCards.length ? evaluate(chosenCards) : null
+  const reversed = view.reversed
+  const combo = chosenCards.length ? evaluate(chosenCards, reversed) : null
   const problem = chosenCards.length ? playProblem(view, chosenCards) : null
   const table = trick.length ? trick[trick.length - 1] : null
   const connected = lobby.players.map((player) => player.connected)
@@ -79,9 +80,9 @@ export function CapsaTable({ room, onExit }: { room: CapsaRoom; onExit: () => vo
     setOrder(rest)
   }
 
-  function playSelected() {
+  function playSelected(walik = false) {
     if (!myTurn || problem || !chosen.length) return
-    room.send({ type: 'play', cardIds: chosen })
+    room.send({ type: 'play', cardIds: chosen, walik: walik || undefined })
     setSelected([])
   }
 
@@ -135,9 +136,25 @@ export function CapsaTable({ room, onExit }: { room: CapsaRoom; onExit: () => vo
           </p>
         )}
         <div className="dock__actions">
-          <button type="button" className="btn btn--primary" disabled={!chosen.length || !!problem} onClick={playSelected}>
+          <button
+            type="button"
+            className="btn btn--primary"
+            disabled={!chosen.length || !!problem}
+            onClick={() => playSelected()}
+          >
             Keluarkan{chosen.length ? ` (${chosen.length})` : ''}
           </button>
+          {/* Four of a kind boleh memilih walik: urutan angka dan bunga terbalik sampai ronde selesai. */}
+          {combo?.kind === 'fourkind' && !problem && (
+            <button
+              type="button"
+              className="btn capsa-walik-btn"
+              title={reversed ? 'Kembalikan urutan kartu ke normal' : '3 jadi terbesar dan 2 terkecil; ♦ terbesar dan ♠ terkecil'}
+              onClick={() => playSelected(true)}
+            >
+              {reversed ? 'Keluarkan & Walik balik' : 'Keluarkan & Walik'}
+            </button>
+          )}
           {table && (
             <button type="button" className="btn" onClick={() => room.send({ type: 'pass' })}>
               Lewat
@@ -180,6 +197,23 @@ export function CapsaTable({ room, onExit }: { room: CapsaRoom; onExit: () => vo
         </ul>
 
         <section className="capsa-felt" aria-label="Meja">
+          {phase !== 'over' && (view.fiveCardPlayed || reversed) && (
+            <div className="capsa-felt__badges">
+              {reversed && (
+                <span
+                  className="capsa-felt__badge capsa-felt__badge--walik"
+                  title="Walik: 3 terbesar, 2 terkecil; ♦ terbesar, ♠ terkecil sampai ronde selesai"
+                >
+                  Walik aktif · 3 terbesar · ♦ terbesar
+                </span>
+              )}
+              {view.fiveCardPlayed && (
+                <span className="capsa-felt__badge" title="Kombo 5 kartu sudah keluar di ronde ini">
+                  Tris terkunci
+                </span>
+              )}
+            </div>
+          )}
           {shown.length === 0 ? (
             <p className="capsa-felt__empty">
               {phase === 'over' ? 'Ronde selesai' : `Meja bersih — ${current === me ? 'kamu' : name(current)} bebas memulai`}
@@ -226,10 +260,10 @@ export function CapsaTable({ room, onExit }: { room: CapsaRoom; onExit: () => vo
             <h2 className="capsa-hand-area__title">Kartumu ({hand.length})</h2>
             <span className="capsa-hand-area__hint">Klik untuk memilih · seret untuk memindah</span>
             <div className="capsa-hand-area__sort">
-              <button type="button" className="btn btn--small" onClick={() => setOrder(sortByRank(hand).map((c) => c.id))}>
+              <button type="button" className="btn btn--small" onClick={() => setOrder(sortByRank(hand, reversed).map((c) => c.id))}>
                 Urut angka
               </button>
-              <button type="button" className="btn btn--small" onClick={() => setOrder(sortBySuit(hand).map((c) => c.id))}>
+              <button type="button" className="btn btn--small" onClick={() => setOrder(sortBySuit(hand, reversed).map((c) => c.id))}>
                 Urut bunga
               </button>
               {chosen.length > 0 && (

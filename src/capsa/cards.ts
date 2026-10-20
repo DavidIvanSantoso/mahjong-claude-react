@@ -66,14 +66,30 @@ export function cardName(card: Card): string {
   return `${rankLabel(card.rank)} ${SUIT_NAMES[card.suit]}`
 }
 
-/** Urut angka (lalu bunga): sama dengan urutan kekuatan. */
-export function sortByRank(cards: Card[]): Card[] {
-  return [...cards].sort((a, b) => a.id - b.id)
+/**
+ * Kekuatan kartu tunggal. Normal sama dengan ID (3♦ terlemah, 2♠ terkuat). Saat walik, urutan angka
+ * dan bunga sama-sama terbalik: 3 terbesar, 2 terkecil, ♦ terbesar, ♠ terkecil (3♦ jadi terkuat).
+ */
+export function strength(card: Card, reversed = false): number {
+  return reversed ? 51 - card.id : card.id
 }
 
-/** Urut bunga dulu, lalu angka. */
-export function sortBySuit(cards: Card[]): Card[] {
-  return [...cards].sort((a, b) => SUITS.indexOf(a.suit) - SUITS.indexOf(b.suit) || a.rank - b.rank)
+/** Kekuatan angka saja (untuk tris, full house, four of a kind). */
+function rankStrength(rank: number, reversed: boolean): number {
+  return reversed ? 18 - rank : rank
+}
+
+/** Urut angka (lalu bunga) dari yang terlemah, mengikuti urutan yang sedang berlaku. */
+export function sortByRank(cards: Card[], reversed = false): Card[] {
+  return [...cards].sort((a, b) => strength(a, reversed) - strength(b, reversed))
+}
+
+/** Urut bunga dulu (dari yang terlemah), lalu angka, mengikuti urutan yang sedang berlaku. */
+export function sortBySuit(cards: Card[], reversed = false): Card[] {
+  const suitRank = (card: Card) => (reversed ? 3 - SUITS.indexOf(card.suit) : SUITS.indexOf(card.suit))
+  return [...cards].sort(
+    (a, b) => suitRank(a) - suitRank(b) || rankStrength(a.rank, reversed) - rankStrength(b.rank, reversed),
+  )
 }
 
 export type ComboKind = 'single' | 'pair' | 'triple' | 'straight' | 'flush' | 'fullhouse' | 'fourkind' | 'straightflush'
@@ -89,12 +105,12 @@ export const COMBO_NAMES: Record<ComboKind, string> = {
   straightflush: 'Straight Flush',
 }
 
-/** Tingkatan kombinasi 5 kartu, dari yang terendah. */
+/** Tingkatan kombinasi 5 kartu, dari yang terendah. Tidak ikut terbalik saat walik. */
 export const FIVE_CARD_ORDER: ComboKind[] = ['straight', 'flush', 'fullhouse', 'fourkind', 'straightflush']
 
 export interface Combo {
   kind: ComboKind
-  /** Kartu kombinasi, diurutkan dari yang terkuat. */
+  /** Kartu kombinasi, diurutkan dari yang terkuat (menurut urutan saat dinilai). */
   cards: Card[]
   /** Nilai pembanding; dibandingkan dari depan, makin besar makin kuat. */
   key: number[]
@@ -109,10 +125,10 @@ function naturalValues(rank: number): number[] {
 
 /**
  * Straight: lima angka berurutan menurut urutan biasa, dengan A boleh di bawah (A-2-3-4-5) atau di
- * atas (10-J-Q-K-A); tidak boleh memutar lewat 2 (J-Q-K-A-2). Hasilnya kartu tertinggi straight itu,
- * atau null kalau bukan straight.
+ * atas (10-J-Q-K-A); tidak boleh memutar lewat 2 (J-Q-K-A-2). Hasilnya kartu tertinggi dan terendah
+ * straight itu, atau null kalau bukan straight.
  */
-function straightTop(cards: Card[]): { value: number; card: Card } | null {
+function straightEnds(cards: Card[]): { top: number; topCard: Card; low: number; lowCard: Card } | null {
   // Coba A sebagai 14, lalu sebagai 1.
   for (const aceLow of [false, true]) {
     const values = cards.map((card) => {
@@ -122,35 +138,48 @@ function straightTop(cards: Card[]): { value: number; card: Card } | null {
     const sorted = [...values].sort((a, b) => a - b)
     if (sorted.every((v, i) => i === 0 || v === sorted[i - 1] + 1)) {
       const top = sorted[4]
-      return { value: top, card: cards[values.indexOf(top)] }
+      const low = sorted[0]
+      return { top, topCard: cards[values.indexOf(top)], low, lowCard: cards[values.indexOf(low)] }
     }
   }
   return null
 }
 
-/** Jenis kombinasi dari kartu yang dipilih, atau null kalau bukan kombinasi yang sah. */
-export function evaluate(cards: Card[]): Combo | null {
-  const sorted = [...cards].sort((a, b) => b.id - a.id)
+/**
+ * Jenis kombinasi dari kartu yang dipilih, atau null kalau bukan kombinasi yang sah.
+ * `reversed`: walik sedang berlaku, jadi kekuatan kartunya dinilai dengan urutan terbalik.
+ */
+export function evaluate(cards: Card[], reversed = false): Combo | null {
+  const str = (card: Card) => strength(card, reversed)
+  const suitStr = (card: Card) => (reversed ? 3 - SUITS.indexOf(card.suit) : SUITS.indexOf(card.suit))
+  const sorted = [...cards].sort((a, b) => str(b) - str(a))
   const counts = new Map<number, number>()
   sorted.forEach((card) => counts.set(card.rank, (counts.get(card.rank) ?? 0) + 1))
-  const groups = [...counts.entries()].sort((a, b) => b[1] - a[1] || b[0] - a[0])
+  const groups = [...counts.entries()].sort((a, b) => b[1] - a[1] || rankStrength(b[0], reversed) - rankStrength(a[0], reversed))
 
   switch (sorted.length) {
     case 1:
-      return { kind: 'single', cards: sorted, key: [sorted[0].id] }
+      return { kind: 'single', cards: sorted, key: [str(sorted[0])] }
     case 2:
-      return groups.length === 1 ? { kind: 'pair', cards: sorted, key: [sorted[0].id] } : null
+      return groups.length === 1 ? { kind: 'pair', cards: sorted, key: [str(sorted[0])] } : null
     case 3:
-      return groups.length === 1 ? { kind: 'triple', cards: sorted, key: [sorted[0].rank] } : null
+      return groups.length === 1 ? { kind: 'triple', cards: sorted, key: [rankStrength(sorted[0].rank, reversed)] } : null
     case 5: {
       const flush = sorted.every((card) => card.suit === sorted[0].suit)
-      const straight = straightTop(sorted)
-      const suitOf = (card: Card) => SUITS.indexOf(card.suit)
-      if (straight && flush) return { kind: 'straightflush', cards: sorted, key: [straight.value, suitOf(straight.card)] }
-      if (groups[0][1] === 4) return { kind: 'fourkind', cards: sorted, key: [groups[0][0]] }
-      if (groups[0][1] === 3 && groups[1][1] === 2) return { kind: 'fullhouse', cards: sorted, key: [groups[0][0]] }
-      if (flush) return { kind: 'flush', cards: sorted, key: sorted.map((card) => card.id) }
-      if (straight) return { kind: 'straight', cards: sorted, key: [straight.value, suitOf(straight.card)] }
+      const straight = straightEnds(sorted)
+      // Straight: normal dinilai dari kartu tertingginya; saat walik, dari kartu terendahnya.
+      const straightKey = straight
+        ? reversed
+          ? [-straight.low, suitStr(straight.lowCard)]
+          : [straight.top, suitStr(straight.topCard)]
+        : []
+      if (straight && flush) return { kind: 'straightflush', cards: sorted, key: straightKey }
+      if (groups[0][1] === 4) return { kind: 'fourkind', cards: sorted, key: [rankStrength(groups[0][0], reversed)] }
+      if (groups[0][1] === 3 && groups[1][1] === 2) {
+        return { kind: 'fullhouse', cards: sorted, key: [rankStrength(groups[0][0], reversed)] }
+      }
+      if (flush) return { kind: 'flush', cards: sorted, key: sorted.map(str) }
+      if (straight) return { kind: 'straight', cards: sorted, key: straightKey }
       return null
     }
     default:
@@ -160,7 +189,8 @@ export function evaluate(cards: Card[]): Combo | null {
 
 /**
  * Apakah `next` mengalahkan `current`: jumlah kartunya harus sama; untuk 5 kartu, jenis yang lebih
- * tinggi selalu menang, dan jenis yang sama dibandingkan lewat `key`.
+ * tinggi selalu menang, dan jenis yang sama dibandingkan lewat `key`. Keduanya harus dinilai dengan
+ * urutan yang sama (walik atau tidak).
  */
 export function beats(next: Combo, current: Combo): boolean {
   if (next.cards.length !== current.cards.length) return false
@@ -175,6 +205,13 @@ export function beats(next: Combo, current: Combo): boolean {
   return false
 }
 
+/** Angka yang paling banyak muncul di kombinasi (angka tris / empat kartu). */
+function mainRank(cards: Card[]): number {
+  const counts = new Map<number, number>()
+  cards.forEach((card) => counts.set(card.rank, (counts.get(card.rank) ?? 0) + 1))
+  return [...counts.entries()].sort((a, b) => b[1] - a[1])[0][0]
+}
+
 /** Nama kombinasi untuk ditampilkan, mis. "Pair K" atau "Full House 7". */
 export function comboLabel(combo: Combo): string {
   const top = combo.cards[0]
@@ -186,7 +223,7 @@ export function comboLabel(combo: Combo): string {
       return `${COMBO_NAMES[combo.kind]} ${rankLabel(top.rank)}`
     case 'fullhouse':
     case 'fourkind':
-      return `${COMBO_NAMES[combo.kind]} ${rankLabel(combo.key[0])}`
+      return `${COMBO_NAMES[combo.kind]} ${rankLabel(mainRank(combo.cards))}`
     default:
       return COMBO_NAMES[combo.kind]
   }

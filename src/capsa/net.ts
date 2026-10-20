@@ -21,6 +21,8 @@ export interface CapsaView {
   leader: number
   trick: Play[]
   mustInclude: number | null
+  fiveCardPlayed: boolean
+  reversed: boolean
   players: { name: string; count: number; passed: boolean }[]
   /** Tangan kursi ini. */
   hand: Card[]
@@ -72,6 +74,8 @@ export function viewFor(s: CapsaState, seat: number): CapsaView {
     leader: s.leader,
     trick: s.trick,
     mustInclude: s.mustInclude,
+    fiveCardPlayed: s.fiveCardPlayed,
+    reversed: s.reversed,
     players: s.players.map((player) => ({ name: player.name, count: player.hand.length, passed: player.passed })),
     hand: s.players[seat]?.hand ?? [],
     winner: s.winner,
@@ -85,7 +89,12 @@ export function viewFor(s: CapsaState, seat: number): CapsaView {
 function isAllowed(s: CapsaState, seat: number, action: Action): boolean {
   if (s.phase !== 'play' || s.current !== seat) return false
   if (action.type === 'pass') return true
-  return action.type === 'play' && Array.isArray(action.cardIds) && action.cardIds.every(Number.isInteger)
+  return (
+    action.type === 'play' &&
+    Array.isArray(action.cardIds) &&
+    action.cardIds.every(Number.isInteger) &&
+    (action.walik === undefined || typeof action.walik === 'boolean')
+  )
 }
 
 function emptySnapshot(code: string): CapsaRoomSnapshot {
@@ -193,8 +202,8 @@ class HostRoom {
     if (this.seats.length < MIN_PLAYERS) return
     if (this.game && this.game.phase !== 'over') return
     const names = this.seats.map((seat) => seat.name)
-    // Ronde pertama: pemegang kartu terkecil; ronde berikutnya: pemenang ronde sebelumnya.
-    this.game = startRound(names, this.game?.winner ?? null)
+    // Tiap ronde dimulai pemegang 3♦ (atau kartu terkecil kalau 3♦ tidak terbagi).
+    this.game = startRound(names)
     this.update()
   }
 
