@@ -1,0 +1,998 @@
+/* ---------- Palet KA-BOOM! (retro 8-bit) ---------- */
+
+/*
+ * Dipasang lewat `data-game='bomkata'` di <html> selama layar KA-BOOM! terbuka (lihat BomKataApp.tsx).
+ * Palet: Deep Arena #172B55, Pixel Blue #294A7A, Power-up #F5C451, Explosion #F47735,
+ * Danger #EF4B55, Safe/Ready #62C96B. Sudut tidak dibulatkan dan bingkai dibuat bertangga
+ * (box-shadow 4px) supaya terasa seperti game 8-bit.
+ */
+:root[data-game='bomkata'] {
+  --bk-arena: #172b55;
+  --bk-blue: #294a7a;
+  --bk-blue-light: #3b6299;
+  --bk-yellow: #f5c451;
+  --bk-orange: #f47735;
+  --bk-red: #ef4b55;
+  --bk-green: #62c96b;
+  --bk-ink: #0b1530;
+  --bk-text: #f4f7ff;
+  --bk-muted: #a9bce0;
+  --bk-title: 'Press Start 2P', ui-monospace, monospace;
+  --bk-body: 'VT323', ui-monospace, monospace;
+  --px: 4px;
+
+  /* Variabel bersama (dialog, lobi, form) */
+  --pink: #1f3b66;
+  --pink-deep: #f5c451;
+  --cream: #294a7a;
+  --sage: #1f3b66;
+  --green: #f5c451;
+  --green-deep: #f5c451;
+  --ink: #f4f7ff;
+  --ink-soft: #a9bce0;
+  --line: #3b6299;
+  --tile-red: #ef4b55;
+  --tile-green: #62c96b;
+  --tile-blue: #a9bce0;
+  --page: #172b55;
+  --on-page: #f4f7ff;
+  --on-page-soft: #a9bce0;
+  --on-green: #172b55;
+  --tile-bg: #294a7a;
+  --btn-bg: #f5c451;
+  --btn-hover: #ffd76e;
+  --btn-shadow: #b8892a;
+
+  /* VT323 kecil dan ramping, jadi seluruh ukuran dinaikkan sedikit */
+  font-family: var(--bk-body);
+  font-size: 125%;
+}
+
+/* Bingkai pixel bertangga: empat bayangan 4px, tanpa sudut membulat */
+:root[data-game='bomkata'] :is(.card, .tutorial-dialog, .btn, .icon-btn, .game-nav, .game-nav__item, .home__tools, .home__credit, .social-link, .lobby__players li, .music-player__panel, input) {
+  border-radius: 0;
+}
+
+:root[data-game='bomkata'] :is(.btn, .icon-btn) {
+  font-family: var(--bk-title);
+  font-size: 0.5rem;
+  line-height: 1.6;
+}
+
+:root[data-game='bomkata'] .btn--small {
+  padding: 8px 10px;
+}
+
+:root[data-game='bomkata'] :is(.setup__title, .result-dialog__title, .lobby__code, .tutorial__section h2) {
+  font-family: var(--bk-title);
+  letter-spacing: 0.04em;
+}
+
+:root[data-game='bomkata'] .setup__title {
+  font-size: 0.9rem;
+}
+
+:root[data-game='bomkata'] .result-dialog__title {
+  font-size: clamp(0.9rem, 4vw, 1.3rem);
+  color: var(--bk-yellow);
+}
+
+:root[data-game='bomkata'] .tutorial__section h2 {
+  font-size: 0.6rem;
+  color: var(--bk-yellow);
+}
+
+:root[data-game='bomkata'] .lobby__code {
+  font-size: 1.4rem;
+  color: var(--bk-yellow);
+}
+
+:root[data-game='bomkata'] .tutorial-dialog {
+  border: var(--px) solid var(--bk-ink);
+  box-shadow: 0 0 0 var(--px) var(--bk-yellow), 0 16px 0 rgb(0 0 0 / 40%);
+}
+
+:root[data-game='bomkata'] .tutorial-dialog::backdrop {
+  background: rgb(11 21 48 / 75%);
+}
+
+:root[data-game='bomkata'] input[type='text'] {
+  font-family: var(--bk-body);
+  font-size: 1.1rem;
+  color: var(--bk-text);
+  background: var(--bk-ink);
+  border: var(--px) solid var(--bk-blue-light);
+  border-radius: 0;
+}
+
+:root[data-game='bomkata'] input[type='text']:focus {
+  outline: none;
+  border-color: var(--bk-yellow);
+}
+
+:root[data-game='bomkata'] :is(.game-nav, .home__tools, .home__credit) {
+  color: var(--bk-muted);
+  background: var(--bk-arena);
+  border: var(--px) solid var(--bk-ink);
+  box-shadow: 0 0 0 2px var(--bk-blue-light);
+}
+
+:root[data-game='bomkata'] .game-nav__item {
+  color: var(--bk-text);
+}
+
+:root[data-game='bomkata'] .game-nav__item--active {
+  color: var(--bk-arena);
+}
+
+:root[data-game='bomkata'] .home__credit strong {
+  color: var(--bk-yellow);
+}
+
+/* ---------- Warna pixel art (lihat Pixel.tsx) ---------- */
+
+.bkpx-k { fill: var(--bk-ink); }
+.bkpx-w { fill: var(--bk-text); }
+.bkpx-c { fill: #8fa3c7; }
+.bkpx-f { fill: #c9a26b; }
+.bkpx-s { fill: var(--bk-yellow); }
+.bkpx-o { fill: var(--bk-orange); }
+.bkpx-y { fill: var(--bk-yellow); }
+.bkpx-r { fill: var(--bk-red); }
+.bkpx-h { fill: var(--bk-red); }
+.bkpx-e { fill: var(--bk-muted); opacity: 0.6; }
+.bkpx-n { fill: var(--bk-ink); }
+.bkpx-m { fill: var(--bk-ink); }
+.bkpx-x { fill: var(--bk-ink); }
+.bkpx-d { fill: #5d6d8c; }
+.bkpx-a { fill: var(--seat-color); }
+
+.bk-face--0 { --seat-color: var(--bk-yellow); }
+.bk-face--1 { --seat-color: var(--bk-orange); }
+.bk-face--2 { --seat-color: var(--bk-green); }
+.bk-face--3 { --seat-color: var(--bk-red); }
+.bk-face--4 { --seat-color: #7fb2ff; }
+.bk-face--5 { --seat-color: #e58fd1; }
+
+/* ---------- Tombol pixel ---------- */
+
+.bk-btn {
+  position: relative;
+  padding: 12px 16px;
+  font-family: var(--bk-title);
+  font-size: 0.6rem;
+  line-height: 1.4;
+  letter-spacing: 0.04em;
+  color: var(--bk-ink);
+  background: var(--bk-yellow);
+  border: 0;
+  border-radius: 0;
+  box-shadow:
+    inset calc(var(--px) * -1) calc(var(--px) * -1) 0 #c9952e,
+    inset var(--px) var(--px) 0 #ffe39a,
+    0 0 0 var(--px) var(--bk-ink);
+  margin: var(--px);
+  cursor: pointer;
+  transition: translate 0.08s steps(2);
+}
+
+.bk-btn:hover:not(:disabled) {
+  translate: 0 -2px;
+  filter: brightness(1.06);
+}
+
+.bk-btn:active:not(:disabled) {
+  translate: 0 2px;
+  box-shadow:
+    inset var(--px) var(--px) 0 #c9952e,
+    0 0 0 var(--px) var(--bk-ink);
+}
+
+.bk-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.bk-btn:focus-visible {
+  outline: var(--px) solid var(--bk-text);
+  outline-offset: var(--px);
+}
+
+.bk-btn--big {
+  padding: 16px;
+  font-size: 0.75rem;
+}
+
+.bk-btn--alt {
+  color: var(--bk-text);
+  background: var(--bk-orange);
+  box-shadow:
+    inset calc(var(--px) * -1) calc(var(--px) * -1) 0 #b9531f,
+    inset var(--px) var(--px) 0 #ffa477,
+    0 0 0 var(--px) var(--bk-ink);
+}
+
+.bk-btn--wide {
+  width: calc(100% - var(--px) * 2);
+}
+
+.bk-icon-btn {
+  font-size: 0.75rem;
+}
+
+/* Panel dengan bingkai pixel */
+.bk-panel {
+  padding: 14px 16px;
+  color: var(--bk-text);
+  background: var(--bk-blue);
+  box-shadow:
+    inset calc(var(--px) * -1) calc(var(--px) * -1) 0 #1e3a63,
+    0 0 0 var(--px) var(--bk-ink);
+  margin: var(--px);
+}
+
+.bk-panel__title {
+  margin-bottom: 8px;
+  font-family: var(--bk-title);
+  font-size: 0.5rem;
+  line-height: 1.6;
+  color: var(--bk-yellow);
+}
+
+.bk-panel__empty {
+  color: var(--bk-muted);
+}
+
+/* ---------- Bom, panah, ledakan ---------- */
+
+.bk-bomb {
+  position: relative;
+  width: var(--bomb-size, 120px);
+  aspect-ratio: 1;
+}
+
+.bk-bomb__art {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Sumbu menyala: percikan api berkelip */
+.bk-bomb--lit :is(.bkpx-s, .bkpx-o) {
+  animation: bk-spark 0.18s steps(1) infinite;
+}
+
+/* Badan bom berkedip merah; makin panas makin cepat (tanpa angka) */
+.bk-bomb--lit .bkpx-k {
+  animation: bk-blink var(--blink, 1.4s) steps(1) infinite;
+}
+
+.bk-bomb--heat-0 { --blink: 1.4s; }
+.bk-bomb--heat-1 { --blink: 0.8s; }
+.bk-bomb--heat-2 { --blink: 0.4s; }
+
+.bk-bomb--heat-3 {
+  --blink: 0.16s;
+  animation: bk-shake 0.12s steps(2) infinite;
+}
+
+.bk-bomb--gone {
+  visibility: hidden;
+}
+
+@keyframes bk-blink {
+  50% {
+    fill: var(--bk-red);
+  }
+}
+
+@keyframes bk-spark {
+  50% {
+    fill: var(--bk-text);
+    opacity: 0.4;
+  }
+}
+
+@keyframes bk-shake {
+  50% {
+    translate: 2px -2px;
+  }
+}
+
+/* Panah mengorbit bom dan menunjuk pemain yang memegangnya */
+.bk-arrow {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  transition: transform 0.45s steps(6);
+}
+
+.bk-arrow__art {
+  position: absolute;
+  left: var(--arrow-orbit, 80px);
+  top: calc(var(--arrow-size, 32px) * -0.44);
+  width: var(--arrow-size, 32px);
+  height: calc(var(--arrow-size, 32px) * 0.875);
+  filter: drop-shadow(0 0 0 var(--bk-ink)) drop-shadow(2px 2px 0 var(--bk-ink));
+  animation: bk-nudge 0.6s steps(2) infinite;
+}
+
+@keyframes bk-nudge {
+  50% {
+    translate: 4px 0;
+  }
+}
+
+.bk-blast {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  display: grid;
+  place-items: center;
+  translate: -50% -50%;
+}
+
+.bk-blast__art {
+  width: calc(var(--bomb-size, 120px) * 1.9);
+  height: calc(var(--bomb-size, 120px) * 1.9);
+  animation: bk-burst 0.6s steps(6) both;
+}
+
+.bk-blast__text {
+  position: absolute;
+  font-family: var(--bk-title);
+  font-size: 1.1rem;
+  color: var(--bk-text);
+  text-shadow:
+    3px 3px 0 var(--bk-ink),
+    -2px -2px 0 var(--bk-ink);
+  animation: bk-pop 0.5s steps(4) both 0.2s;
+}
+
+@keyframes bk-burst {
+  from {
+    scale: 0.2;
+    opacity: 0;
+  }
+
+  60% {
+    scale: 1.15;
+    opacity: 1;
+  }
+
+  to {
+    scale: 1;
+  }
+}
+
+@keyframes bk-pop {
+  from {
+    scale: 0;
+  }
+}
+
+/* ---------- Homescreen ---------- */
+
+.bk-home {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 24px;
+  padding: 88px clamp(20px, 7vw, 120px) 72px;
+  color: var(--bk-text);
+  background-color: var(--bk-arena);
+  /* Lantai arena berpetak */
+  background-image:
+    linear-gradient(var(--bk-ink) 2px, transparent 2px),
+    linear-gradient(90deg, var(--bk-ink) 2px, transparent 2px);
+  background-size: 48px 48px;
+  background-position: -2px -2px;
+}
+
+.bk-home__menu {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 340px);
+  display: grid;
+  gap: 14px;
+}
+
+.bk-logo {
+  display: grid;
+  margin: 0 0 6px;
+  font-family: var(--bk-title);
+  font-size: clamp(2rem, 6vw, 3.4rem);
+  line-height: 1.15;
+  color: var(--bk-yellow);
+  text-shadow:
+    4px 4px 0 var(--bk-orange),
+    8px 8px 0 var(--bk-ink);
+}
+
+.bk-logo span + span {
+  color: var(--bk-text);
+  text-shadow:
+    4px 4px 0 var(--bk-red),
+    8px 8px 0 var(--bk-ink);
+}
+
+.bk-home__tagline {
+  font-size: 1.25rem;
+  line-height: 1.2;
+  color: var(--bk-text);
+}
+
+.bk-home__note {
+  font-size: 1rem;
+  color: var(--bk-muted);
+}
+
+.bk-home__stage {
+  position: relative;
+  justify-self: center;
+  width: min(100%, 420px);
+  aspect-ratio: 1;
+}
+
+.bk-home__bomb {
+  --bomb-size: min(60%, 260px);
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  translate: -50% -50%;
+  animation: bk-bob 1.2s steps(4) infinite;
+}
+
+@keyframes bk-bob {
+  50% {
+    margin-top: -12px;
+  }
+}
+
+/* Huruf melayang mengelilingi bom */
+.bk-home__letter {
+  --a: calc(var(--i) * 36deg);
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  margin: -22px 0 0 -22px;
+  font-family: var(--bk-title);
+  font-size: 0.9rem;
+  color: var(--bk-ink);
+  background: var(--bk-yellow);
+  box-shadow:
+    inset -4px -4px 0 #c9952e,
+    0 0 0 4px var(--bk-ink);
+  transform: rotate(var(--a)) translateX(min(19vw, 185px)) rotate(calc(var(--a) * -1));
+  animation: bk-float 2s steps(4) infinite;
+  animation-delay: calc(var(--i) * -0.3s);
+}
+
+.bk-home__letter:nth-child(3n) {
+  background: var(--bk-green);
+}
+
+.bk-home__letter:nth-child(3n + 1) {
+  color: var(--bk-text);
+  background: var(--bk-orange);
+}
+
+@keyframes bk-float {
+  50% {
+    margin-top: -30px;
+  }
+}
+
+/* ---------- Menu online dan lobi ---------- */
+
+.bk-page {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 24px 16px;
+  color: var(--bk-text);
+  background-color: var(--bk-arena);
+  background-image:
+    linear-gradient(var(--bk-ink) 2px, transparent 2px),
+    linear-gradient(90deg, var(--bk-ink) 2px, transparent 2px);
+  background-size: 48px 48px;
+}
+
+.bk-setup {
+  grid-template-columns: minmax(0, 520px) auto;
+  justify-content: center;
+  gap: 48px;
+}
+
+.bk-setup__card {
+  width: min(100%, 480px);
+  display: grid;
+  gap: 16px;
+  padding: 24px;
+}
+
+.bk-setup__title {
+  font-family: var(--bk-title);
+  font-size: 1rem;
+  line-height: 1.3;
+  color: var(--bk-yellow);
+  text-shadow: 3px 3px 0 var(--bk-ink);
+}
+
+.bk-setup__lead {
+  font-size: 1.15rem;
+  color: var(--bk-text);
+}
+
+.bk-setup__note {
+  font-size: 1rem;
+  color: var(--bk-muted);
+}
+
+.bk-setup__note--bad {
+  color: var(--bk-red);
+}
+
+.bk-setup__deco .bk-bomb {
+  --bomb-size: 200px;
+  animation: bk-bob 1.2s steps(4) infinite;
+}
+
+.bk-field {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.bk-field input {
+  width: 100%;
+  min-width: 0;
+  padding: 8px 10px;
+}
+
+.bk-field__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+
+:root[data-game='bomkata'] .lobby__players li {
+  font-size: 1.1rem;
+  background: var(--bk-arena);
+  border-left: var(--px) solid var(--bk-yellow);
+}
+
+:root[data-game='bomkata'] .lobby__players .lobby__empty {
+  border-left-color: transparent;
+}
+
+/* ---------- Halaman permainan ---------- */
+
+.bk-game {
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 10px 12px 32px;
+  color: var(--bk-text);
+  background-color: var(--bk-arena);
+  background-image:
+    linear-gradient(rgb(11 21 48 / 70%) 2px, transparent 2px),
+    linear-gradient(90deg, rgb(11 21 48 / 70%) 2px, transparent 2px);
+  background-size: 40px 40px;
+}
+
+.bk-topbar {
+  position: relative;
+  max-width: 1180px;
+  margin: 0 auto 12px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  padding: 0 4px;
+}
+
+.bk-topbar__title {
+  font-family: var(--bk-title);
+  font-size: 0.9rem;
+  color: var(--bk-yellow);
+  text-shadow: 3px 3px 0 var(--bk-ink);
+}
+
+.bk-topbar__room {
+  margin-right: auto;
+  font-family: var(--bk-title);
+  font-size: 0.5rem;
+  color: var(--bk-muted);
+}
+
+.bk-topbar__tools {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bk-game__layout {
+  max-width: 1180px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+}
+
+@media (min-width: 1000px) {
+  .bk-game__layout {
+    grid-template-columns: minmax(0, 1fr) 300px;
+    align-items: start;
+  }
+
+  .bk-side {
+    position: sticky;
+    top: 12px;
+  }
+}
+
+.bk-main {
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+}
+
+/* Undian kategori */
+.bk-category {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  min-width: min(100%, 360px);
+  padding: 10px 18px 12px;
+  text-align: center;
+  background: var(--bk-ink);
+  box-shadow:
+    0 0 0 var(--px) var(--bk-yellow),
+    0 0 0 calc(var(--px) * 2) var(--bk-ink);
+  margin: calc(var(--px) * 2);
+}
+
+.bk-category__label {
+  font-family: var(--bk-title);
+  font-size: 0.45rem;
+  color: var(--bk-muted);
+}
+
+.bk-category__name {
+  font-family: var(--bk-title);
+  font-size: clamp(0.8rem, 3.6vw, 1.15rem);
+  line-height: 1.3;
+  color: var(--bk-yellow);
+}
+
+.bk-category--rolling .bk-category__name {
+  color: var(--bk-text);
+  animation: bk-roll 0.08s steps(1) infinite;
+}
+
+@keyframes bk-roll {
+  50% {
+    translate: 0 -3px;
+  }
+}
+
+/* Meja bundar: kursi melingkar, bom di tengah */
+.bk-arena {
+  /* Ukuran bom dan panah mengikuti lebar meja (container query units) */
+  container-type: inline-size;
+  --bomb-size: 22cqw;
+  --arrow-size: 9cqw;
+  --arrow-orbit: 17cqw;
+  position: relative;
+  width: min(100%, 600px);
+  aspect-ratio: 1;
+}
+
+.bk-arena__table {
+  position: absolute;
+  inset: 16%;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, rgb(245 196 81 / 10%) 0 40%, transparent 41%),
+    var(--bk-blue);
+  /* Lingkaran dengan bingkai bertangga */
+  box-shadow:
+    0 0 0 var(--px) var(--bk-ink),
+    0 0 0 calc(var(--px) * 3) var(--bk-blue-light),
+    0 0 0 calc(var(--px) * 4) var(--bk-ink),
+    inset 0 0 0 calc(var(--px) * 3) #1e3a63;
+}
+
+.bk-arena__seats {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bk-seat {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  translate: -50% -50%;
+  width: clamp(84px, 20vw, 120px);
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: 8px 6px;
+  text-align: center;
+  background: var(--bk-arena);
+  box-shadow: 0 0 0 var(--px) var(--bk-ink);
+  transition: box-shadow 0.2s steps(2);
+}
+
+.bk-seat .bk-face {
+  width: clamp(28px, 7vw, 40px);
+  height: clamp(28px, 7vw, 40px);
+}
+
+.bk-seat__name {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 1.05rem;
+  line-height: 1;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.bk-seat__lives {
+  display: flex;
+  gap: 4px;
+}
+
+.bk-heart {
+  width: 18px;
+  height: 16px;
+}
+
+.bk-seat__wins,
+.bk-seat__offline {
+  font-size: 0.85rem;
+  color: var(--bk-muted);
+}
+
+/* Pemegang bom: bingkai kuning berkedip */
+.bk-seat--turn {
+  box-shadow:
+    0 0 0 var(--px) var(--bk-ink),
+    0 0 0 calc(var(--px) * 2) var(--bk-yellow);
+  animation: bk-turn 0.6s steps(1) infinite;
+}
+
+@keyframes bk-turn {
+  50% {
+    box-shadow:
+      0 0 0 var(--px) var(--bk-ink),
+      0 0 0 calc(var(--px) * 2) var(--bk-orange);
+  }
+}
+
+.bk-seat--hit {
+  background: var(--bk-red);
+  animation: bk-shake 0.1s steps(2) 6;
+}
+
+.bk-seat--out {
+  opacity: 0.45;
+  filter: grayscale(1);
+}
+
+.bk-seat--me .bk-seat__name {
+  color: var(--bk-yellow);
+}
+
+.bk-arena__center {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  translate: -50% -50%;
+}
+
+/* Konsol di bawah meja: status, ketikan pemegang bom, dan hasil jawaban */
+.bk-console {
+  width: min(100%, 600px);
+  min-height: 112px;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 6px;
+  padding: 12px 16px;
+  text-align: center;
+  background: var(--bk-ink);
+  box-shadow:
+    0 0 0 var(--px) var(--bk-blue-light),
+    inset 0 0 0 2px #142449;
+  margin: var(--px);
+}
+
+.bk-status {
+  font-family: var(--bk-title);
+  font-size: clamp(0.45rem, 1.8vw, 0.6rem);
+  line-height: 1.5;
+  color: var(--bk-muted);
+}
+
+.bk-status--danger {
+  color: var(--bk-red);
+}
+
+.bk-status--win {
+  color: var(--bk-green);
+}
+
+/* Kata yang sedang diketik pemegang bom, terlihat oleh semua pemain */
+.bk-typing {
+  max-width: 100%;
+  overflow: hidden;
+  padding: 2px 8px;
+  font-size: clamp(1.5rem, 5vw, 2rem);
+  line-height: 1.1;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--bk-text);
+}
+
+.bk-typing__cursor {
+  color: var(--bk-yellow);
+  animation: bk-blink-text 0.7s steps(1) infinite;
+}
+
+@keyframes bk-blink-text {
+  50% {
+    opacity: 0;
+  }
+}
+
+.bk-feedback {
+  font-size: 1.05rem;
+  line-height: 1.1;
+}
+
+.bk-feedback--ok {
+  color: var(--bk-green);
+  animation: bk-pop 0.3s steps(3);
+}
+
+.bk-feedback--bad {
+  color: var(--bk-red);
+  animation: bk-shake 0.08s steps(2) 4;
+}
+
+/* Kotak ketik */
+.bk-input {
+  width: min(100%, 600px);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.bk-input input {
+  min-width: 0;
+  padding: 12px;
+  font-size: 1.4rem !important;
+}
+
+.bk-input input:disabled {
+  opacity: 0.55;
+}
+
+/* Kolom samping */
+.bk-side {
+  display: grid;
+  gap: 12px;
+}
+
+.bk-used {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.bk-used li {
+  padding: 2px 8px;
+  font-size: 1rem;
+  color: var(--bk-ink);
+  background: var(--bk-green);
+  box-shadow: inset -2px -2px 0 #3f9947;
+}
+
+.bk-log {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 2px;
+  font-size: 1rem;
+  color: var(--bk-muted);
+}
+
+.bk-log li:last-child {
+  color: var(--bk-text);
+}
+
+/* ---------- Layar sempit ---------- */
+
+@media (max-width: 720px) {
+  .bk-home {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    align-content: start;
+    gap: 8px;
+    padding: 76px 16px 150px;
+    text-align: center;
+  }
+
+  .bk-home__menu {
+    width: min(100%, 360px);
+  }
+
+  .bk-logo {
+    justify-items: center;
+  }
+
+  .bk-home__stage {
+    order: -1;
+    width: min(100%, 300px);
+  }
+
+  .bk-home__letter {
+    width: 32px;
+    height: 32px;
+    margin: -16px 0 0 -16px;
+    font-size: 0.65rem;
+    transform: rotate(var(--a)) translateX(min(36vw, 130px)) rotate(calc(var(--a) * -1));
+  }
+
+  .bk-setup {
+    grid-template-columns: 1fr;
+  }
+
+  .bk-setup__deco {
+    display: none;
+  }
+
+  .bk-seat {
+    width: clamp(72px, 23vw, 96px);
+    padding: 6px 4px;
+  }
+
+  .bk-seat__name {
+    font-size: 0.9rem;
+  }
+
+  .bk-heart {
+    width: 14px;
+    height: 12px;
+  }
+
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-game='bomkata'] :is(.bk-home__bomb, .bk-home__letter, .bk-arrow__art, .bk-setup__deco .bk-bomb, .bk-seat--turn) {
+    animation: none;
+  }
+}

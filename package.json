@@ -5,8 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
-    "preview": "vite preview"
+    "build": "node scripts/words.mjs --check && tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "words": "node scripts/words.mjs"
   },
   "dependencies": {
     "gsap": "^3.15.0",

@@ -1,0 +1,173 @@
+{
+  "language": "id",
+  "categories": [
+    {
+      "id": "alam-cuaca",
+      "name": "Alam & Cuaca",
+      "file": "alam-cuaca.json",
+      "count": 79
+    },
+    {
+      "id": "alat-musik",
+      "name": "Alat Musik",
+      "file": "alat-musik.json",
+      "count": 105
+    },
+    {
+      "id": "alat-sekolah",
+      "name": "Alat Sekolah",
+      "file": "alat-sekolah.json",
+      "count": 70
+    },
+    {
+      "id": "anggota-tubuh",
+      "name": "Anggota Tubuh",
+      "file": "anggota-tubuh.json",
+      "count": 87
+    },
+    {
+      "id": "benda-rumah",
+      "name": "Benda di Rumah",
+      "file": "benda-rumah.json",
+      "count": 162
+    },
+    {
+      "id": "buah",
+      "name": "Buah",
+      "file": "buah.json",
+      "count": 100
+    },
+    {
+      "id": "bumbu-rempah",
+      "name": "Bumbu & Rempah",
+      "file": "bumbu-rempah.json",
+      "count": 74
+    },
+    {
+      "id": "bunga-tanaman",
+      "name": "Bunga & Tanaman",
+      "file": "bunga-tanaman.json",
+      "count": 78
+    },
+    {
+      "id": "burung",
+      "name": "Burung",
+      "file": "burung.json",
+      "count": 70
+    },
+    {
+      "id": "elektronik",
+      "name": "Elektronik & Gadget",
+      "file": "elektronik.json",
+      "count": 79
+    },
+    {
+      "id": "hewan",
+      "name": "Hewan",
+      "file": "hewan.json",
+      "count": 172
+    },
+    {
+      "id": "ikan",
+      "name": "Ikan",
+      "file": "ikan.json",
+      "count": 65
+    },
+    {
+      "id": "kendaraan",
+      "name": "Kendaraan",
+      "file": "kendaraan.json",
+      "count": 80
+    },
+    {
+      "id": "kota-indonesia",
+      "name": "Kota di Indonesia",
+      "file": "kota-indonesia.json",
+      "count": 203
+    },
+    {
+      "id": "kue-jajanan",
+      "name": "Kue & Jajanan",
+      "file": "kue-jajanan.json",
+      "count": 98
+    },
+    {
+      "id": "luar-angkasa",
+      "name": "Luar Angkasa",
+      "file": "luar-angkasa.json",
+      "count": 61
+    },
+    {
+      "id": "makanan-indonesia",
+      "name": "Makanan Khas Indonesia",
+      "file": "makanan-indonesia.json",
+      "count": 175
+    },
+    {
+      "id": "mata-pelajaran",
+      "name": "Mata Pelajaran",
+      "file": "mata-pelajaran.json",
+      "count": 54
+    },
+    {
+      "id": "minuman",
+      "name": "Minuman",
+      "file": "minuman.json",
+      "count": 78
+    },
+    {
+      "id": "negara",
+      "name": "Negara",
+      "file": "negara.json",
+      "count": 183
+    },
+    {
+      "id": "olahraga",
+      "name": "Olahraga",
+      "file": "olahraga.json",
+      "count": 120
+    },
+    {
+      "id": "pakaian",
+      "name": "Pakaian & Aksesori",
+      "file": "pakaian.json",
+      "count": 85
+    },
+    {
+      "id": "pekerjaan",
+      "name": "Pekerjaan",
+      "file": "pekerjaan.json",
+      "count": 168
+    },
+    {
+      "id": "provinsi-indonesia",
+      "name": "Provinsi di Indonesia",
+      "file": "provinsi-indonesia.json",
+      "count": 48
+    },
+    {
+      "id": "sayuran",
+      "name": "Sayuran",
+      "file": "sayuran.json",
+      "count": 105
+    },
+    {
+      "id": "serangga",
+      "name": "Serangga & Hewan Kecil",
+      "file": "serangga.json",
+      "count": 53
+    },
+    {
+      "id": "tempat-bangunan",
+      "name": "Tempat & Bangunan",
+      "file": "tempat-bangunan.json",
+      "count": 99
+    },
+    {
+      "id": "warna",
+      "name": "Warna",
+      "file": "warna.json",
+      "count": 63
+    }
+  ]
+}

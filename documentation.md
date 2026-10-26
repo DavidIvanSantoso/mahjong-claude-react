@@ -2,7 +2,7 @@
 
 Game mahjong 2D untuk 2–4 pemain, dibuat dengan React dan TypeScript. Bisa dimainkan bergantian di satu perangkat, atau online lewat room (PeerJS) dengan tiap pemain di perangkatnya sendiri.
 
-Situs yang sama juga memuat game kartu **UNO** (online, 2–6 pemain; [bagian 11](#11-game-uno)) dan **Capsa** (online, 2–4 pemain; [bagian 12](#12-game-capsa)). Navbar di pojok kiri atas homescreen dipakai untuk berpindah game.
+Situs yang sama juga memuat game kartu **UNO** (online, 2–6 pemain; [bagian 11](#11-game-uno)) **Capsa** (online, 2–4 pemain; [bagian 12](#12-game-capsa)), dan **KA-BOOM!** (online, 2–6 pemain; [bagian 13](#13-game-ka-boom)). Navbar di pojok kiri atas homescreen dipakai untuk berpindah game.
 
 - Situs: https://davidivansantoso.github.io/mahjong-claude-react/
 - Repo: https://github.com/DavidIvanSantoso/mahjong-claude-react
@@ -21,6 +21,7 @@ Situs yang sama juga memuat game kartu **UNO** (online, 2–6 pemain; [bagian 11
 10. [Lisensi dan aset](#10-lisensi-dan-aset)
 11. [Game UNO](#11-game-uno)
 12. [Game Capsa](#12-game-capsa)
+13. [Game KA-BOOM!](#13-game-ka-boom)
 
 ---
 
@@ -78,12 +79,14 @@ src/
     Seat.tsx               Satu kursi: tangan, set terbuka, bunga, buangan
     TileView.tsx           Gambar satu ubin (muka atau telungkup)
     OnlineGame.tsx         Lobi room dan pembungkus meja untuk mode online
-    GameNav.tsx            Navbar pemilih game (Mahjong / UNO / Capsa) di homescreen
+    GameNav.tsx            Navbar pemilih game (Mahjong / UNO / Capsa / KA-BOOM!) di homescreen
   net/                     Mode online
     online.ts              Bentuk pesan, kode room, penyaringan state per pemain
     rooms.ts               Kelas HostRoom dan GuestRoom, plus hook React-nya
   uno/                     Game UNO (lihat bagian 11)
   capsa/                   Game Capsa (lihat bagian 12)
+  bomkata/                 Game KA-BOOM! (lihat bagian 13)
+public/words/id/           Kamus kata KA-BOOM! (JSON)
 .github/workflows/deploy.yml   Build dan deploy otomatis ke GitHub Pages
 vite.config.ts             Konfigurasi Vite (base path relatif)
 ```
@@ -564,3 +567,76 @@ src/capsa/
 ### Online
 
 Sama dengan UNO: ID PeerJS berawalan `capsa-claude-room-`, link undangan `?game=capsa&room=KODE`, dan pemain yang terputus lebih dari 15 detik dijalankan otomatis. Bedanya, Capsa tidak memakai batas waktu giliran. `viewFor` hanya mengirim jumlah kartu lawan; semua tangan baru dibuka setelah ronde selesai.
+
+## 13. Game KA-BOOM!
+
+Nama internalnya tetap `bomkata` (folder `src/bomkata/`, link undangan `?game=bomkata`, awalan ID room), supaya link lama tetap jalan.
+
+### Ringkasan
+
+Gabungan adu kata dan *hot potato*. Online, 2–6 pemain duduk di meja bundar, masing-masing punya 2 nyawa.
+
+1. Setiap ronde, sebuah kategori diundi (animasi mesin slot), misalnya Hewan atau Buah.
+2. Bom di tengah mulai berdetak dengan durasi acak tersembunyi (12–30 detik). Panah di bom menunjuk pemain yang memegangnya.
+3. Pemegang bom mengetik kata dari kategori itu. Kata benar memindahkan bom ke pemain hidup berikutnya searah jarum jam. Kata salah atau sudah dipakai di ronde itu ditolak, dan bom tetap di tangannya.
+4. Waktu bom tidak pernah ditampilkan sebagai angka. Makin dekat ledakan, kedipan dan bunyi detaknya makin cepat (tingkat `heat` 0–3: sisa >12, ≤12, ≤6, ≤2,5 detik).
+5. Saat meledak, pemegang bom kehilangan 1 nyawa. Kategori baru diundi, dan ronde berikutnya dimulai dari pemain hidup sesudahnya. Kategori yang baru dipakai tidak diundi lagi selama 3 ronde.
+6. Pemain terakhir yang masih punya nyawa menang. Jumlah kemenangan dicatat selama room dibuka.
+
+Pemain lain bisa melihat huruf yang sedang diketik pemegang bom secara langsung.
+
+### Kamus kata (`public/words/<bahasa>/`)
+
+GitHub Pages tidak punya database, jadi kamus berupa file JSON statis. Untuk sekarang hanya Bahasa Indonesia (`public/words/id/`).
+
+- `index.json` berisi daftar kategori:
+  ```json
+  { "language": "id", "categories": [ { "id": "hewan", "name": "Hewan", "file": "hewan.json", "count": 106 } ] }
+  ```
+- Satu file per kategori, supaya kamus yang besar tidak perlu diunduh sekaligus:
+  ```json
+  { "id": "hewan", "name": "Hewan", "words": ["kucing", "kuda nil", "lumba-lumba"] }
+  ```
+- Hanya **host** yang mengunduh kamus dan memeriksa jawaban (`src/bomkata/words.ts`). Daftar jawaban tidak pernah dikirim ke tamu (`viewFor` membuang `answers`).
+- Jawaban dibandingkan setelah dinormalisasi (`normalizeWord`): huruf kecil, tanpa tanda baca, tanda hubung dianggap spasi. Jadi "Kuda-Nil", "kuda nil", dan "KUDA  NIL" sama.
+- Kamus berisi 28 kategori (2.814 kata):
+  - **Umum:** Hewan, Buah, Sayuran, Negara, Kota di Indonesia, Pekerjaan, Benda di Rumah, Makanan Khas Indonesia, Olahraga, Alat Musik.
+  - **Tambahan:** Warna, Anggota Tubuh, Kendaraan, Bunga & Tanaman, Minuman, Alat Sekolah, Pakaian & Aksesori, Provinsi di Indonesia, Luar Angkasa, Bumbu & Rempah, Tempat & Bangunan, Alam & Cuaca, Elektronik & Gadget, Kue & Jajanan, Mata Pelajaran, Ikan, Burung, Serangga & Hewan Kecil.
+  - Sebagian kategori sengaja beririsan (mis. Hewan dengan Ikan dan Burung), karena tiap ronde hanya memakai satu kategori.
+- **Penulisan kata:** huruf kecil. Frasa memakai spasi ("kuda nil"); kata ulang memakai tanda hubung ("kupu-kupu"). Ejaan lain yang umum boleh ditambahkan sebagai kata terpisah (mis. "cabai" dan "cabe", "kaos" dan "kaus").
+
+**Menambah atau mengubah kategori:**
+
+1. Buat atau ubah `public/words/id/<id>.json` dengan format di atas; `id` harus sama dengan nama filenya.
+2. Jalankan `npm run words`. Skrip `scripts/words.mjs` memeriksa semua file (JSON valid, `id` cocok, kata huruf kecil tanpa tanda baca, tidak ada kata ganda) lalu menulis ulang `index.json` beserta jumlah katanya. Tidak ada kode yang perlu diubah.
+3. Commit file kategori dan `index.json`. Saat build (`npm run build`, termasuk deploy GitHub Actions), skrip yang sama dijalankan dengan `--check` dan build gagal kalau kamus rusak atau `index.json` belum diperbarui.
+
+Kalau ada kata benar yang ditolak saat bermain, tambahkan kata itu ke file kategorinya lalu jalankan `npm run words`.
+
+### Struktur folder
+
+```
+src/bomkata/
+  words.ts            Memuat index dan kategori dari public/words, normalisasi jawaban
+  state.ts            State dan reducer: ronde, ketik, kirim kata, tingkat panas, ledakan, nyawa
+  net.ts              HostRoom/GuestRoom (PeerJS); host juga mengatur undian, sumbu bom, dan jeda ronde
+  BomKataApp.tsx      Layar-layar, lobi, menu online, tema 8-bit (font, ikon tab)
+  BomKataHome.tsx     Homescreen dengan bom pixel dan huruf melayang
+  BomKataTable.tsx    Meja bundar, bom dan panah, undian kategori, konsol ketikan, kotak ketik
+  BomKataDialogs.tsx  Panduan dan hasil permainan
+  Pixel.tsx           Pixel art SVG: bom, ledakan, panah, hati, wajah pemain
+  sfx.ts              Efek suara chiptune lewat Web Audio (detak, benar, salah, ledakan, menang)
+  bomkata.css         Semua gaya KA-BOOM!, termasuk palet
+```
+
+### Tampilan
+
+- **Palet** (`data-game='bomkata'`): Deep Arena `#172B55`, Pixel Blue `#294A7A`, Power-up `#F5C451`, Explosion `#F47735`, Danger `#EF4B55`, Safe/Ready `#62C96B`.
+- **Font pixel:** Press Start 2P untuk judul dan tombol, VT323 untuk teks. Keduanya dimuat dari Google Fonts saat layar KA-BOOM! dibuka.
+- **Pixel art:** semua gambar (bom, ledakan, panah, hati, wajah) digambar dari kotak SVG di `Pixel.tsx`, jadi tetap tajam di semua ukuran. Tidak ada file gambar.
+- **Efek suara:** dibuat langsung dengan Web Audio, jadi tidak ada file suara. Bisa dimatikan lewat tombol ♪ di meja; pilihannya disimpan di perangkat itu.
+- **Ukuran meja:** ukuran bom dan panah mengikuti lebar meja lewat *container query units* (`cqw`).
+
+### Online
+
+Sama dengan game lain: ID PeerJS berawalan `bomkata-claude-room-`, dan link undangannya `?game=bomkata&room=KODE`. Bedanya, semua pewaktu dijalankan host: undian kategori (`READY_MS`), sumbu bom (`FUSE_MIN_MS`–`FUSE_MAX_MS`), tingkat panas (`HEAT_AT`), dan jeda setelah ledakan (`BOOM_MS`). Pemain yang terputus tetap duduk; kalau bom ada di tangannya, bom meledak seperti biasa.

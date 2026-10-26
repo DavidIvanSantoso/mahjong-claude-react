@@ -21,11 +21,12 @@ type Screen =
   | { kind: 'host'; name: string; capacity: number; turnSeconds: number; timeAttack: boolean }
   | { kind: 'guest'; name: string; code: string }
 
-/** UNO dan Capsa dimuat terpisah, supaya pemain satu game tidak ikut mengunduh kode game lain. */
+/** UNO, Capsa, dan KA-BOOM! dimuat terpisah, supaya pemain satu game tidak ikut mengunduh kode game lain. */
 const UnoApp = lazy(() => import('./uno/UnoApp').then((module) => ({ default: module.UnoApp })))
 const CapsaApp = lazy(() => import('./capsa/CapsaApp').then((module) => ({ default: module.CapsaApp })))
+const BomKataApp = lazy(() => import('./bomkata/BomKataApp').then((module) => ({ default: module.BomKataApp })))
 
-const GAMES: GameId[] = ['mahjong', 'uno', 'capsa']
+const GAMES: GameId[] = ['mahjong', 'uno', 'capsa', 'bomkata']
 
 function isGame(value: string | null): value is GameId {
   return GAMES.includes(value as GameId)
@@ -208,7 +209,9 @@ export function App() {
       {game === 'mahjong' ? (
         <Screens nav={nav} />
       ) : (
-        <Suspense fallback={null}>{game === 'uno' ? <UnoApp nav={nav} /> : <CapsaApp nav={nav} />}</Suspense>
+        <Suspense fallback={null}>
+          {game === 'uno' ? <UnoApp nav={nav} /> : game === 'capsa' ? <CapsaApp nav={nav} /> : <BomKataApp nav={nav} />}
+        </Suspense>
       )}
     </MusicProvider>
   )

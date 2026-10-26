@@ -530,8 +530,8 @@ p {
 
 /*
  * Layar sempit: navbar diperkecil bertahap supaya tidak bertabrakan dengan tombol di kanan.
- * Tablet kecil: ikon disembunyikan. Ponsel: hanya ikon; nama game tetap terbaca pembaca layar
- * dan muncul sebagai tooltip.
+ * Tablet kecil (≤600px): ikon disembunyikan. Ponsel (≤520px): hanya ikon; nama game tetap
+ * terbaca pembaca layar dan muncul sebagai tooltip.
  */
 @media (max-width: 600px) {
   .game-nav__item {
@@ -543,7 +543,7 @@ p {
   }
 }
 
-@media (max-width: 420px) {
+@media (max-width: 520px) {
   .game-nav {
     left: 12px;
   }
@@ -563,6 +563,18 @@ p {
     overflow: hidden;
     clip-path: inset(50%);
     white-space: nowrap;
+  }
+}
+
+/* Ponsel sangat sempit: ikon lebih rapat supaya empat game tetap muat di samping tombol kanan */
+@media (max-width: 360px) {
+  .game-nav {
+    gap: 0;
+    padding: 4px;
+  }
+
+  .game-nav__item {
+    padding: 7px;
   }
 }
 
