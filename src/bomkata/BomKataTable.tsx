@@ -4,7 +4,7 @@ import type { BomKataRoom, BomKataView } from './net'
 import { PixelArrow, PixelBlast, PixelBomb, PixelFace, PixelHeart } from './Pixel'
 import { BomKataResultDialog, GuideDialog } from './BomKataDialogs'
 import { sfx, toggleSfx, useSfxEnabled } from './sfx'
-import { LIVES, WORD_MAX } from './state'
+import { categoryLabel, LIVES, WORD_MAX } from './state'
 
 /** Jeda detak bom per tingkat panas (ms). */
 const TICK_MS = [1400, 800, 400, 160]
@@ -27,7 +27,19 @@ function useArrowAngle(target: number): number {
 }
 
 /** Undian kategori ala mesin slot: nama-nama kategori bergulir cepat, lalu berhenti di yang terpilih. */
-function CategoryRoller({ names, final, round, rolling }: { names: string[]; final: string; round: number; rolling: boolean }) {
+function CategoryRoller({
+  names,
+  final,
+  twist,
+  round,
+  rolling,
+}: {
+  names: string[]
+  final: string
+  twist?: string
+  round: number
+  rolling: boolean
+}) {
   const [shown, setShown] = useState(final)
   const [spinning, setSpinning] = useState(false)
 
@@ -56,6 +68,8 @@ function CategoryRoller({ names, final, round, rolling }: { names: string[]; fin
     <div className={`bk-category ${spinning ? 'bk-category--rolling' : ''}`} aria-live="polite">
       <span className="bk-category__label">Kategori</span>
       <strong className="bk-category__name">{spinning ? shown : final}</strong>
+      {/* Tantangan muncul setelah undian berhenti, seperti kejutan */}
+      {twist && !spinning && <span className="bk-category__twist">{twist}</span>}
     </div>
   )
 }
@@ -97,7 +111,7 @@ function feedbackText(view: BomKataView): string {
   if (fb.ok) return `✓ ${fb.word.toUpperCase()}`
   if (fb.reason === 'used') return `✗ "${fb.word}" sudah dipakai`
   if (fb.reason === 'empty') return `✗ ${who} belum mengetik apa-apa`
-  return `✗ "${fb.word}" bukan ${view.category?.name ?? 'kategori ini'}`
+  return `✗ "${fb.word}" bukan ${categoryLabel(view.category) || 'kategori ini'}`
 }
 
 export function BomKataTable({ room, onExit }: { room: BomKataRoom; onExit: () => void }) {
@@ -193,6 +207,7 @@ export function BomKataTable({ room, onExit }: { room: BomKataRoom; onExit: () =
           <CategoryRoller
             names={lobby.categoryNames}
             final={view.category?.name ?? '…'}
+            twist={view.category?.twist}
             round={view.round}
             rolling={phase === 'ready'}
           />
@@ -271,7 +286,7 @@ export function BomKataTable({ room, onExit }: { room: BomKataRoom; onExit: () =
                 !alive
                   ? 'Kamu sudah gugur, tonton saja'
                   : myTurn
-                    ? `Ketik ${view.category?.name.toLowerCase() ?? 'kata'}, lalu Enter`
+                    ? `Ketik ${categoryLabel(view.category).toLowerCase() || 'kata'}, lalu Enter`
                     : phase === 'play'
                       ? `Tunggu giliranmu (${holder})`
                       : 'Tunggu ronde dimulai'

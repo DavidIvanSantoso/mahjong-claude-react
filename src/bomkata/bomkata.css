@@ -678,6 +678,20 @@
   color: var(--bk-yellow);
 }
 
+/* Tantangan tambahan, mis. "berakhiran A" */
+.bk-category__twist {
+  padding: 4px 10px;
+  font-family: var(--bk-title);
+  font-size: clamp(0.5rem, 2.2vw, 0.7rem);
+  line-height: 1.4;
+  color: var(--bk-text);
+  background: var(--bk-orange);
+  box-shadow:
+    inset -3px -3px 0 #b9531f,
+    0 0 0 3px var(--bk-ink);
+  animation: bk-pop 0.35s steps(4);
+}
+
 .bk-category--rolling .bk-category__name {
   color: var(--bk-text);
   animation: bk-roll 0.08s steps(1) infinite;

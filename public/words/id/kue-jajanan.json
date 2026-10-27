@@ -1,6 +1,7 @@
 {
   "id": "kue-jajanan",
   "name": "Kue & Jajanan",
+  "group": "makanan",
   "words": [
     "klepon",
     "onde-onde",

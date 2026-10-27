@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { CONNECT_TIMEOUT_MS, iceDetail, PEER_OPTIONS } from '../net/ice'
 import { randomCode, type RoomError } from '../net/online'
 import { aliveSeats, newGame, nextAlive, reducer, type Action, type BomKataState, type Heat } from './state'
+import { drawFromBag, RECENT_WINDOW, shuffled, TWIST_CHANCE, twistOptions } from './rounds'
 import { loadCategory, loadIndex, normalizeWord, type CategoryEntry } from './words'
 
 export const MIN_PLAYERS = 2
@@ -21,9 +22,6 @@ const HEAT_AT: [Heat, number][] = [
   [2, 6_000],
   [3, 2_500],
 ]
-/** Kategori yang baru dipakai tidak diundi lagi selama beberapa ronde. */
-const RECENT_CATEGORIES = 3
-
 export interface BomKataLobby {
   /** `wins`: jumlah permainan yang dimenangkan selama room ini dibuka. */
   players: { name: string; connected: boolean; wins: number }[]
@@ -102,7 +100,13 @@ class HostRoom {
   private game: BomKataState | null = null
   private index: CategoryEntry[] = []
   private library: BomKataLobby['library'] = 'loading'
-  private recent: string[] = []
+  /**
+   * Kantong acak kategori: tiap kategori keluar sekali dalam urutan acak sebelum ada yang terulang
+   * (seperti shuffle playlist). Bertahan selama room dibuka, termasuk antarpermainan.
+   */
+  private bag: CategoryEntry[] = []
+  /** Kategori terakhir yang dipakai, paling baru di depan (lihat RECENT_WINDOW). */
+  private recent: CategoryEntry[] = []
   private timers: ReturnType<typeof setTimeout>[] = []
   /** Naik tiap permainan baru atau saat room ditutup; pewaktu lama yang terlambat diabaikan. */
   private generation = 0
@@ -210,16 +214,21 @@ class HostRoom {
     void this.nextRound(Math.floor(Math.random() * this.seats.length))
   }
 
-  /** Undi kategori (selain yang baru dipakai), unduh kata-katanya, lalu tampilkan sebelum bom berdetak. */
+  private drawCategory(): CategoryEntry {
+    if (this.bag.length === 0) this.bag = shuffled(this.index)
+    const entry = drawFromBag(this.bag, this.recent)
+    this.recent = [entry, ...this.recent].slice(0, Math.min(RECENT_WINDOW, this.index.length - 1))
+    return entry
+  }
+
+  /** Undi kategori (kadang dengan tantangan), unduh kata-katanya, lalu tampilkan sebelum bom berdetak. */
   private async nextRound(starter: number) {
     const generation = this.generation
-    const fresh = this.index.filter((entry) => !this.recent.includes(entry.id))
-    const pool = fresh.length ? fresh : this.index
-    let entry = pool[Math.floor(Math.random() * pool.length)]
+    let entry = this.drawCategory()
     let category = await loadCategory(entry).catch(() => null)
-    // Satu file gagal diunduh: coba kategori lain sekali.
+    // Satu file gagal diunduh: coba kategori berikutnya sekali.
     if (!category) {
-      entry = this.index[Math.floor(Math.random() * this.index.length)]
+      entry = this.drawCategory()
       category = await loadCategory(entry).catch(() => null)
     }
     if (generation !== this.generation || !this.game) return
@@ -228,9 +237,15 @@ class HostRoom {
       this.publish()
       return
     }
-    this.recent = [entry.id, ...this.recent.filter((id) => id !== entry.id)].slice(0, Math.min(RECENT_CATEGORIES, this.index.length - 1))
-    const answers = [...new Set(category.words.map(normalizeWord).filter(Boolean))]
-    this.apply({ type: 'round', category: { id: category.id, name: category.name }, answers, starter })
+    let answers = [...new Set(category.words.map(normalizeWord).filter(Boolean))]
+    let twist: string | undefined
+    const options = Math.random() < TWIST_CHANCE ? twistOptions(answers) : []
+    if (options.length) {
+      const pick = options[Math.floor(Math.random() * options.length)]
+      twist = pick.twist
+      answers = pick.answers
+    }
+    this.apply({ type: 'round', category: { id: category.id, name: category.name, twist }, answers, starter })
     this.later(READY_MS, () => this.light())
   }
 

@@ -1,6 +1,7 @@
 {
   "id": "hewan",
   "name": "Hewan",
+  "group": "hewan",
   "words": [
     "kucing",
     "anjing",

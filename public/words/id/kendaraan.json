@@ -1,6 +1,7 @@
 {
   "id": "kendaraan",
   "name": "Kendaraan",
+  "group": "kendaraan",
   "words": [
     "mobil",
     "motor",

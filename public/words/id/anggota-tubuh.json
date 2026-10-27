@@ -1,6 +1,7 @@
 {
   "id": "anggota-tubuh",
   "name": "Anggota Tubuh",
+  "group": "tubuh",
   "words": [
     "kepala",
     "rambut",

@@ -1,6 +1,7 @@
 {
   "id": "pakaian",
   "name": "Pakaian & Aksesori",
+  "group": "pakaian",
   "words": [
     "baju",
     "kaus",

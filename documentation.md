@@ -576,14 +576,33 @@ Nama internalnya tetap `bomkata` (folder `src/bomkata/`, link undangan `?game=bo
 
 Gabungan adu kata dan *hot potato*. Online, 2–6 pemain duduk di meja bundar, masing-masing punya 2 nyawa.
 
-1. Setiap ronde, sebuah kategori diundi (animasi mesin slot), misalnya Hewan atau Buah.
+1. Setiap ronde, sebuah kategori diundi (animasi mesin slot), misalnya Hewan atau Buah. Sekitar 40% ronde mendapat tantangan tambahan (lihat *Tantangan* di bawah), misalnya "Buah berakhiran A".
 2. Bom di tengah mulai berdetak dengan durasi acak tersembunyi (12–30 detik). Panah di bom menunjuk pemain yang memegangnya.
 3. Pemegang bom mengetik kata dari kategori itu. Kata benar memindahkan bom ke pemain hidup berikutnya searah jarum jam. Kata salah atau sudah dipakai di ronde itu ditolak, dan bom tetap di tangannya.
 4. Waktu bom tidak pernah ditampilkan sebagai angka. Makin dekat ledakan, kedipan dan bunyi detaknya makin cepat (tingkat `heat` 0–3: sisa >12, ≤12, ≤6, ≤2,5 detik).
-5. Saat meledak, pemegang bom kehilangan 1 nyawa. Kategori baru diundi, dan ronde berikutnya dimulai dari pemain hidup sesudahnya. Kategori yang baru dipakai tidak diundi lagi selama 3 ronde.
+5. Saat meledak, pemegang bom kehilangan 1 nyawa. Kategori baru diundi, dan ronde berikutnya dimulai dari pemain hidup sesudahnya.
 6. Pemain terakhir yang masih punya nyawa menang. Jumlah kemenangan dicatat selama room dibuka.
 
 Pemain lain bisa melihat huruf yang sedang diketik pemegang bom secara langsung.
+
+### Undian kategori (`src/bomkata/rounds.ts`)
+
+Supaya kategori tidak sering berulang, host memakai **kantong acak** (*shuffle bag*):
+
+- Semua kategori dikocok ke dalam kantong, lalu diambil satu per ronde sampai habis. Baru setelah itu kantong diisi dan dikocok lagi. Jadi dalam satu siklus (59 ronde) tiap kategori keluar tepat sekali.
+- Kategori yang muncul dalam `RECENT_WINDOW` (10) ronde terakhir dilewati dulu, juga saat kantong baru diisi ulang. Jarak minimal sebuah kategori muncul lagi adalah 11 ronde.
+- Kategori boleh punya `group` (mis. `hewan` untuk Hewan, Ikan, Burung, Serangga). Dua kategori segrup tidak diundi berturut-turut, supaya Ikan tidak langsung muncul setelah Hewan.
+- Urutan prioritasnya ada di `drawFromBag`: bukan yang baru muncul dan beda grup → bukan yang baru muncul → beda grup → apa saja selain kategori sebelumnya.
+
+### Tantangan
+
+Dengan peluang `TWIST_CHANCE` (40%), kategori ronde itu diberi syarat tambahan yang dipilih acak dari `twistOptions`:
+
+- **berawalan "X"**, mis. "Hewan berawalan K"
+- **berakhiran "X"**, mis. "Buah berakhiran A"
+- **minimal N huruf** (N = 6–10, spasi tidak dihitung)
+
+Tantangan hanya dipakai kalau kamus masih menyisakan minimal 8 jawaban sah. Syarat "minimal N huruf" juga dilewati kalau lebih dari 70% jawaban sudah sepanjang itu, karena tidak terasa seperti tantangan. Host langsung menyaring daftar jawaban, jadi kata yang tidak memenuhi syarat ditolak seperti kata salah. Tantangan tampil sebagai lencana oranye di bawah nama kategori, dan ikut tercatat di riwayat ("Ronde 2: Buah berakhiran A").
 
 ### Kamus kata (`public/words/<bahasa>/`)
 
@@ -591,24 +610,29 @@ GitHub Pages tidak punya database, jadi kamus berupa file JSON statis. Untuk sek
 
 - `index.json` berisi daftar kategori:
   ```json
-  { "language": "id", "categories": [ { "id": "hewan", "name": "Hewan", "file": "hewan.json", "count": 106 } ] }
+  { "language": "id", "categories": [ { "id": "hewan", "name": "Hewan", "group": "hewan", "file": "hewan.json", "count": 106 } ] }
   ```
-- Satu file per kategori, supaya kamus yang besar tidak perlu diunduh sekaligus:
+- Satu file per kategori, supaya kamus yang besar tidak perlu diunduh sekaligus. `group` boleh dikosongkan:
   ```json
-  { "id": "hewan", "name": "Hewan", "words": ["kucing", "kuda nil", "lumba-lumba"] }
+  { "id": "hewan", "name": "Hewan", "group": "hewan", "words": ["kucing", "kuda nil", "lumba-lumba"] }
   ```
 - Hanya **host** yang mengunduh kamus dan memeriksa jawaban (`src/bomkata/words.ts`). Daftar jawaban tidak pernah dikirim ke tamu (`viewFor` membuang `answers`).
 - Jawaban dibandingkan setelah dinormalisasi (`normalizeWord`): huruf kecil, tanpa tanda baca, tanda hubung dianggap spasi. Jadi "Kuda-Nil", "kuda nil", dan "KUDA  NIL" sama.
-- Kamus berisi 28 kategori (2.814 kata):
-  - **Umum:** Hewan, Buah, Sayuran, Negara, Kota di Indonesia, Pekerjaan, Benda di Rumah, Makanan Khas Indonesia, Olahraga, Alat Musik.
-  - **Tambahan:** Warna, Anggota Tubuh, Kendaraan, Bunga & Tanaman, Minuman, Alat Sekolah, Pakaian & Aksesori, Provinsi di Indonesia, Luar Angkasa, Bumbu & Rempah, Tempat & Bangunan, Alam & Cuaca, Elektronik & Gadget, Kue & Jajanan, Mata Pelajaran, Ikan, Burung, Serangga & Hewan Kecil.
-  - Sebagian kategori sengaja beririsan (mis. Hewan dengan Ikan dan Burung), karena tiap ronde hanya memakai satu kategori.
+- Kamus berisi 59 kategori (4.908 kata), dikelompokkan per grup:
+  - **hewan:** Hewan, Ikan, Burung, Serangga & Hewan Kecil.
+  - **makanan:** Buah, Sayuran, Makanan Khas Indonesia, Makanan Internasional, Kue & Jajanan, Minuman, Bumbu & Rempah, Bahan Makanan.
+  - **geografi:** Negara, Ibu Kota Negara, Kota di Indonesia, Provinsi di Indonesia, Pulau di Indonesia, Gunung di Indonesia, Sungai & Danau di Indonesia.
+  - **benda:** Benda di Rumah, Bagian Rumah, Elektronik & Gadget, Alat Sekolah, Alat Kantor, Perkakas & Alat Pertukangan, Bahan Bangunan, Kosmetik & Perawatan Diri.
+  - **kegiatan:** Olahraga, Peralatan Olahraga, Hobi, Kegiatan Sehari-hari.
+  - **kendaraan:** Kendaraan, Bagian Kendaraan. **tubuh:** Anggota Tubuh, Penyakit & Gejala. **sifat:** Perasaan & Emosi, Sifat & Karakter. **pakaian:** Pakaian & Aksesori, Jenis Kain. **budaya:** Tarian Daerah, Suku Bangsa Indonesia, Bahasa.
+  - **Tanpa grup:** Alam & Cuaca, Alat Musik, Anggota Keluarga, Bentuk & Bangun, Bunga & Tanaman, Hantu & Makhluk Mitos, Logam & Batu Mulia, Luar Angkasa, Mata Pelajaran, Mata Uang, Nama Hari & Bulan, Pekerjaan, Permainan Tradisional, Senjata, Tempat & Bangunan, Tokoh Wayang, Warna.
+  - Sebagian kategori sengaja beririsan (mis. Hewan dengan Ikan dan Burung), karena tiap ronde hanya memakai satu kategori. Kategori yang beririsan sebaiknya diberi `group` yang sama.
 - **Penulisan kata:** huruf kecil. Frasa memakai spasi ("kuda nil"); kata ulang memakai tanda hubung ("kupu-kupu"). Ejaan lain yang umum boleh ditambahkan sebagai kata terpisah (mis. "cabai" dan "cabe", "kaos" dan "kaus").
 
 **Menambah atau mengubah kategori:**
 
 1. Buat atau ubah `public/words/id/<id>.json` dengan format di atas; `id` harus sama dengan nama filenya.
-2. Jalankan `npm run words`. Skrip `scripts/words.mjs` memeriksa semua file (JSON valid, `id` cocok, kata huruf kecil tanpa tanda baca, tidak ada kata ganda) lalu menulis ulang `index.json` beserta jumlah katanya. Tidak ada kode yang perlu diubah.
+2. Jalankan `npm run words`. Skrip `scripts/words.mjs` memeriksa semua file (JSON valid, `id` cocok, `group` berformat benar, kata huruf kecil tanpa tanda baca, tidak ada kata ganda; kategori di bawah 30 kata diberi peringatan) lalu menulis ulang `index.json` beserta jumlah katanya. Tidak ada kode yang perlu diubah.
 3. Commit file kategori dan `index.json`. Saat build (`npm run build`, termasuk deploy GitHub Actions), skrip yang sama dijalankan dengan `--check` dan build gagal kalau kamus rusak atau `index.json` belum diperbarui.
 
 Kalau ada kata benar yang ditolak saat bermain, tambahkan kata itu ke file kategorinya lalu jalankan `npm run words`.
@@ -619,6 +643,7 @@ Kalau ada kata benar yang ditolak saat bermain, tambahkan kata itu ke file kateg
 src/bomkata/
   words.ts            Memuat index dan kategori dari public/words, normalisasi jawaban
   state.ts            State dan reducer: ronde, ketik, kirim kata, tingkat panas, ledakan, nyawa
+  rounds.ts           Kantong acak kategori dan pilihan tantangan (murni, tanpa PeerJS)
   net.ts              HostRoom/GuestRoom (PeerJS); host juga mengatur undian, sumbu bom, dan jeda ronde
   BomKataApp.tsx      Layar-layar, lobi, menu online, tema 8-bit (font, ikon tab)
   BomKataHome.tsx     Homescreen dengan bom pixel dan huruf melayang

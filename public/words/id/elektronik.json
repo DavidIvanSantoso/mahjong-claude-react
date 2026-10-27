@@ -1,6 +1,7 @@
 {
   "id": "elektronik",
   "name": "Elektronik & Gadget",
+  "group": "benda",
   "words": [
     "televisi",
     "tv",

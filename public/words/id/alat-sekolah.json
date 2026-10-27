@@ -1,6 +1,7 @@
 {
   "id": "alat-sekolah",
   "name": "Alat Sekolah",
+  "group": "benda",
   "words": [
     "pensil",
     "pulpen",

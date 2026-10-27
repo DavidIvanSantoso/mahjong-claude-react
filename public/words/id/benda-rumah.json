@@ -1,6 +1,7 @@
 {
   "id": "benda-rumah",
   "name": "Benda di Rumah",
+  "group": "benda",
   "words": [
     "meja",
     "kursi",

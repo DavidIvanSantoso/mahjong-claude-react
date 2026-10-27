@@ -1,6 +1,7 @@
 {
   "id": "olahraga",
   "name": "Olahraga",
+  "group": "kegiatan",
   "words": [
     "sepak bola",
     "futsal",
@@ -121,6 +122,10 @@
     "jogging",
     "joging",
     "bola sodok",
-    "lari lintas alam"
+    "lari lintas alam",
+    "pickleball",
+    "frisbee",
+    "padel",
+    "curling"
   ]
 }

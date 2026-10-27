@@ -1,6 +1,7 @@
 {
   "id": "buah",
   "name": "Buah",
+  "group": "makanan",
   "words": [
     "apel",
     "jeruk",

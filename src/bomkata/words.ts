@@ -8,6 +8,11 @@
 export interface CategoryEntry {
   id: string
   name: string
+  /**
+   * Kategori yang mirip (mis. Hewan, Ikan, Burung) berbagi grup yang sama, supaya tidak muncul
+   * berturut-turut. Kosong berarti kategori itu tidak punya kemiripan dengan yang lain.
+   */
+  group?: string
   file: string
   count: number
 }

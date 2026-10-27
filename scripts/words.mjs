@@ -3,7 +3,8 @@
 //   npm run words          periksa semua kategori lalu tulis ulang index.json
 //   npm run words -- --check   hanya periksa (dipakai saat build); gagal kalau index.json belum diperbarui
 //
-// Tiap file kategori: { "id": "<nama file tanpa .json>", "name": "Nama Tampilan", "words": ["kata", ...] }
+// Tiap file kategori: { "id": "<nama file tanpa .json>", "name": "Nama Tampilan", "group": "opsional", "words": ["kata", ...] }
+// "group": kategori yang mirip (mis. hewan, ikan, burung) diberi grup sama supaya tidak muncul berturut-turut.
 // Kata ditulis huruf kecil, hanya huruf/angka dengan spasi atau tanda hubung di antaranya.
 // Kata yang sama setelah tanda hubung dianggap spasi ("kuda-nil" = "kuda nil") dihitung ganda.
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs'
@@ -44,8 +45,11 @@ for (const file of readdirSync(DIR).filter((f) => f.endsWith('.json') && f !== '
     if (seen.has(key)) errors.push(`${file}: "${word}" ganda dengan "${seen.get(key)}"`)
     else seen.set(key, word)
   }
+  if (data.group !== undefined && (typeof data.group !== 'string' || !/^[a-z0-9-]+$/.test(data.group))) {
+    errors.push(`${file}: "group" harus huruf kecil tanpa spasi, mis. "hewan"`)
+  }
   if (data.words.length < MIN_WORDS) warnings.push(`${file}: hanya ${data.words.length} kata (disarankan minimal ${MIN_WORDS})`)
-  categories.push({ id, name: data.name, file, count: data.words.length })
+  categories.push({ id, name: data.name, ...(data.group ? { group: data.group } : {}), file, count: data.words.length })
 }
 
 categories.sort((a, b) => a.name.localeCompare(b.name, 'id'))

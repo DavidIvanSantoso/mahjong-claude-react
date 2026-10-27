@@ -1,6 +1,7 @@
 {
   "id": "minuman",
   "name": "Minuman",
+  "group": "makanan",
   "words": [
     "air",
     "air putih",

@@ -1,6 +1,7 @@
 {
   "id": "sayuran",
   "name": "Sayuran",
+  "group": "makanan",
   "words": [
     "bayam",
     "kangkung",

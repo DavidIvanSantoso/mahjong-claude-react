@@ -7,6 +7,22 @@ export const WORD_MAX = 32
 /** Seberapa dekat bom dengan ledakan; dipakai untuk kecepatan kedip, tanpa memperlihatkan angka. */
 export type Heat = 0 | 1 | 2 | 3
 
+/**
+ * Kategori ronde. `twist` adalah tantangan tambahan yang menyaring kamus kategori itu,
+ * mis. "berakhiran A" untuk "Buah berakhiran A"; kosong berarti kategori biasa.
+ */
+export interface RoundCategory {
+  id: string
+  name: string
+  twist?: string
+}
+
+/** Nama lengkap kategori ronde, mis. "Buah" atau "Buah berakhiran A". */
+export function categoryLabel(category: RoundCategory | null): string {
+  if (!category) return ''
+  return category.twist ? `${category.name} ${category.twist}` : category.name
+}
+
 export interface Player {
   name: string
   /** 0 berarti sudah gugur. */
@@ -35,7 +51,7 @@ export interface BomKataState {
   players: Player[]
   phase: Phase
   round: number
-  category: { id: string; name: string } | null
+  category: RoundCategory | null
   /** Semua jawaban sah kategori ini (sudah dinormalisasi). Hanya ada di host, tidak dikirim ke tamu. */
   answers: string[]
   /** Kata yang sudah dipakai di ronde ini, urut dari yang pertama. */
@@ -55,7 +71,7 @@ export type Action =
   | { type: 'type'; text: string }
   | { type: 'submit'; word: string }
   // Hanya dijalankan host:
-  | { type: 'round'; category: { id: string; name: string }; answers: string[]; starter: number }
+  | { type: 'round'; category: RoundCategory; answers: string[]; starter: number }
   | { type: 'go' }
   | { type: 'heat'; heat: Heat }
   | { type: 'explode' }
@@ -113,7 +129,7 @@ export function reducer(state: BomKataState, action: Action): BomKataState {
       s.heat = 0
       s.feedback = null
       s.exploded = null
-      log(s, `Ronde ${s.round}: kategori ${action.category.name}.`)
+      log(s, `Ronde ${s.round}: ${categoryLabel(action.category)}.`)
       return s
     }
     case 'go':

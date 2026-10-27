@@ -40,6 +40,11 @@ export function GuideContent() {
           <li>2–6 pemain duduk melingkar. Tiap pemain punya {LIVES} nyawa.</li>
           <li>Setiap ronde, sebuah <strong>kategori</strong> diundi, misalnya Hewan atau Buah.</li>
           <li>
+            Kadang kategorinya diberi <strong>tantangan</strong>: berawalan huruf tertentu, berakhiran huruf tertentu,
+            atau minimal sekian huruf. Contoh: &quot;Buah berakhiran A&quot; (nangka, semangka) atau &quot;Hewan
+            berawalan K&quot; (kucing, kuda).
+          </li>
+          <li>
             Panah di bom menunjuk pemain yang sedang memegang bom. Ia harus mengetik satu kata dari kategori itu lalu
             menekan Enter.
           </li>

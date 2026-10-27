@@ -1,6 +1,7 @@
 {
   "id": "burung",
   "name": "Burung",
+  "group": "hewan",
   "words": [
     "merpati",
     "elang",

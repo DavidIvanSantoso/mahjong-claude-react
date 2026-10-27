@@ -1,6 +1,7 @@
 {
   "id": "makanan-indonesia",
   "name": "Makanan Khas Indonesia",
+  "group": "makanan",
   "words": [
     "nasi goreng",
     "rendang",

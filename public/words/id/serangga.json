@@ -1,6 +1,7 @@
 {
   "id": "serangga",
   "name": "Serangga & Hewan Kecil",
+  "group": "hewan",
   "words": [
     "semut",
     "lebah",
