@@ -111,6 +111,13 @@
       "count": 139
     },
     {
+      "id": "bagian-tubuh-hewan",
+      "name": "Bagian Tubuh Hewan",
+      "group": "hewan",
+      "file": "bagian-tubuh-hewan.json",
+      "count": 69
+    },
+    {
       "id": "bahan-bangunan",
       "name": "Bahan Bangunan",
       "group": "benda",
@@ -214,6 +221,34 @@
       "count": 137
     },
     {
+      "id": "dunia-doraemon",
+      "name": "Dunia Doraemon",
+      "group": "hiburan",
+      "file": "dunia-doraemon.json",
+      "count": 53
+    },
+    {
+      "id": "dunia-harry-potter",
+      "name": "Dunia Harry Potter",
+      "group": "hiburan",
+      "file": "dunia-harry-potter.json",
+      "count": 109
+    },
+    {
+      "id": "dunia-naruto",
+      "name": "Dunia Naruto",
+      "group": "anime",
+      "file": "dunia-naruto.json",
+      "count": 101
+    },
+    {
+      "id": "dunia-one-piece",
+      "name": "Dunia One Piece",
+      "group": "anime",
+      "file": "dunia-one-piece.json",
+      "count": 88
+    },
+    {
       "id": "elektronik",
       "name": "Elektronik & Gadget",
       "group": "benda",
@@ -270,6 +305,13 @@
       "count": 83
     },
     {
+      "id": "hero-mlbb",
+      "name": "Hero Mobile Legends",
+      "group": "game",
+      "file": "hero-mlbb.json",
+      "count": 129
+    },
+    {
       "id": "hewan",
       "name": "Hewan",
       "group": "hewan",
@@ -312,6 +354,27 @@
       "count": 115
     },
     {
+      "id": "istilah-gaming",
+      "name": "Istilah Gaming",
+      "group": "game",
+      "file": "istilah-gaming.json",
+      "count": 138
+    },
+    {
+      "id": "istilah-sepakbola",
+      "name": "Istilah Sepak Bola",
+      "group": "kegiatan",
+      "file": "istilah-sepakbola.json",
+      "count": 115
+    },
+    {
+      "id": "jajanan-sd",
+      "name": "Jajanan SD & Jajanan Jadul",
+      "group": "makanan",
+      "file": "jajanan-sd.json",
+      "count": 107
+    },
+    {
       "id": "kain",
       "name": "Jenis Kain",
       "group": "pakaian",
@@ -333,6 +396,13 @@
       "count": 167
     },
     {
+      "id": "lagu-barat",
+      "name": "Judul Lagu Barat & K-Pop",
+      "group": "musik",
+      "file": "lagu-barat.json",
+      "count": 122
+    },
+    {
       "id": "jurusan-kuliah",
       "name": "Jurusan Kuliah",
       "group": "sains",
@@ -342,7 +412,7 @@
     {
       "id": "karakter-anime",
       "name": "Karakter Anime & Manga",
-      "group": "hiburan",
+      "group": "anime",
       "file": "karakter-anime.json",
       "count": 164
     },
@@ -361,11 +431,25 @@
       "count": 245
     },
     {
+      "id": "karakter-game",
+      "name": "Karakter Video Game",
+      "group": "game",
+      "file": "karakter-game.json",
+      "count": 130
+    },
+    {
       "id": "kata-kerja",
       "name": "Kata Kerja",
       "group": "kegiatan",
       "file": "kata-kerja.json",
       "count": 222
+    },
+    {
+      "id": "kata-ulang",
+      "name": "Kata Ulang",
+      "group": "kata",
+      "file": "kata-ulang.json",
+      "count": 86
     },
     {
       "id": "kegiatan",
@@ -417,6 +501,13 @@
       "count": 203
     },
     {
+      "id": "kota-dunia",
+      "name": "Kota Terkenal Dunia",
+      "group": "geografi",
+      "file": "kota-dunia.json",
+      "count": 120
+    },
+    {
       "id": "kue-jajanan",
       "name": "Kue & Jajanan",
       "group": "makanan",
@@ -429,6 +520,13 @@
       "group": "musik",
       "file": "lagu-indonesia.json",
       "count": 97
+    },
+    {
+      "id": "landmark-dunia",
+      "name": "Landmark Dunia",
+      "group": "geografi",
+      "file": "landmark-dunia.json",
+      "count": 102
     },
     {
       "id": "logam-permata",
@@ -464,11 +562,25 @@
       "count": 96
     },
     {
+      "id": "makanan-jepang",
+      "name": "Makanan Jepang",
+      "group": "makanan",
+      "file": "makanan-jepang.json",
+      "count": 84
+    },
+    {
       "id": "makanan-indonesia",
       "name": "Makanan Khas Indonesia",
       "group": "makanan",
       "file": "makanan-indonesia.json",
       "count": 175
+    },
+    {
+      "id": "makanan-korea",
+      "name": "Makanan Korea",
+      "group": "makanan",
+      "file": "makanan-korea.json",
+      "count": 71
     },
     {
       "id": "maskapai",
@@ -642,6 +754,13 @@
       "count": 138
     },
     {
+      "id": "camping",
+      "name": "Perlengkapan Camping & Mendaki",
+      "group": "kegiatan",
+      "file": "camping.json",
+      "count": 77
+    },
+    {
       "id": "permainan-papan",
       "name": "Permainan Papan & Kartu",
       "group": "kegiatan",
@@ -664,9 +783,15 @@
     {
       "id": "pokemon",
       "name": "Pokemon",
-      "group": "hiburan",
+      "group": "game",
       "file": "pokemon.json",
       "count": 175
+    },
+    {
+      "id": "pemimpin-negara",
+      "name": "Presiden & Pemimpin Negara",
+      "file": "pemimpin-negara.json",
+      "count": 79
     },
     {
       "id": "provinsi-indonesia",
@@ -849,7 +974,7 @@
     {
       "id": "video-game",
       "name": "Video Game",
-      "group": "hiburan",
+      "group": "game",
       "file": "video-game.json",
       "count": 145
     },

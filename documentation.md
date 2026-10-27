@@ -589,7 +589,7 @@ Pemain lain bisa melihat huruf yang sedang diketik pemegang bom secara langsung.
 
 Supaya kategori tidak sering berulang, host memakai **kantong acak** (*shuffle bag*):
 
-- Semua kategori dikocok ke dalam kantong, lalu diambil satu per ronde sampai habis. Baru setelah itu kantong diisi dan dikocok lagi. Jadi dalam satu siklus (126 ronde) tiap kategori keluar tepat sekali.
+- Semua kategori dikocok ke dalam kantong, lalu diambil satu per ronde sampai habis. Baru setelah itu kantong diisi dan dikocok lagi. Jadi dalam satu siklus (144 ronde) tiap kategori keluar tepat sekali.
 - Kategori yang muncul dalam `RECENT_WINDOW` (10) ronde terakhir dilewati dulu, juga saat kantong baru diisi ulang. Jarak minimal sebuah kategori muncul lagi adalah 11 ronde.
 - Kategori boleh punya `group` (mis. `hewan` untuk Hewan, Ikan, Burung, Serangga). Dua kategori segrup tidak diundi berturut-turut, supaya Ikan tidak langsung muncul setelah Hewan.
 - Urutan prioritasnya ada di `drawFromBag`: bukan yang baru muncul dan beda grup → bukan yang baru muncul → beda grup → apa saja selain kategori sebelumnya.
@@ -618,18 +618,19 @@ GitHub Pages tidak punya database, jadi kamus berupa file JSON statis. Untuk sek
   ```
 - Hanya **host** yang mengunduh kamus dan memeriksa jawaban (`src/bomkata/words.ts`). Daftar jawaban tidak pernah dikirim ke tamu (`viewFor` membuang `answers`).
 - Jawaban dibandingkan setelah dinormalisasi (`normalizeWord`): huruf kecil, tanpa tanda baca, tanda hubung dianggap spasi. Jadi "Kuda-Nil", "kuda nil", dan "KUDA  NIL" sama.
-- Kamus berisi 126 kategori (15.965 kata), dikelompokkan per grup:
+- Kamus berisi 144 kategori (17.745 kata), dikelompokkan per grup:
   - **merek:** Merek Fashion, Merek Kecantikan, Merek Makanan & Minuman, Merek Elektronik & Teknologi, Aplikasi & Media Sosial, Maskapai Penerbangan, Toko & Ritel, Bank & Dompet Digital.
-  - **hiburan:** Karakter Kartun & Animasi, Karakter Film, Superhero & Penjahat Super, Karakter Anime & Manga, Pokemon, Video Game, Judul Film, Film Disney & Pixar, Film DreamWorks, Film Animasi Lainnya, Judul Drama Korea, Serial Kartun TV, Artis & Selebritas Indonesia, Aktor & Aktris Dunia, Stasiun TV & Radio.
-  - **kata:** Bahasa Gaul, Singkatan & Akronim, Kosakata Bahasa Jawa. **inggris:** Hewan dalam Bahasa Inggris, Makanan dalam Bahasa Inggris. **sains:** Unsur Kimia, Satuan Ukuran, Jurusan Kuliah, Universitas di Indonesia. **tumbuhan:** Bunga & Tanaman, Pohon & Kayu.
-  - **musik:** Alat Musik, Genre Musik, Penyanyi & Band Indonesia, Penyanyi & Band Dunia, Lagu Anak, Daerah & Nasional. **mitos:** Hantu & Makhluk Mitos, Dewa & Mitologi.
-  - **hewan:** Hewan, Ikan, Burung, Serangga & Hewan Kecil, Dinosaurus & Hewan Purba, Ras Anjing & Kucing, Hewan Laut.
-  - **makanan:** Buah, Sayuran, Makanan Khas Indonesia, Makanan Internasional, Kue & Jajanan, Minuman, Bumbu & Rempah, Bahan Makanan, Aneka Sambal, Aneka Nasi & Mi, Aneka Soto, Sate & Bakso, Tanaman Pertanian & Perkebunan.
-  - **geografi:** Negara, Ibu Kota Negara, Kota di Indonesia, Provinsi di Indonesia, Pulau di Indonesia, Gunung di Indonesia, Sungai & Danau di Indonesia, Tempat Wisata Indonesia.
+  - **hiburan:** Karakter Kartun & Animasi, Karakter Film, Superhero & Penjahat Super, Judul Film, Dunia Harry Potter, Dunia Doraemon, Film Disney & Pixar, Film DreamWorks, Film Animasi Lainnya, Judul Drama Korea, Serial Kartun TV, Artis & Selebritas Indonesia, Aktor & Aktris Dunia, Stasiun TV & Radio.
+  - **game:** Video Game, Pokemon, Hero Mobile Legends, Karakter Video Game, Istilah Gaming. **anime:** Karakter Anime & Manga, Dunia Naruto, Dunia One Piece.
+  - **kata:** Bahasa Gaul, Singkatan & Akronim, Kosakata Bahasa Jawa, Kata Ulang. **inggris:** Hewan dalam Bahasa Inggris, Makanan dalam Bahasa Inggris. **sains:** Unsur Kimia, Satuan Ukuran, Jurusan Kuliah, Universitas di Indonesia. **tumbuhan:** Bunga & Tanaman, Pohon & Kayu.
+  - **musik:** Alat Musik, Genre Musik, Penyanyi & Band Indonesia, Penyanyi & Band Dunia, Lagu Anak, Daerah & Nasional, Judul Lagu Barat & K-Pop. **mitos:** Hantu & Makhluk Mitos, Dewa & Mitologi.
+  - **hewan:** Hewan, Ikan, Burung, Serangga & Hewan Kecil, Dinosaurus & Hewan Purba, Ras Anjing & Kucing, Hewan Laut, Bagian Tubuh Hewan.
+  - **makanan:** Buah, Sayuran, Makanan Khas Indonesia, Makanan Internasional, Kue & Jajanan, Minuman, Bumbu & Rempah, Bahan Makanan, Aneka Sambal, Aneka Nasi & Mi, Aneka Soto, Sate & Bakso, Tanaman Pertanian & Perkebunan, Jajanan SD & Jajanan Jadul, Makanan Jepang, Makanan Korea.
+  - **geografi:** Negara, Ibu Kota Negara, Kota di Indonesia, Provinsi di Indonesia, Pulau di Indonesia, Gunung di Indonesia, Sungai & Danau di Indonesia, Tempat Wisata Indonesia, Landmark Dunia, Kota Terkenal Dunia.
   - **benda:** Benda di Rumah, Bagian Rumah, Elektronik & Gadget, Alat Sekolah, Alat Kantor, Perkakas & Alat Pertukangan, Bahan Bangunan, Kosmetik & Perawatan Diri, Alat Dapur, Komputer & Internet.
-  - **kegiatan:** Olahraga, Peralatan Olahraga, Hobi, Kegiatan Sehari-hari, Permainan Papan & Kartu, Klub Sepak Bola, Pemain Sepak Bola, Mainan, Kata Kerja, Bela Diri.
+  - **kegiatan:** Olahraga, Peralatan Olahraga, Hobi, Kegiatan Sehari-hari, Permainan Papan & Kartu, Klub Sepak Bola, Pemain Sepak Bola, Mainan, Kata Kerja, Bela Diri, Istilah Sepak Bola, Perlengkapan Camping & Mendaki.
   - **kendaraan:** Kendaraan, Bagian Kendaraan, Merek Kendaraan, Model Mobil & Motor. **tubuh:** Anggota Tubuh, Penyakit & Gejala, Obat & Alat Kesehatan. **sifat:** Perasaan & Emosi, Sifat & Karakter, Rasa & Tekstur, Panggilan & Sapaan. **pakaian:** Pakaian & Aksesori, Jenis Kain. **budaya:** Tarian Daerah, Suku Bangsa Indonesia, Bahasa, Tokoh Dongeng & Cerita Rakyat, Pahlawan Nasional, Rumah Adat, Hari Raya & Perayaan.
-  - **Tanpa grup:** Alam & Cuaca, Anggota Keluarga, Bentuk & Bangun, Bunyi & Onomatope, Logam & Batu Mulia, Luar Angkasa, Mata Pelajaran, Mata Uang, Nama Hari & Bulan, Pekerjaan, Permainan Tradisional, Senjata, Tempat & Bangunan, Tokoh Wayang, Warna, Zodiak & Shio, Tokoh Terkenal Dunia, Angka & Bilangan.
+  - **Tanpa grup:** Alam & Cuaca, Anggota Keluarga, Bentuk & Bangun, Bunyi & Onomatope, Logam & Batu Mulia, Luar Angkasa, Mata Pelajaran, Mata Uang, Nama Hari & Bulan, Pekerjaan, Permainan Tradisional, Senjata, Tempat & Bangunan, Tokoh Wayang, Warna, Zodiak & Shio, Tokoh Terkenal Dunia, Angka & Bilangan, Presiden & Pemimpin Negara.
   - Sebagian kategori sengaja beririsan (mis. Hewan dengan Ikan dan Burung), karena tiap ronde hanya memakai satu kategori. Kategori yang beririsan sebaiknya diberi `group` yang sama.
 - **Penulisan kata:** huruf kecil. Frasa memakai spasi ("kuda nil"); kata ulang memakai tanda hubung ("kupu-kupu"). Ejaan lain yang umum boleh ditambahkan sebagai kata terpisah (mis. "cabai" dan "cabe", "kaos" dan "kaus").
 
