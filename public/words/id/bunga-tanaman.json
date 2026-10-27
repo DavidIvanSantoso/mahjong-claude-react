@@ -1,6 +1,7 @@
 {
   "id": "bunga-tanaman",
   "name": "Bunga & Tanaman",
+  "group": "tumbuhan",
   "words": [
     "mawar",
     "melati",
@@ -79,6 +80,32 @@
     "gelombang cinta",
     "kenikir",
     "melati air",
-    "bunga tasbih"
+    "bunga tasbih",
+    "anggrek bulan",
+    "anggrek hitam",
+    "rafflesia",
+    "kantil",
+    "kemboja",
+    "tasbih",
+    "daisy",
+    "peony",
+    "kana",
+    "sukulen",
+    "philodendron",
+    "calathea",
+    "anthurium",
+    "sirih gading",
+    "janda bolong",
+    "kuping gajah",
+    "pucuk merah",
+    "bambu hoki",
+    "pukul empat",
+    "zinnia",
+    "petunia",
+    "begonia",
+    "kamelia",
+    "gardenia",
+    "hortensia",
+    "wisteria"
   ]
 }
