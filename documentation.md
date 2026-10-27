@@ -589,7 +589,7 @@ Pemain lain bisa melihat huruf yang sedang diketik pemegang bom secara langsung.
 
 Supaya kategori tidak sering berulang, host memakai **kantong acak** (*shuffle bag*):
 
-- Semua kategori dikocok ke dalam kantong, lalu diambil satu per ronde sampai habis. Baru setelah itu kantong diisi dan dikocok lagi. Jadi dalam satu siklus (59 ronde) tiap kategori keluar tepat sekali.
+- Semua kategori dikocok ke dalam kantong, lalu diambil satu per ronde sampai habis. Baru setelah itu kantong diisi dan dikocok lagi. Jadi dalam satu siklus (102 ronde) tiap kategori keluar tepat sekali.
 - Kategori yang muncul dalam `RECENT_WINDOW` (10) ronde terakhir dilewati dulu, juga saat kantong baru diisi ulang. Jarak minimal sebuah kategori muncul lagi adalah 11 ronde.
 - Kategori boleh punya `group` (mis. `hewan` untuk Hewan, Ikan, Burung, Serangga). Dua kategori segrup tidak diundi berturut-turut, supaya Ikan tidak langsung muncul setelah Hewan.
 - Urutan prioritasnya ada di `drawFromBag`: bukan yang baru muncul dan beda grup → bukan yang baru muncul → beda grup → apa saja selain kategori sebelumnya.
@@ -618,14 +618,18 @@ GitHub Pages tidak punya database, jadi kamus berupa file JSON statis. Untuk sek
   ```
 - Hanya **host** yang mengunduh kamus dan memeriksa jawaban (`src/bomkata/words.ts`). Daftar jawaban tidak pernah dikirim ke tamu (`viewFor` membuang `answers`).
 - Jawaban dibandingkan setelah dinormalisasi (`normalizeWord`): huruf kecil, tanpa tanda baca, tanda hubung dianggap spasi. Jadi "Kuda-Nil", "kuda nil", dan "KUDA  NIL" sama.
-- Kamus berisi 59 kategori (4.908 kata), dikelompokkan per grup:
-  - **hewan:** Hewan, Ikan, Burung, Serangga & Hewan Kecil.
+- Kamus berisi 102 kategori (10.019 kata), dikelompokkan per grup:
+  - **merek:** Merek Fashion, Merek Kecantikan, Merek Makanan & Minuman, Merek Elektronik & Teknologi, Aplikasi & Media Sosial, Maskapai Penerbangan.
+  - **hiburan:** Karakter Kartun & Animasi, Karakter Film, Superhero & Penjahat Super, Karakter Anime & Manga, Pokemon, Video Game, Judul Film.
+  - **kata:** Bahasa Gaul, Singkatan & Akronim. **inggris:** Hewan dalam Bahasa Inggris, Makanan dalam Bahasa Inggris. **sains:** Unsur Kimia, Satuan Ukuran.
+  - **musik:** Alat Musik, Genre Musik, Penyanyi & Band Indonesia, Penyanyi & Band Dunia, Lagu Anak, Daerah & Nasional. **mitos:** Hantu & Makhluk Mitos, Dewa & Mitologi.
+  - **hewan:** Hewan, Ikan, Burung, Serangga & Hewan Kecil, Dinosaurus & Hewan Purba, Ras Anjing & Kucing.
   - **makanan:** Buah, Sayuran, Makanan Khas Indonesia, Makanan Internasional, Kue & Jajanan, Minuman, Bumbu & Rempah, Bahan Makanan.
-  - **geografi:** Negara, Ibu Kota Negara, Kota di Indonesia, Provinsi di Indonesia, Pulau di Indonesia, Gunung di Indonesia, Sungai & Danau di Indonesia.
-  - **benda:** Benda di Rumah, Bagian Rumah, Elektronik & Gadget, Alat Sekolah, Alat Kantor, Perkakas & Alat Pertukangan, Bahan Bangunan, Kosmetik & Perawatan Diri.
-  - **kegiatan:** Olahraga, Peralatan Olahraga, Hobi, Kegiatan Sehari-hari.
-  - **kendaraan:** Kendaraan, Bagian Kendaraan. **tubuh:** Anggota Tubuh, Penyakit & Gejala. **sifat:** Perasaan & Emosi, Sifat & Karakter. **pakaian:** Pakaian & Aksesori, Jenis Kain. **budaya:** Tarian Daerah, Suku Bangsa Indonesia, Bahasa.
-  - **Tanpa grup:** Alam & Cuaca, Alat Musik, Anggota Keluarga, Bentuk & Bangun, Bunga & Tanaman, Hantu & Makhluk Mitos, Logam & Batu Mulia, Luar Angkasa, Mata Pelajaran, Mata Uang, Nama Hari & Bulan, Pekerjaan, Permainan Tradisional, Senjata, Tempat & Bangunan, Tokoh Wayang, Warna.
+  - **geografi:** Negara, Ibu Kota Negara, Kota di Indonesia, Provinsi di Indonesia, Pulau di Indonesia, Gunung di Indonesia, Sungai & Danau di Indonesia, Tempat Wisata Indonesia.
+  - **benda:** Benda di Rumah, Bagian Rumah, Elektronik & Gadget, Alat Sekolah, Alat Kantor, Perkakas & Alat Pertukangan, Bahan Bangunan, Kosmetik & Perawatan Diri, Alat Dapur, Komputer & Internet.
+  - **kegiatan:** Olahraga, Peralatan Olahraga, Hobi, Kegiatan Sehari-hari, Permainan Papan & Kartu, Klub Sepak Bola, Pemain Sepak Bola, Mainan.
+  - **kendaraan:** Kendaraan, Bagian Kendaraan, Merek Kendaraan, Model Mobil & Motor. **tubuh:** Anggota Tubuh, Penyakit & Gejala, Obat & Alat Kesehatan. **sifat:** Perasaan & Emosi, Sifat & Karakter. **pakaian:** Pakaian & Aksesori, Jenis Kain. **budaya:** Tarian Daerah, Suku Bangsa Indonesia, Bahasa, Tokoh Dongeng & Cerita Rakyat, Pahlawan Nasional, Rumah Adat, Hari Raya & Perayaan.
+  - **Tanpa grup:** Alam & Cuaca, Anggota Keluarga, Bentuk & Bangun, Bunga & Tanaman, Logam & Batu Mulia, Luar Angkasa, Mata Pelajaran, Mata Uang, Nama Hari & Bulan, Pekerjaan, Permainan Tradisional, Senjata, Tempat & Bangunan, Tokoh Wayang, Warna, Zodiak & Shio, Tokoh Terkenal Dunia, Angka & Bilangan.
   - Sebagian kategori sengaja beririsan (mis. Hewan dengan Ikan dan Burung), karena tiap ronde hanya memakai satu kategori. Kategori yang beririsan sebaiknya diberi `group` yang sama.
 - **Penulisan kata:** huruf kecil. Frasa memakai spasi ("kuda nil"); kata ulang memakai tanda hubung ("kupu-kupu"). Ejaan lain yang umum boleh ditambahkan sebagai kata terpisah (mis. "cabai" dan "cabe", "kaos" dan "kaus").
 

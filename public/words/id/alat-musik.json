@@ -1,6 +1,7 @@
 {
   "id": "alat-musik",
   "name": "Alat Musik",
+  "group": "musik",
   "words": [
     "gitar",
     "piano",
