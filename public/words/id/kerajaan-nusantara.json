@@ -2,6 +2,7 @@
   "id": "kerajaan-nusantara",
   "name": "Kerajaan Nusantara",
   "group": "budaya",
+  "disabled": true,
   "words": [
     "majapahit",
     "sriwijaya",

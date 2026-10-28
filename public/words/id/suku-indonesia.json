@@ -2,6 +2,7 @@
   "id": "suku-indonesia",
   "name": "Suku Bangsa Indonesia",
   "group": "budaya",
+  "disabled": true,
   "words": [
     "jawa",
     "sunda",

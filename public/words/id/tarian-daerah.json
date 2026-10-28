@@ -2,6 +2,7 @@
   "id": "tarian-daerah",
   "name": "Tarian Daerah",
   "group": "budaya",
+  "disabled": true,
   "words": [
     "saman",
     "jaipong",

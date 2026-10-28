@@ -2,6 +2,7 @@
   "id": "bahasa-jawa",
   "name": "Kosakata Bahasa Jawa",
   "group": "kata",
+  "disabled": true,
   "words": [
     "mangan",
     "ngombe",

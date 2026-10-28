@@ -473,13 +473,6 @@
       "count": 124
     },
     {
-      "id": "sifat-inggris",
-      "name": "Kata Sifat dalam Bahasa Inggris",
-      "group": "inggris",
-      "file": "sifat-inggris.json",
-      "count": 117
-    },
-    {
       "id": "kata-ulang",
       "name": "Kata Ulang",
       "group": "kata",
@@ -501,13 +494,6 @@
       "count": 142
     },
     {
-      "id": "kerajaan-nusantara",
-      "name": "Kerajaan Nusantara",
-      "group": "budaya",
-      "file": "kerajaan-nusantara.json",
-      "count": 79
-    },
-    {
       "id": "klub-bola",
       "name": "Klub Sepak Bola",
       "group": "kegiatan",
@@ -520,20 +506,6 @@
       "group": "benda",
       "file": "komputer-internet.json",
       "count": 122
-    },
-    {
-      "id": "bahasa-jawa",
-      "name": "Kosakata Bahasa Jawa",
-      "group": "kata",
-      "file": "bahasa-jawa.json",
-      "count": 191
-    },
-    {
-      "id": "bahasa-sunda",
-      "name": "Kosakata Bahasa Sunda",
-      "group": "kata",
-      "file": "bahasa-sunda.json",
-      "count": 148
     },
     {
       "id": "kosmetik",
@@ -727,13 +699,6 @@
       "count": 124
     },
     {
-      "id": "pahlawan",
-      "name": "Pahlawan Nasional",
-      "group": "budaya",
-      "file": "pahlawan.json",
-      "count": 106
-    },
-    {
       "id": "pakaian",
       "name": "Pakaian & Aksesori",
       "group": "pakaian",
@@ -851,12 +816,6 @@
       "count": 175
     },
     {
-      "id": "pemimpin-negara",
-      "name": "Presiden & Pemimpin Negara",
-      "file": "pemimpin-negara.json",
-      "count": 79
-    },
-    {
       "id": "provinsi-indonesia",
       "name": "Provinsi di Indonesia",
       "group": "geografi",
@@ -890,13 +849,6 @@
       "group": "makanan",
       "file": "roti-dessert.json",
       "count": 98
-    },
-    {
-      "id": "rumah-adat",
-      "name": "Rumah Adat",
-      "group": "budaya",
-      "file": "rumah-adat.json",
-      "count": 122
     },
     {
       "id": "satuan",
@@ -954,13 +906,6 @@
       "count": 120
     },
     {
-      "id": "suku-indonesia",
-      "name": "Suku Bangsa Indonesia",
-      "group": "budaya",
-      "file": "suku-indonesia.json",
-      "count": 150
-    },
-    {
       "id": "sungai-danau",
       "name": "Sungai & Danau di Indonesia",
       "group": "geografi",
@@ -980,13 +925,6 @@
       "group": "makanan",
       "file": "pertanian.json",
       "count": 142
-    },
-    {
-      "id": "tarian-daerah",
-      "name": "Tarian Daerah",
-      "group": "budaya",
-      "file": "tarian-daerah.json",
-      "count": 156
     },
     {
       "id": "tempat-bangunan",

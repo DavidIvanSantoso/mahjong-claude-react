@@ -2,6 +2,7 @@
   "id": "rumah-adat",
   "name": "Rumah Adat",
   "group": "budaya",
+  "disabled": true,
   "words": [
     "joglo",
     "rumah gadang",

@@ -2,6 +2,7 @@
   "id": "bahasa-sunda",
   "name": "Kosakata Bahasa Sunda",
   "group": "kata",
+  "disabled": true,
   "words": [
     "dahar",
     "tuang",

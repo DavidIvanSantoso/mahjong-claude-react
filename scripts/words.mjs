@@ -5,6 +5,7 @@
 //
 // Tiap file kategori: { "id": "<nama file tanpa .json>", "name": "Nama Tampilan", "group": "opsional", "words": ["kata", ...] }
 // "group": kategori yang mirip (mis. hewan, ikan, burung) diberi grup sama supaya tidak muncul berturut-turut.
+// "disabled": true menyembunyikan kategori dari permainan (tidak masuk index.json), isinya tetap diperiksa.
 // Kata ditulis huruf kecil, hanya huruf/angka dengan spasi atau tanda hubung di antaranya.
 // Kata yang sama setelah tanda hubung dianggap spasi ("kuda-nil" = "kuda nil") dihitung ganda.
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs'
@@ -19,6 +20,7 @@ const check = process.argv.includes('--check')
 const errors = []
 const warnings = []
 const categories = []
+const disabled = []
 
 for (const file of readdirSync(DIR).filter((f) => f.endsWith('.json') && f !== 'index.json').sort()) {
   const id = file.replace(/\.json$/, '')
@@ -48,7 +50,12 @@ for (const file of readdirSync(DIR).filter((f) => f.endsWith('.json') && f !== '
   if (data.group !== undefined && (typeof data.group !== 'string' || !/^[a-z0-9-]+$/.test(data.group))) {
     errors.push(`${file}: "group" harus huruf kecil tanpa spasi, mis. "hewan"`)
   }
+  if (data.disabled !== undefined && typeof data.disabled !== 'boolean') errors.push(`${file}: "disabled" harus true atau false`)
   if (data.words.length < MIN_WORDS) warnings.push(`${file}: hanya ${data.words.length} kata (disarankan minimal ${MIN_WORDS})`)
+  if (data.disabled) {
+    disabled.push(id)
+    continue
+  }
   categories.push({ id, name: data.name, ...(data.group ? { group: data.group } : {}), file, count: data.words.length })
 }
 
@@ -79,3 +86,4 @@ if (current !== index) {
 }
 const total = categories.reduce((sum, c) => sum + c.count, 0)
 console.log(`Kamus ${LANGUAGE}: ${categories.length} kategori, ${total} kata.`)
+if (disabled.length) console.log(`Dinonaktifkan (${disabled.length}): ${disabled.join(', ')}`)

@@ -2,6 +2,7 @@
   "id": "sifat-inggris",
   "name": "Kata Sifat dalam Bahasa Inggris",
   "group": "inggris",
+  "disabled": true,
   "words": [
     "happy",
     "sad",

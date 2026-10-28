@@ -2,6 +2,7 @@
   "id": "pahlawan",
   "name": "Pahlawan Nasional",
   "group": "budaya",
+  "disabled": true,
   "words": [
     "soekarno",
     "sukarno",

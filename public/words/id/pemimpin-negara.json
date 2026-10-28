@@ -1,6 +1,7 @@
 {
   "id": "pemimpin-negara",
   "name": "Presiden & Pemimpin Negara",
+  "disabled": true,
   "words": [
     "soekarno",
     "sukarno",
