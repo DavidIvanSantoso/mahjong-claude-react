@@ -33,7 +33,7 @@
       "name": "Alat Musik",
       "group": "musik",
       "file": "alat-musik.json",
-      "count": 105
+      "count": 158
     },
     {
       "id": "alat-sekolah",
@@ -74,13 +74,13 @@
       "name": "Anggota Tubuh",
       "group": "tubuh",
       "file": "anggota-tubuh.json",
-      "count": 87
+      "count": 125
     },
     {
       "id": "angka",
       "name": "Angka & Bilangan",
       "file": "angka.json",
-      "count": 81
+      "count": 135
     },
     {
       "id": "aplikasi",
@@ -115,7 +115,7 @@
       "name": "Bagian Tubuh Hewan",
       "group": "hewan",
       "file": "bagian-tubuh-hewan.json",
-      "count": 69
+      "count": 129
     },
     {
       "id": "bahan-bangunan",
@@ -129,7 +129,7 @@
       "name": "Bahan Makanan",
       "group": "makanan",
       "file": "bahan-makanan.json",
-      "count": 91
+      "count": 199
     },
     {
       "id": "bahasa-dunia",
@@ -153,11 +153,25 @@
       "count": 127
     },
     {
+      "id": "barang-kamar",
+      "name": "Barang di Kamar & Kamar Mandi",
+      "group": "benda",
+      "file": "barang-kamar.json",
+      "count": 70
+    },
+    {
       "id": "bela-diri",
       "name": "Bela Diri",
       "group": "kegiatan",
       "file": "bela-diri.json",
       "count": 107
+    },
+    {
+      "id": "benda-inggris",
+      "name": "Benda dalam Bahasa Inggris",
+      "group": "inggris",
+      "file": "benda-inggris.json",
+      "count": 118
     },
     {
       "id": "benda-rumah",
@@ -177,7 +191,7 @@
       "name": "Buah",
       "group": "makanan",
       "file": "buah.json",
-      "count": 100
+      "count": 145
     },
     {
       "id": "bumbu-rempah",
@@ -204,14 +218,21 @@
       "name": "Burung",
       "group": "hewan",
       "file": "burung.json",
-      "count": 80
+      "count": 134
+    },
+    {
+      "id": "candi",
+      "name": "Candi di Indonesia",
+      "group": "budaya",
+      "file": "candi.json",
+      "count": 85
     },
     {
       "id": "dewa-mitologi",
       "name": "Dewa & Mitologi",
       "group": "mitos",
       "file": "dewa-mitologi.json",
-      "count": 93
+      "count": 191
     },
     {
       "id": "dinosaurus",
@@ -225,7 +246,7 @@
       "name": "Dunia Doraemon",
       "group": "hiburan",
       "file": "dunia-doraemon.json",
-      "count": 53
+      "count": 98
     },
     {
       "id": "dunia-harry-potter",
@@ -260,7 +281,7 @@
       "name": "Film Animasi Lainnya",
       "group": "hiburan",
       "file": "film-animasi.json",
-      "count": 81
+      "count": 160
     },
     {
       "id": "film-disney",
@@ -302,7 +323,7 @@
       "name": "Hari Raya & Perayaan",
       "group": "budaya",
       "file": "hari-raya.json",
-      "count": 83
+      "count": 159
     },
     {
       "id": "hero-mlbb",
@@ -344,7 +365,7 @@
       "name": "Ibu Kota Negara",
       "group": "geografi",
       "file": "ibu-kota-dunia.json",
-      "count": 100
+      "count": 148
     },
     {
       "id": "ikan",
@@ -445,6 +466,20 @@
       "count": 222
     },
     {
+      "id": "kerja-inggris",
+      "name": "Kata Kerja dalam Bahasa Inggris",
+      "group": "inggris",
+      "file": "kerja-inggris.json",
+      "count": 124
+    },
+    {
+      "id": "sifat-inggris",
+      "name": "Kata Sifat dalam Bahasa Inggris",
+      "group": "inggris",
+      "file": "sifat-inggris.json",
+      "count": 117
+    },
+    {
       "id": "kata-ulang",
       "name": "Kata Ulang",
       "group": "kata",
@@ -456,14 +491,21 @@
       "name": "Kegiatan Sehari-hari",
       "group": "kegiatan",
       "file": "kegiatan.json",
-      "count": 89
+      "count": 154
     },
     {
       "id": "kendaraan",
       "name": "Kendaraan",
       "group": "kendaraan",
       "file": "kendaraan.json",
-      "count": 80
+      "count": 142
+    },
+    {
+      "id": "kerajaan-nusantara",
+      "name": "Kerajaan Nusantara",
+      "group": "budaya",
+      "file": "kerajaan-nusantara.json",
+      "count": 79
     },
     {
       "id": "klub-bola",
@@ -485,6 +527,13 @@
       "group": "kata",
       "file": "bahasa-jawa.json",
       "count": 191
+    },
+    {
+      "id": "bahasa-sunda",
+      "name": "Kosakata Bahasa Sunda",
+      "group": "kata",
+      "file": "bahasa-sunda.json",
+      "count": 148
     },
     {
       "id": "kosmetik",
@@ -512,7 +561,7 @@
       "name": "Kue & Jajanan",
       "group": "makanan",
       "file": "kue-jajanan.json",
-      "count": 98
+      "count": 138
     },
     {
       "id": "lagu-indonesia",
@@ -538,7 +587,7 @@
       "id": "luar-angkasa",
       "name": "Luar Angkasa",
       "file": "luar-angkasa.json",
-      "count": 80
+      "count": 116
     },
     {
       "id": "mainan",
@@ -559,7 +608,7 @@
       "name": "Makanan Internasional",
       "group": "makanan",
       "file": "makanan-internasional.json",
-      "count": 96
+      "count": 214
     },
     {
       "id": "makanan-jepang",
@@ -580,7 +629,7 @@
       "name": "Makanan Korea",
       "group": "makanan",
       "file": "makanan-korea.json",
-      "count": 71
+      "count": 130
     },
     {
       "id": "maskapai",
@@ -593,7 +642,7 @@
       "id": "mata-pelajaran",
       "name": "Mata Pelajaran",
       "file": "mata-pelajaran.json",
-      "count": 96
+      "count": 114
     },
     {
       "id": "mata-uang",
@@ -641,7 +690,7 @@
       "name": "Minuman",
       "group": "makanan",
       "file": "minuman.json",
-      "count": 100
+      "count": 161
     },
     {
       "id": "model-kendaraan",
@@ -668,7 +717,7 @@
       "name": "Obat & Alat Kesehatan",
       "group": "tubuh",
       "file": "kesehatan.json",
-      "count": 95
+      "count": 160
     },
     {
       "id": "olahraga",
@@ -692,6 +741,13 @@
       "count": 110
     },
     {
+      "id": "pakaian-adat",
+      "name": "Pakaian Adat & Tradisional",
+      "group": "pakaian",
+      "file": "pakaian-adat.json",
+      "count": 73
+    },
+    {
       "id": "panggilan",
       "name": "Panggilan & Sapaan",
       "group": "sifat",
@@ -703,6 +759,13 @@
       "name": "Pekerjaan",
       "file": "pekerjaan.json",
       "count": 168
+    },
+    {
+      "id": "pekerjaan-inggris",
+      "name": "Pekerjaan dalam Bahasa Inggris",
+      "group": "inggris",
+      "file": "pekerjaan-inggris.json",
+      "count": 104
     },
     {
       "id": "pemain-bola",
@@ -758,7 +821,7 @@
       "name": "Perlengkapan Camping & Mendaki",
       "group": "kegiatan",
       "file": "camping.json",
-      "count": 77
+      "count": 135
     },
     {
       "id": "permainan-papan",
@@ -778,7 +841,7 @@
       "name": "Pohon & Kayu",
       "group": "tumbuhan",
       "file": "pohon.json",
-      "count": 93
+      "count": 164
     },
     {
       "id": "pokemon",
@@ -822,6 +885,13 @@
       "count": 92
     },
     {
+      "id": "roti-dessert",
+      "name": "Roti, Kue & Dessert",
+      "group": "makanan",
+      "file": "roti-dessert.json",
+      "count": 98
+    },
+    {
       "id": "rumah-adat",
       "name": "Rumah Adat",
       "group": "budaya",
@@ -840,7 +910,7 @@
       "name": "Sayuran",
       "group": "makanan",
       "file": "sayuran.json",
-      "count": 105
+      "count": 140
     },
     {
       "id": "senjata",
@@ -867,7 +937,7 @@
       "name": "Sifat & Karakter",
       "group": "sifat",
       "file": "sifat.json",
-      "count": 87
+      "count": 159
     },
     {
       "id": "singkatan",
@@ -909,7 +979,7 @@
       "name": "Tanaman Pertanian & Perkebunan",
       "group": "makanan",
       "file": "pertanian.json",
-      "count": 85
+      "count": 142
     },
     {
       "id": "tarian-daerah",
@@ -922,7 +992,7 @@
       "id": "tempat-bangunan",
       "name": "Tempat & Bangunan",
       "file": "tempat-bangunan.json",
-      "count": 99
+      "count": 154
     },
     {
       "id": "wisata-indonesia",
@@ -936,14 +1006,14 @@
       "name": "Toko & Ritel",
       "group": "merek",
       "file": "toko-ritel.json",
-      "count": 80
+      "count": 151
     },
     {
       "id": "tokoh-dongeng",
       "name": "Tokoh Dongeng & Cerita Rakyat",
       "group": "budaya",
       "file": "tokoh-dongeng.json",
-      "count": 82
+      "count": 138
     },
     {
       "id": "tokoh-dunia",
@@ -982,7 +1052,7 @@
       "id": "warna",
       "name": "Warna",
       "file": "warna.json",
-      "count": 84
+      "count": 122
     },
     {
       "id": "zodiak-shio",
