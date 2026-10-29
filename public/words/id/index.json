@@ -221,13 +221,6 @@
       "count": 134
     },
     {
-      "id": "candi",
-      "name": "Candi di Indonesia",
-      "group": "budaya",
-      "file": "candi.json",
-      "count": 85
-    },
-    {
       "id": "dewa-mitologi",
       "name": "Dewa & Mitologi",
       "group": "mitos",
@@ -303,13 +296,6 @@
       "group": "musik",
       "file": "genre-musik.json",
       "count": 178
-    },
-    {
-      "id": "gunung-indonesia",
-      "name": "Gunung di Indonesia",
-      "group": "geografi",
-      "file": "gunung-indonesia.json",
-      "count": 180
     },
     {
       "id": "hantu-mitos",
@@ -536,13 +522,6 @@
       "count": 138
     },
     {
-      "id": "lagu-indonesia",
-      "name": "Lagu Anak, Daerah & Nasional",
-      "group": "musik",
-      "file": "lagu-indonesia.json",
-      "count": 97
-    },
-    {
       "id": "landmark-dunia",
       "name": "Landmark Dunia",
       "group": "geografi",
@@ -706,13 +685,6 @@
       "count": 110
     },
     {
-      "id": "pakaian-adat",
-      "name": "Pakaian Adat & Tradisional",
-      "group": "pakaian",
-      "file": "pakaian-adat.json",
-      "count": 73
-    },
-    {
       "id": "panggilan",
       "name": "Panggilan & Sapaan",
       "group": "sifat",
@@ -816,13 +788,6 @@
       "count": 175
     },
     {
-      "id": "provinsi-indonesia",
-      "name": "Provinsi di Indonesia",
-      "group": "geografi",
-      "file": "provinsi-indonesia.json",
-      "count": 75
-    },
-    {
       "id": "pulau-indonesia",
       "name": "Pulau di Indonesia",
       "group": "geografi",
@@ -899,13 +864,6 @@
       "count": 142
     },
     {
-      "id": "stasiun-tv",
-      "name": "Stasiun TV & Radio",
-      "group": "hiburan",
-      "file": "stasiun-tv.json",
-      "count": 120
-    },
-    {
       "id": "sungai-danau",
       "name": "Sungai & Danau di Indonesia",
       "group": "geografi",
@@ -933,13 +891,6 @@
       "count": 154
     },
     {
-      "id": "wisata-indonesia",
-      "name": "Tempat Wisata Indonesia",
-      "group": "geografi",
-      "file": "wisata-indonesia.json",
-      "count": 129
-    },
-    {
       "id": "toko-ritel",
       "name": "Toko & Ritel",
       "group": "merek",
@@ -947,30 +898,10 @@
       "count": 151
     },
     {
-      "id": "tokoh-dongeng",
-      "name": "Tokoh Dongeng & Cerita Rakyat",
-      "group": "budaya",
-      "file": "tokoh-dongeng.json",
-      "count": 138
-    },
-    {
       "id": "tokoh-dunia",
       "name": "Tokoh Terkenal Dunia",
       "file": "tokoh-dunia.json",
       "count": 128
-    },
-    {
-      "id": "tokoh-wayang",
-      "name": "Tokoh Wayang",
-      "file": "tokoh-wayang.json",
-      "count": 155
-    },
-    {
-      "id": "universitas",
-      "name": "Universitas di Indonesia",
-      "group": "sains",
-      "file": "universitas.json",
-      "count": 150
     },
     {
       "id": "unsur-kimia",

@@ -6,8 +6,13 @@ import { GuideDialog } from './BomKataDialogs'
 import { BomKataTable } from './BomKataTable'
 import { MAX_PLAYERS, MIN_PLAYERS, useBomKataGuestRoom, useBomKataHostRoom, type BomKataRoom } from './net'
 import { PixelBomb } from './Pixel'
+import { TWIST_KINDS, type TwistKind } from './rounds'
 
-type Screen = { kind: 'home' } | { kind: 'setup' } | { kind: 'host'; name: string } | { kind: 'guest'; name: string; code: string }
+type Screen =
+  | { kind: 'home' }
+  | { kind: 'setup' }
+  | { kind: 'host'; name: string; twists: TwistKind[] }
+  | { kind: 'guest'; name: string; code: string }
 
 /** Kode room dari link undangan (?game=bomkata&room=KODE). */
 function invitedRoom(): string {
@@ -38,9 +43,23 @@ function errorMessage(error: RoomError | null): string {
   }
 }
 
-function Setup({ onHost, onJoin, onBack }: { onHost: (name: string) => void; onJoin: (name: string, code: string) => void; onBack: () => void }) {
+function Setup({
+  onHost,
+  onJoin,
+  onBack,
+}: {
+  onHost: (name: string, twists: TwistKind[]) => void
+  onJoin: (name: string, code: string) => void
+  onBack: () => void
+}) {
   const [name, setName] = useState('')
   const [code, setCode] = useState(invitedRoom)
+  // Next Level: tantangan tambahan di sebagian ronde. Semua mati kecuali dinyalakan host.
+  const [twists, setTwists] = useState<TwistKind[]>([])
+
+  function toggleTwist(kind: TwistKind) {
+    setTwists(twists.includes(kind) ? twists.filter((k) => k !== kind) : [...twists, kind])
+  }
 
   function join(event: FormEvent) {
     event.preventDefault()
@@ -84,7 +103,24 @@ function Setup({ onHost, onJoin, onBack }: { onHost: (name: string) => void; onJ
           <span>atau</span>
         </div>
 
-        <button type="button" className="bk-btn bk-btn--big" onClick={() => onHost(name.trim() || 'Host')}>
+        <fieldset className="bk-field bk-levels">
+          <legend>
+            NEXT LEVEL <span>(opsional, untuk room baru)</span>
+          </legend>
+          <p className="bk-setup__note">Kategori kadang diberi tantangan tambahan. Pilih yang mau dipakai:</p>
+          {TWIST_KINDS.map((kind) => (
+            <label key={kind.id} className={`bk-level ${twists.includes(kind.id) ? 'bk-level--on' : ''}`}>
+              <input type="checkbox" checked={twists.includes(kind.id)} onChange={() => toggleTwist(kind.id)} />
+              <span className="bk-level__box" aria-hidden="true">
+                {twists.includes(kind.id) ? '✓' : ''}
+              </span>
+              <strong>{kind.label}</strong>
+              <span className="bk-level__example">{kind.example}</span>
+            </label>
+          ))}
+        </fieldset>
+
+        <button type="button" className="bk-btn bk-btn--big" onClick={() => onHost(name.trim() || 'Host', twists)}>
           BUAT ROOM BARU
         </button>
         <p className="bk-setup__note">Permainan bisa dimulai begitu ada minimal {MIN_PLAYERS} pemain.</p>
@@ -121,7 +157,8 @@ function RoomView({ room, onExit }: { room: BomKataRoom; onExit: () => void }) {
 
   if (room.view) return <BomKataTable room={room} onExit={onExit} />
 
-  const { players, library } = room.lobby
+  const { players, library, twists } = room.lobby
+  const levels = TWIST_KINDS.filter((kind) => twists.includes(kind.id)).map((kind) => kind.label.toLowerCase())
   const ready = players.length >= MIN_PLAYERS && library === 'ready'
   const link = `${window.location.origin}${window.location.pathname}?game=bomkata&room=${room.code}`
 
@@ -146,6 +183,7 @@ function RoomView({ room, onExit }: { room: BomKataRoom; onExit: () => void }) {
           <>
             <p className="bk-setup__lead">Kode room</p>
             <h1 className="lobby__code">{room.code}</h1>
+            <p className="bk-setup__note">Next Level: {levels.length ? levels.join(', ') : 'mati (kategori biasa saja)'}</p>
 
             <div className="bk-field">
               <span>Bagikan link ini ke pemain lain</span>
@@ -192,8 +230,8 @@ function RoomView({ room, onExit }: { room: BomKataRoom; onExit: () => void }) {
   )
 }
 
-function HostGame({ name, onExit }: { name: string; onExit: () => void }) {
-  return <RoomView room={useBomKataHostRoom(name)} onExit={onExit} />
+function HostGame({ name, twists, onExit }: { name: string; twists: TwistKind[]; onExit: () => void }) {
+  return <RoomView room={useBomKataHostRoom(name, twists)} onExit={onExit} />
 }
 
 function GuestGame({ name, code, onExit }: { name: string; code: string; onExit: () => void }) {
@@ -246,13 +284,13 @@ export function BomKataApp({ nav }: { nav: ReactNode }) {
     case 'setup':
       return (
         <Setup
-          onHost={(name) => setScreen({ kind: 'host', name })}
+          onHost={(name, twists) => setScreen({ kind: 'host', name, twists })}
           onJoin={(name, code) => setScreen({ kind: 'guest', name, code })}
           onBack={goHome}
         />
       )
     case 'host':
-      return <HostGame name={screen.name} onExit={goHome} />
+      return <HostGame name={screen.name} twists={screen.twists} onExit={goHome} />
     case 'guest':
       return <GuestGame name={screen.name} code={screen.code} onExit={goHome} />
   }

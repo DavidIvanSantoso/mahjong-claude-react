@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { CONNECT_TIMEOUT_MS, iceDetail, PEER_OPTIONS } from '../net/ice'
 import { randomCode, type RoomError } from '../net/online'
 import { aliveSeats, newGame, nextAlive, reducer, type Action, type BomKataState, type Heat } from './state'
-import { drawFromBag, RECENT_WINDOW, shuffled, TWIST_CHANCE, twistOptions } from './rounds'
+import { drawFromBag, isTwistKind, RECENT_WINDOW, shuffled, TWIST_CHANCE, twistOptions, type TwistKind } from './rounds'
 import { loadCategory, loadIndex, normalizeWord, type CategoryEntry } from './words'
 
 export const MIN_PLAYERS = 2
@@ -28,6 +28,8 @@ export interface BomKataLobby {
   /** Nama semua kategori, untuk animasi undian di semua perangkat. */
   categoryNames: string[]
   library: 'loading' | 'ready' | 'error'
+  /** Jenis tantangan Next Level yang dinyalakan host; kosong berarti kategori biasa saja. */
+  twists: TwistKind[]
 }
 
 /** State yang dikirim ke tamu: tanpa daftar jawaban. */
@@ -80,7 +82,7 @@ function emptySnapshot(code: string): BomKataRoomSnapshot {
     status: 'connecting',
     error: null,
     code,
-    lobby: { players: [], categoryNames: [], library: 'loading' },
+    lobby: { players: [], categoryNames: [], library: 'loading', twists: [] },
     seat: 0,
     view: null,
   }
@@ -116,6 +118,7 @@ class HostRoom {
   constructor(
     private code: string,
     hostName: string,
+    private twists: TwistKind[],
     private onChange: (snapshot: BomKataRoomSnapshot) => void,
   ) {
     this.seats = [{ name: hostName, token: '', conn: null, wins: 0 }]
@@ -221,7 +224,7 @@ class HostRoom {
     return entry
   }
 
-  /** Undi kategori (kadang dengan tantangan), unduh kata-katanya, lalu tampilkan sebelum bom berdetak. */
+  /** Undi kategori (kadang dengan tantangan Next Level), unduh kata-katanya, lalu tampilkan sebelum bom berdetak. */
   private async nextRound(starter: number) {
     const generation = this.generation
     let entry = this.drawCategory()
@@ -239,7 +242,7 @@ class HostRoom {
     }
     let answers = [...new Set(category.words.map(normalizeWord).filter(Boolean))]
     let twist: string | undefined
-    const options = Math.random() < TWIST_CHANCE ? twistOptions(answers) : []
+    const options = this.twists.length && Math.random() < TWIST_CHANCE ? twistOptions(answers, this.twists) : []
     if (options.length) {
       const pick = options[Math.floor(Math.random() * options.length)]
       twist = pick.twist
@@ -279,6 +282,7 @@ class HostRoom {
       players: this.seats.map((seat, i) => ({ name: seat.name, connected: i === 0 || Boolean(seat.conn?.open), wins: seat.wins })),
       categoryNames: this.index.map((entry) => entry.name),
       library: this.library,
+      twists: this.twists,
     }
     const view = this.game ? viewFor(this.game) : null
     this.seats.forEach((seat, i) => {
@@ -368,15 +372,17 @@ class GuestRoom {
   }
 }
 
-export function useBomKataHostRoom(name: string): BomKataRoom {
+export function useBomKataHostRoom(name: string, twists: TwistKind[]): BomKataRoom {
   const [snapshot, setSnapshot] = useState(() => emptySnapshot(''))
   const roomRef = useRef<HostRoom | null>(null)
+  // Dibandingkan sebagai teks, supaya array baru dengan isi sama tidak membuat room baru.
+  const twistKey = twists.filter(isTwistKind).join(',')
 
   useEffect(() => {
-    const room = new HostRoom(randomCode(), name, setSnapshot)
+    const room = new HostRoom(randomCode(), name, twistKey ? (twistKey.split(',') as TwistKind[]) : [], setSnapshot)
     roomRef.current = room
     return () => room.destroy()
-  }, [name])
+  }, [name, twistKey])
 
   return {
     ...snapshot,

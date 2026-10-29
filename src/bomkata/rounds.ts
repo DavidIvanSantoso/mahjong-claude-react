@@ -5,24 +5,38 @@ import type { CategoryEntry } from './words'
  * (tanpa PeerJS/browser) dan bisa diuji sendiri.
  */
 
-/** Peluang sebuah ronde mendapat tantangan tambahan (mis. "berakhiran A"). */
+/** Peluang sebuah ronde mendapat tantangan tambahan (mis. "berakhiran A"), kalau Next Level dinyalakan. */
 export const TWIST_CHANCE = 0.4
 /** Tantangan hanya dipakai kalau kamus masih menyisakan sebanyak ini jawaban yang sah. */
 const TWIST_MIN_ANSWERS = 8
 const LETTERS = 'abcdefghijklmnopqrstuvwxyz'.split('')
 
+/** Jenis tantangan Next Level yang bisa dinyalakan host saat membuat room. */
+export type TwistKind = 'start' | 'end' | 'length'
+
+export const TWIST_KINDS: { id: TwistKind; label: string; example: string }[] = [
+  { id: 'start', label: 'Awalan huruf', example: 'Buah berawalan "M"' },
+  { id: 'end', label: 'Akhiran huruf', example: 'Hewan berakhiran "A"' },
+  { id: 'length', label: 'Minimal huruf', example: 'Negara minimal 7 huruf' },
+]
+
+export function isTwistKind(value: unknown): value is TwistKind {
+  return TWIST_KINDS.some((kind) => kind.id === value)
+}
+
 /**
- * Semua tantangan yang mungkin untuk satu kategori: berawalan huruf, berakhiran huruf, atau
- * minimal sekian huruf. Hanya tantangan yang menyisakan cukup banyak jawaban yang dipakai.
+ * Tantangan yang mungkin untuk satu kategori, dari jenis yang dinyalakan (`kinds`): berawalan huruf,
+ * berakhiran huruf, atau minimal sekian huruf. Hanya tantangan yang menyisakan cukup banyak jawaban yang dipakai.
  */
-export function twistOptions(answers: string[]): { twist: string; answers: string[] }[] {
+export function twistOptions(answers: string[], kinds: TwistKind[]): { twist: string; answers: string[] }[] {
   const options: { twist: string; answers: string[] }[] = []
   for (const letter of LETTERS) {
     const starts = answers.filter((word) => word.startsWith(letter))
-    if (starts.length >= TWIST_MIN_ANSWERS) options.push({ twist: `berawalan "${letter.toUpperCase()}"`, answers: starts })
+    if (kinds.includes('start') && starts.length >= TWIST_MIN_ANSWERS) options.push({ twist: `berawalan "${letter.toUpperCase()}"`, answers: starts })
     const ends = answers.filter((word) => word.endsWith(letter))
-    if (ends.length >= TWIST_MIN_ANSWERS) options.push({ twist: `berakhiran "${letter.toUpperCase()}"`, answers: ends })
+    if (kinds.includes('end') && ends.length >= TWIST_MIN_ANSWERS) options.push({ twist: `berakhiran "${letter.toUpperCase()}"`, answers: ends })
   }
+  if (!kinds.includes('length')) return options
   for (const min of [6, 7, 8, 9, 10]) {
     const long = answers.filter((word) => word.replace(/ /g, '').length >= min)
     // Kalau hampir semua jawaban sudah sepanjang itu, tantangannya tidak berarti.

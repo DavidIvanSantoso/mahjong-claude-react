@@ -579,7 +579,7 @@ Nama internalnya tetap `bomkata` (folder `src/bomkata/`, link undangan `?game=bo
 
 Gabungan adu kata dan *hot potato*. Online, 2–6 pemain duduk di meja bundar, masing-masing punya 2 nyawa.
 
-1. Setiap ronde, sebuah kategori diundi (animasi mesin slot), misalnya Hewan atau Buah. Sekitar 40% ronde mendapat tantangan tambahan (lihat *Tantangan* di bawah), misalnya "Buah berakhiran A".
+1. Setiap ronde, sebuah kategori diundi (animasi mesin slot), misalnya Hewan atau Buah. Kalau host menyalakan **Next Level**, sekitar 40% ronde mendapat tantangan tambahan (lihat *Tantangan (Next Level)* di bawah), misalnya "Buah berakhiran A".
 2. Bom di tengah mulai berdetak dengan durasi acak tersembunyi (12–30 detik). Panah di bom menunjuk pemain yang memegangnya.
 3. Pemegang bom mengetik kata dari kategori itu. Kata benar memindahkan bom ke pemain hidup berikutnya searah jarum jam. Kata salah atau sudah dipakai di ronde itu ditolak, dan bom tetap di tangannya.
 4. Waktu bom tidak pernah ditampilkan sebagai angka. Makin dekat ledakan, kedipan dan bunyi detaknya makin cepat (tingkat `heat` 0–3: sisa >12, ≤12, ≤6, ≤2,5 detik).
@@ -592,18 +592,20 @@ Pemain lain bisa melihat huruf yang sedang diketik pemegang bom secara langsung.
 
 Supaya kategori tidak sering berulang, host memakai **kantong acak** (*shuffle bag*):
 
-- Semua kategori dikocok ke dalam kantong, lalu diambil satu per ronde sampai habis. Baru setelah itu kantong diisi dan dikocok lagi. Jadi dalam satu siklus (145 ronde) tiap kategori keluar tepat sekali.
+- Semua kategori dikocok ke dalam kantong, lalu diambil satu per ronde sampai habis. Baru setelah itu kantong diisi dan dikocok lagi. Jadi dalam satu siklus (135 ronde) tiap kategori keluar tepat sekali.
 - Kategori yang muncul dalam `RECENT_WINDOW` (10) ronde terakhir dilewati dulu, juga saat kantong baru diisi ulang. Jarak minimal sebuah kategori muncul lagi adalah 11 ronde.
 - Kategori boleh punya `group` (mis. `hewan` untuk Hewan, Ikan, Burung, Serangga). Dua kategori segrup tidak diundi berturut-turut, supaya Ikan tidak langsung muncul setelah Hewan.
 - Urutan prioritasnya ada di `drawFromBag`: bukan yang baru muncul dan beda grup → bukan yang baru muncul → beda grup → apa saja selain kategori sebelumnya.
 
-### Tantangan
+### Tantangan (Next Level)
 
-Dengan peluang `TWIST_CHANCE` (40%), kategori ronde itu diberi syarat tambahan yang dipilih acak dari `twistOptions`:
+Tantangan **mati secara bawaan**. Saat membuat room, host bisa menyalakan menu **NEXT LEVEL** dan memilih jenis tantangan yang dipakai (`TWIST_KINDS` di `rounds.ts`, dikirim ke tamu lewat `lobby.twists` dan ditampilkan di lobi):
 
-- **berawalan "X"**, mis. "Hewan berawalan K"
-- **berakhiran "X"**, mis. "Buah berakhiran A"
-- **minimal N huruf** (N = 6–10, spasi tidak dihitung)
+- **Awalan huruf** (`start`): **berawalan "X"**, mis. "Hewan berawalan K"
+- **Akhiran huruf** (`end`): **berakhiran "X"**, mis. "Buah berakhiran A"
+- **Minimal huruf** (`length`): **minimal N huruf** (N = 6–10, spasi tidak dihitung)
+
+Kalau minimal satu jenis dinyalakan, setiap ronde punya peluang `TWIST_CHANCE` (40%) mendapat syarat tambahan yang dipilih acak dari `twistOptions(answers, jenisYangDinyalakan)`.
 
 Tantangan hanya dipakai kalau kamus masih menyisakan minimal 8 jawaban sah. Syarat "minimal N huruf" juga dilewati kalau lebih dari 70% jawaban sudah sepanjang itu, karena tidak terasa seperti tantangan. Host langsung menyaring daftar jawaban, jadi kata yang tidak memenuhi syarat ditolak seperti kata salah. Tantangan tampil sebagai lencana oranye di bawah nama kategori, dan ikut tercatat di riwayat ("Ronde 2: Buah berakhiran A").
 
@@ -621,20 +623,20 @@ GitHub Pages tidak punya database, jadi kamus berupa file JSON statis. Untuk sek
   ```
 - Hanya **host** yang mengunduh kamus dan memeriksa jawaban (`src/bomkata/words.ts`). Daftar jawaban tidak pernah dikirim ke tamu (`viewFor` membuang `answers`).
 - Jawaban dibandingkan setelah dinormalisasi (`normalizeWord`): huruf kecil, tanpa tanda baca, tanda hubung dianggap spasi. Jadi "Kuda-Nil", "kuda nil", dan "KUDA  NIL" sama.
-- Kamus berisi 145 kategori aktif (19.408 kata), dikelompokkan per grup:
+- Kamus berisi 135 kategori aktif (18.206 kata), dikelompokkan per grup:
   - **merek:** Merek Fashion, Merek Kecantikan, Merek Makanan & Minuman, Merek Elektronik & Teknologi, Aplikasi & Media Sosial, Maskapai Penerbangan, Toko & Ritel, Bank & Dompet Digital.
-  - **hiburan:** Karakter Kartun & Animasi, Karakter Film, Superhero & Penjahat Super, Judul Film, Dunia Harry Potter, Dunia Doraemon, Film Disney & Pixar, Film DreamWorks, Film Animasi Lainnya, Judul Drama Korea, Serial Kartun TV, Artis & Selebritas Indonesia, Aktor & Aktris Dunia, Stasiun TV & Radio.
+  - **hiburan:** Karakter Kartun & Animasi, Karakter Film, Superhero & Penjahat Super, Judul Film, Dunia Harry Potter, Dunia Doraemon, Film Disney & Pixar, Film DreamWorks, Film Animasi Lainnya, Judul Drama Korea, Serial Kartun TV, Artis & Selebritas Indonesia, Aktor & Aktris Dunia.
   - **game:** Video Game, Pokemon, Hero Mobile Legends, Karakter Video Game, Istilah Gaming. **anime:** Karakter Anime & Manga, Dunia Naruto, Dunia One Piece.
-  - **kata:** Bahasa Gaul, Singkatan & Akronim, Kata Ulang. **inggris:** Hewan dalam Bahasa Inggris, Makanan dalam Bahasa Inggris, Benda dalam Bahasa Inggris, Pekerjaan dalam Bahasa Inggris, Kata Kerja dalam Bahasa Inggris. **sains:** Unsur Kimia, Satuan Ukuran, Jurusan Kuliah, Universitas di Indonesia. **tumbuhan:** Bunga & Tanaman, Pohon & Kayu.
-  - **musik:** Alat Musik, Genre Musik, Penyanyi & Band Indonesia, Penyanyi & Band Dunia, Lagu Anak, Daerah & Nasional, Judul Lagu Barat & K-Pop. **mitos:** Hantu & Makhluk Mitos, Dewa & Mitologi.
+  - **kata:** Bahasa Gaul, Singkatan & Akronim, Kata Ulang. **inggris:** Hewan dalam Bahasa Inggris, Makanan dalam Bahasa Inggris, Benda dalam Bahasa Inggris, Pekerjaan dalam Bahasa Inggris, Kata Kerja dalam Bahasa Inggris. **sains:** Unsur Kimia, Satuan Ukuran, Jurusan Kuliah. **tumbuhan:** Bunga & Tanaman, Pohon & Kayu.
+  - **musik:** Alat Musik, Genre Musik, Penyanyi & Band Indonesia, Penyanyi & Band Dunia, Judul Lagu Barat & K-Pop. **mitos:** Hantu & Makhluk Mitos, Dewa & Mitologi.
   - **hewan:** Hewan, Ikan, Burung, Serangga & Hewan Kecil, Dinosaurus & Hewan Purba, Ras Anjing & Kucing, Hewan Laut, Bagian Tubuh Hewan.
   - **makanan:** Buah, Sayuran, Makanan Khas Indonesia, Makanan Internasional, Kue & Jajanan, Minuman, Bumbu & Rempah, Bahan Makanan, Aneka Sambal, Aneka Nasi & Mi, Aneka Soto, Sate & Bakso, Tanaman Pertanian & Perkebunan, Jajanan SD & Jajanan Jadul, Makanan Jepang, Makanan Korea, Roti, Kue & Dessert.
-  - **geografi:** Negara, Ibu Kota Negara, Kota di Indonesia, Provinsi di Indonesia, Pulau di Indonesia, Gunung di Indonesia, Sungai & Danau di Indonesia, Tempat Wisata Indonesia, Landmark Dunia, Kota Terkenal Dunia.
+  - **geografi:** Negara, Ibu Kota Negara, Kota di Indonesia, Pulau di Indonesia, Sungai & Danau di Indonesia, Landmark Dunia, Kota Terkenal Dunia.
   - **benda:** Benda di Rumah, Bagian Rumah, Elektronik & Gadget, Alat Sekolah, Alat Kantor, Perkakas & Alat Pertukangan, Bahan Bangunan, Kosmetik & Perawatan Diri, Alat Dapur, Komputer & Internet, Barang di Kamar & Kamar Mandi.
   - **kegiatan:** Olahraga, Peralatan Olahraga, Hobi, Kegiatan Sehari-hari, Permainan Papan & Kartu, Klub Sepak Bola, Pemain Sepak Bola, Mainan, Kata Kerja, Bela Diri, Istilah Sepak Bola, Perlengkapan Camping & Mendaki.
-  - **kendaraan:** Kendaraan, Bagian Kendaraan, Merek Kendaraan, Model Mobil & Motor. **tubuh:** Anggota Tubuh, Penyakit & Gejala, Obat & Alat Kesehatan. **sifat:** Perasaan & Emosi, Sifat & Karakter, Rasa & Tekstur, Panggilan & Sapaan. **pakaian:** Pakaian & Aksesori, Jenis Kain, Pakaian Adat & Tradisional. **budaya:** Bahasa, Tokoh Dongeng & Cerita Rakyat, Hari Raya & Perayaan, Candi di Indonesia.
-  - **Tanpa grup:** Alam & Cuaca, Anggota Keluarga, Bentuk & Bangun, Bunyi & Onomatope, Logam & Batu Mulia, Luar Angkasa, Mata Pelajaran, Mata Uang, Nama Hari & Bulan, Pekerjaan, Permainan Tradisional, Senjata, Tempat & Bangunan, Tokoh Wayang, Warna, Zodiak & Shio, Tokoh Terkenal Dunia, Angka & Bilangan.
-  - **Dinonaktifkan sementara** (terlalu sulit, `"disabled": true`): Kosakata Bahasa Jawa, Kosakata Bahasa Sunda, Kata Sifat dalam Bahasa Inggris, Tarian Daerah, Suku Bangsa Indonesia, Pahlawan Nasional, Rumah Adat, Kerajaan Nusantara, Presiden & Pemimpin Negara.
+  - **kendaraan:** Kendaraan, Bagian Kendaraan, Merek Kendaraan, Model Mobil & Motor. **tubuh:** Anggota Tubuh, Penyakit & Gejala, Obat & Alat Kesehatan. **sifat:** Perasaan & Emosi, Sifat & Karakter, Rasa & Tekstur, Panggilan & Sapaan. **pakaian:** Pakaian & Aksesori, Jenis Kain. **budaya:** Bahasa, Hari Raya & Perayaan.
+  - **Tanpa grup:** Alam & Cuaca, Anggota Keluarga, Bentuk & Bangun, Bunyi & Onomatope, Logam & Batu Mulia, Luar Angkasa, Mata Pelajaran, Mata Uang, Nama Hari & Bulan, Pekerjaan, Permainan Tradisional, Senjata, Tempat & Bangunan, Warna, Zodiak & Shio, Tokoh Terkenal Dunia, Angka & Bilangan.
+  - **Dinonaktifkan sementara** (terlalu sulit, `"disabled": true`): Kata Sifat dalam Bahasa Inggris, Pahlawan Nasional, Rumah Adat, Kerajaan Nusantara, Presiden & Pemimpin Negara.
   - Sebagian kategori sengaja beririsan (mis. Hewan dengan Ikan dan Burung), karena tiap ronde hanya memakai satu kategori. Kategori yang beririsan sebaiknya diberi `group` yang sama.
 - **Penulisan kata:** huruf kecil. Frasa memakai spasi ("kuda nil"); kata ulang memakai tanda hubung ("kupu-kupu"). Ejaan lain yang umum boleh ditambahkan sebagai kata terpisah (mis. "cabai" dan "cabe", "kaos" dan "kaus").
 
