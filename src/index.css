@@ -529,21 +529,10 @@ p {
 }
 
 /*
- * Layar sempit: navbar diperkecil bertahap supaya tidak bertabrakan dengan tombol di kanan.
- * Tablet kecil (≤600px): ikon disembunyikan. Ponsel (≤520px): hanya ikon; nama game tetap
- * terbaca pembaca layar dan muncul sebagai tooltip.
+ * Layar sempit (≤800px): navbar hanya menampilkan ikon supaya kelima game tidak bertabrakan dengan
+ * tombol di kanan; nama game tetap terbaca pembaca layar dan muncul sebagai tooltip.
  */
-@media (max-width: 600px) {
-  .game-nav__item {
-    padding: 7px 11px;
-  }
-
-  .game-nav__item svg {
-    display: none;
-  }
-}
-
-@media (max-width: 520px) {
+@media (max-width: 800px) {
   .game-nav {
     left: 12px;
   }
@@ -566,7 +555,7 @@ p {
   }
 }
 
-/* Ponsel sangat sempit: ikon lebih rapat supaya empat game tetap muat di samping tombol kanan */
+/* Ponsel sangat sempit: ikon lebih rapat supaya kelima game tetap muat di samping tombol kanan */
 @media (max-width: 360px) {
   .game-nav {
     gap: 0;
@@ -574,7 +563,7 @@ p {
   }
 
   .game-nav__item {
-    padding: 7px;
+    padding: 6px;
   }
 }
 
@@ -732,7 +721,7 @@ p {
  * Mobile: ubin tegak (tidak diputar) memenuhi seluruh layar sebagai latar,
  * dan menu berada di kartu di tengah. Ubin di luar kartu tetap bisa diketuk.
  */
-@media (max-width: 720px) {
+@media (max-width: 800px) {
   .home {
     justify-content: center;
     padding: 24px 16px;
@@ -922,7 +911,7 @@ p {
 }
 
 /* Mobile: kolom ubin disembunyikan, form memenuhi layar dan boleh di-scroll seperti halaman biasa */
-@media (max-width: 720px) {
+@media (max-width: 800px) {
   .split {
     height: auto;
     min-height: 100vh;
@@ -2444,7 +2433,7 @@ button.tile.tile--selected:hover {
   }
 }
 
-@media (max-width: 720px) {
+@media (max-width: 800px) {
   :root[data-theme='hk'] .home__menu,
   :root[data-theme='hk'] .home__credit {
     background: color-mix(in srgb, var(--page) 90%, transparent);

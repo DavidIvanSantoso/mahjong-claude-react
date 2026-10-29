@@ -2,7 +2,7 @@
 
 Game mahjong 2D untuk 2–4 pemain, dibuat dengan React dan TypeScript. Bisa dimainkan bergantian di satu perangkat, atau online lewat room (PeerJS) dengan tiap pemain di perangkatnya sendiri.
 
-Situs yang sama juga memuat game kartu **UNO** (online, 2–6 pemain; [bagian 11](#11-game-uno)) **Capsa** (online, 2–4 pemain; [bagian 12](#12-game-capsa)), dan **KA-BOOM!** (online, 2–6 pemain; [bagian 13](#13-game-ka-boom)). Navbar di pojok kiri atas homescreen dipakai untuk berpindah game.
+Situs yang sama juga memuat game kartu **UNO** (online, 2–6 pemain; [bagian 11](#11-game-uno)) **Capsa** (online, 2–4 pemain; [bagian 12](#12-game-capsa)), **KA-BOOM!** (online, 2–6 pemain; [bagian 13](#13-game-ka-boom)), dan **Armada Royale** (online, 2–6 pemain; [bagian 14](#14-game-armada-royale)). Navbar di pojok kiri atas homescreen dipakai untuk berpindah game.
 
 - Situs: https://davidivansantoso.github.io/mahjong-claude-react/
 - Repo: https://github.com/DavidIvanSantoso/mahjong-claude-react
@@ -22,6 +22,7 @@ Situs yang sama juga memuat game kartu **UNO** (online, 2–6 pemain; [bagian 11
 11. [Game UNO](#11-game-uno)
 12. [Game Capsa](#12-game-capsa)
 13. [Game KA-BOOM!](#13-game-ka-boom)
+14. [Game Armada Royale](#14-game-armada-royale)
 
 ---
 
@@ -79,13 +80,14 @@ src/
     Seat.tsx               Satu kursi: tangan, set terbuka, bunga, buangan
     TileView.tsx           Gambar satu ubin (muka atau telungkup)
     OnlineGame.tsx         Lobi room dan pembungkus meja untuk mode online
-    GameNav.tsx            Navbar pemilih game (Mahjong / UNO / Capsa / KA-BOOM!) di homescreen
+    GameNav.tsx            Navbar pemilih game (Mahjong / UNO / Capsa / KA-BOOM! / Armada) di homescreen
   net/                     Mode online
     online.ts              Bentuk pesan, kode room, penyaringan state per pemain
     rooms.ts               Kelas HostRoom dan GuestRoom, plus hook React-nya
   uno/                     Game UNO (lihat bagian 11)
   capsa/                   Game Capsa (lihat bagian 12)
   bomkata/                 Game KA-BOOM! (lihat bagian 13)
+  armada/                  Game Armada Royale (lihat bagian 14)
 public/words/id/           Kamus kata KA-BOOM! (JSON)
 .github/workflows/deploy.yml   Build dan deploy otomatis ke GitHub Pages
 vite.config.ts             Konfigurasi Vite (base path relatif)
@@ -441,6 +443,7 @@ GitHub Pages hanya menyajikan file statis, dan itu cukup: aplikasi ini tidak pun
 - Alat build: Vite (MIT), TypeScript (Apache-2.0).
 - Mahjong adalah permainan tradisional; aturan dan namanya tidak dimiliki pihak mana pun.
 - UNO adalah merek dagang Mattel. Game UNO di sini adalah projek penggemar non-komersial; kartunya digambar dengan CSS, tanpa aset gambar resmi.
+- Armada Royale memakai konsep tembak-tembakan kapal di papan berpetak, permainan kertas-pensil lama yang aturannya tidak dimiliki siapa pun. Nama "Battleship" (merek dagang Hasbro) tidak dipakai. Semua gambarnya pixel art yang digambar di kode (`src/armada/Pixel.tsx`), efek suaranya dibuat dengan Web Audio, dan fontnya (Press Start 2P, VT323; dimuat dari Google Fonts, sama dengan KA-BOOM!) berlisensi SIL Open Font License.
 
 ## 11. Game UNO
 
@@ -671,3 +674,110 @@ src/bomkata/
 ### Online
 
 Sama dengan game lain: ID PeerJS berawalan `bomkata-claude-room-`, dan link undangannya `?game=bomkata&room=KODE`. Bedanya, semua pewaktu dijalankan host: undian kategori (`READY_MS`), sumbu bom (`FUSE_MIN_MS`–`FUSE_MAX_MS`), tingkat panas (`HEAT_AT`), dan jeda setelah ledakan (`BOOM_MS`). Pemain yang terputus tetap duduk; kalau bom ada di tangannya, bom meledak seperti biasa.
+
+## 14. Game Armada Royale
+
+Nama internalnya `armada` (folder `src/armada/`, link undangan `?game=armada&room=KODE`, awalan ID room `armada-claude-room-`).
+
+### Ringkasan
+
+Tembak-tembakan kapal dengan format *battle royale*: online, 2–6 pemain, masing-masing punya papan dan armada sendiri. Pemain terakhir yang masih punya kapal menang.
+
+1. **Penempatan.**
+   - Setiap pemain menyusun armadanya dengan seret-dan-lepas (lihat *Penempatan kapal*), lalu menekan SIAP.
+   - Batas waktunya `PLACEMENT_SECONDS` (90 detik). Saat habis, armada yang belum siap disusun acak oleh host.
+2. **Ronde.** Urutan pemain yang masih hidup diacak di awal tiap ronde (`planTurn`). Tiap pemain mendapat satu giliran.
+3. **Target diundi otomatis** (`pickTarget` di `grid.ts`).
+   - Calon target adalah lawan yang masih hidup, masing-masing berbobot 1.
+   - Target terakhir penyerang itu berbobot `REPEAT_WEIGHT` (0,5).
+4. **Menembak.**
+   - Penyerang memilih satu sel di papan target dalam `TURN_SECONDS` (20 detik). Kalau waktunya habis, host menembak sel acak.
+   - Hasilnya (meleset, kena, tenggelam, atau ditahan Perisai) dicatat **di papan target** dan terlihat semua pemain.
+5. **Tenggelam dan gugur.**
+   - Kapal tenggelam kalau semua selnya kena. Posisinya lalu terlihat semua pemain.
+   - Pemain yang semua kapalnya tenggelam gugur dan menonton sampai selesai.
+6. **Akhir permainan.** Layar akhir memuat statistik tiap pemain. Jumlah kemenangan dicatat selama room dibuka.
+
+### Papan dan armada (`src/armada/grid.ts`)
+
+Host memilih ukuran papan saat membuat room. Kepadatan kapal dijaga sekitar 30% papan.
+
+| Preset | Papan | Kapal |
+|---|---|---|
+| Cepat | 5×5 | Kapal Perang 3, Perusak 2, Patroli 2 |
+| Normal (bawaan) | 6×6 | Kapal Induk 4, Kapal Perang 3, Perusak 2, Patroli 2 |
+| Panjang | 7×7 | Kapal Induk 4, Kapal Perang 3, Kapal Selam 3, Perusak 2, Patroli 2 |
+
+- Sel disimpan sebagai indeks `row * size + col`. Label "B3" (kolom huruf, baris angka) hanya untuk tampilan.
+- Kapal boleh bersentuhan, tapi tidak boleh tumpang tindih atau keluar papan (`fleetCells`).
+
+### Skill (`src/armada/skills.ts`)
+
+**Cara mendapat SP.** Pemain mendapat Skill Point (SP) saat **papannya ditembak**:
+- +1 setiap ditembak, termasuk kalau tembakannya ditahan Perisai;
+- +1 lagi kalau tembakannya kena;
+- +2 lagi kalau kapalnya tenggelam.
+
+SP awal 0, maksimal 6. Angka-angka ini ada di `SKILL_CONFIG`.
+
+| Skill | SP | Kapan | Efek |
+|---|---|---|---|
+| Perisai | 2 | Kapan saja selama hidup | Menahan satu tembakan berikutnya; sel itu tidak dicatat. Perisai terlihat semua pemain |
+| Sonar | 2 | Giliran sendiri, 1× per giliran | Jumlah sel kapal yang belum kena di area 3×3 papan target. Hasilnya hanya dikirim ke pemakai |
+| Tembakan Ganda | 3 | Giliran sendiri, sebelum menembak | Dua tembakan ke sel berbeda di target yang sama |
+
+Teks dan biaya ada di `SKILLS`. Efeknya ada di reducer (`useSkill` di `state.ts`).
+
+### Privasi (`viewFor` di `state.ts`)
+
+Host memegang armada semua pemain, sama seperti host game lain memegang semua kartu. Tamu hanya menerima `viewFor(state, kursinya)`:
+- **Untuk semua pemain:** status hidup/gugur, SP, perisai, tembakan yang diterima tiap papan, jumlah kapal tersisa, kapal yang sudah tenggelam, dan statistik.
+- **Hanya untuk pemiliknya:** armada lengkap.
+- **Setelah permainan selesai:** armada semua pemain dibuka.
+- **Hasil Sonar:** hanya dikirim ke pemakainya.
+
+### Penempatan kapal (`ArmadaPlacement.tsx`)
+
+Seret-dan-lepas dibuat dengan Pointer Events, jadi jalan dengan mouse maupun sentuhan:
+- **Pasang:** seret kapal dari dok ke papan. Kapal mengikuti titik yang dipegang, dan ujungnya digeser masuk kalau keluar tepi.
+- **Pratinjau:** sel tujuan berwarna hijau kalau muat, merah kalau menabrak kapal lain.
+- **Pindah atau lepas:** seret kapal di papan untuk memindahkannya, atau seret keluar papan untuk mengembalikannya ke dok.
+- **Putar:** ketuk kapal di papan. Selama menyeret, bisa juga dengan tombol R atau spasi. Tombol PUTAR mengubah arah kapal di dok.
+- **ACAK** menyusun armada otomatis, **KOSONGKAN** mengosongkan papan.
+
+### Pewaktu host (`net.ts`)
+
+- `START_MS`: jeda sebelum giliran pertama.
+- `TARGET_MS`: animasi undian target.
+- `TURN_SECONDS`: batas bidikan. Tembakan kedua dari Tembakan Ganda mendapat waktu baru.
+- `RESULT_MS`: lama hasil tembakan ditampilkan.
+
+Pemain yang terputus tetap duduk dan tetap bisa menjadi target. Saat gilirannya, sel acak ditembak setelah batas waktu habis. Seperti game lain, setelah refresh pemain menekan GABUNG lagi untuk kembali ke kursinya.
+
+### Struktur folder
+
+```
+src/armada/
+  grid.ts              Preset papan/armada, koordinat, validasi armada, armada acak, undian target
+  skills.ts            SKILL_CONFIG (SP) dan daftar skill
+  state.ts             State, reducer, planTurn (urutan dan target), viewFor (privasi)
+  net.ts               HostRoom/GuestRoom PeerJS, pewaktu, hook React
+  ArmadaApp.tsx        Layar-layar, menu online (pilih preset), lobi, tema
+  ArmadaHome.tsx       Homescreen
+  ArmadaPlacement.tsx  Layar penempatan kapal (seret-dan-lepas)
+  ArmadaTable.tsx      Meja: papan besar, status giliran, riwayat
+  ArmadaHud.tsx        Kartu pemain, panel skill, SP, undian target
+  ArmadaDialogs.tsx    Panduan dan layar akhir (statistik)
+  Board.tsx            Komponen papan N×N (besar, sedang, mini)
+  Timer.tsx            Bar sisa waktu
+  Pixel.tsx            Pixel art SVG: kapal, cipratan, api, perisai, radar, bidikan, bendera, ombak
+  sfx.ts               Efek suara chiptune lewat Web Audio
+  armada.css           Semua gaya Armada Royale, termasuk palet
+```
+
+### Tampilan
+
+- **Palet** (`data-game='armada'`): Charcoal `#171A17`, Military Green `#30352D`, Olive `#55584B`, Muted Green `#8A8B73`, Parchment `#C6B98A`, Hit `#A63D32`, Water `#3F6470`. Token CSS-nya bernama semantik (`--ar-accent`, `--ar-hit`, `--ar-water`, dst.) di awal `armada.css`, jadi palet bisa diganti di satu blok.
+- **Font dan gaya pixel:** sama dengan KA-BOOM! (Press Start 2P dan VT323).
+- **Pixel art:** semua digambar di `Pixel.tsx`. Kapal dibuat prosedural sesuai panjangnya, lalu diputar untuk kapal tegak.
+- **Papan besar:** menampilkan papan target giliran itu. Kartu pemain bisa diketuk untuk melihat papan pemain lain.

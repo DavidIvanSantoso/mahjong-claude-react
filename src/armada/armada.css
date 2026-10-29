@@ -1,0 +1,1519 @@
+/* ---------- Palet Armada Royale (militer 8-bit) ---------- */
+
+/*
+ * Dipasang lewat `data-game='armada'` di <html> selama layar Armada Royale terbuka (lihat ArmadaApp.tsx).
+ * Palet: Charcoal #171A17, Military Green #30352D, Olive #55584B, Muted Green #8A8B73,
+ * Parchment #C6B98A, Hit #A63D32, Water #3F6470. Warna lain di file ini hanya turunan
+ * (lebih terang/gelap) dari tujuh warna itu. Sudut tidak dibulatkan dan bingkai dibuat
+ * bertangga (box-shadow 4px) seperti KA-BOOM!.
+ */
+:root[data-game='armada'] {
+  --ar-sea: #171a17;
+  --ar-panel: #30352d;
+  --ar-panel-dark: #232720;
+  --ar-panel-hover: #3a4036;
+  --ar-line: #55584b;
+  --ar-water: #3f6470;
+  --ar-water-2: #3a5d68;
+  --ar-water-hover: #4f7a87;
+  --ar-water-miss: #33535d;
+  --ar-water-hit: #5a2a24;
+  --ar-ink: #0d0f0d;
+  --ar-text: #e9e2c8;
+  --ar-muted: #8a8b73;
+  --ar-accent: #c6b98a;
+  --ar-accent-dark: #9c9068;
+  --ar-accent-light: #e2d7ae;
+  --ar-hit: #a63d32;
+  --ar-hit-light: #d06a52;
+  --ar-danger: #a63d32;
+  --ar-ok: #8a8b73;
+  --ar-ok-bg: #4d5640;
+  --ar-bad-bg: #6e2a23;
+  --ar-sonar: #8fb3bc;
+  --ar-water-dark: #2c4952;
+  --ar-water-light: #6a8f99;
+  --ar-title: 'Press Start 2P', ui-monospace, monospace;
+  --ar-body: 'VT323', ui-monospace, monospace;
+  --px: 4px;
+
+  /* Variabel bersama (dialog, lobi, form) */
+  --pink: #30352d;
+  --pink-deep: #c6b98a;
+  --cream: #55584b;
+  --sage: #30352d;
+  --green: #c6b98a;
+  --green-deep: #c6b98a;
+  --ink: #e9e2c8;
+  --ink-soft: #8a8b73;
+  --line: #55584b;
+  --tile-red: #a63d32;
+  --tile-green: #8a8b73;
+  --tile-blue: #3f6470;
+  --page: #171a17;
+  --on-page: #e9e2c8;
+  --on-page-soft: #8a8b73;
+  --on-green: #171a17;
+  --tile-bg: #30352d;
+  --btn-bg: #c6b98a;
+  --btn-hover: #e2d7ae;
+  --btn-shadow: #9c9068;
+
+  font-family: var(--ar-body);
+  font-size: 125%;
+}
+
+:root[data-game='armada'] :is(.card, .tutorial-dialog, .btn, .icon-btn, .game-nav, .game-nav__item, .home__tools, .home__credit, .social-link, .lobby__players li, .music-player__panel, input) {
+  border-radius: 0;
+}
+
+:root[data-game='armada'] :is(.btn, .icon-btn) {
+  font-family: var(--ar-title);
+  font-size: 0.5rem;
+  line-height: 1.6;
+}
+
+:root[data-game='armada'] .btn--small {
+  padding: 8px 10px;
+}
+
+:root[data-game='armada'] :is(.setup__title, .result-dialog__title, .lobby__code, .tutorial__section h2) {
+  font-family: var(--ar-title);
+  letter-spacing: 0.04em;
+}
+
+:root[data-game='armada'] .setup__title {
+  font-size: 0.9rem;
+}
+
+:root[data-game='armada'] .result-dialog__title {
+  font-size: clamp(0.9rem, 4vw, 1.3rem);
+  color: var(--ar-accent);
+}
+
+:root[data-game='armada'] .tutorial__section h2 {
+  font-size: 0.6rem;
+  color: var(--ar-accent);
+}
+
+:root[data-game='armada'] .lobby__code {
+  font-size: 1.4rem;
+  color: var(--ar-accent);
+}
+
+:root[data-game='armada'] .tutorial-dialog {
+  border: var(--px) solid var(--ar-ink);
+  box-shadow: 0 0 0 var(--px) var(--ar-sonar), 0 16px 0 rgb(0 0 0 / 40%);
+}
+
+:root[data-game='armada'] .tutorial-dialog::backdrop {
+  background: rgb(13 15 13 / 75%);
+}
+
+:root[data-game='armada'] input[type='text'] {
+  font-family: var(--ar-body);
+  font-size: 1.1rem;
+  color: var(--ar-text);
+  background: var(--ar-ink);
+  border: var(--px) solid var(--ar-line);
+  border-radius: 0;
+}
+
+:root[data-game='armada'] input[type='text']:focus {
+  outline: none;
+  border-color: var(--ar-accent);
+}
+
+:root[data-game='armada'] :is(.game-nav, .home__tools, .home__credit) {
+  color: var(--ar-muted);
+  background: var(--ar-sea);
+  border: var(--px) solid var(--ar-ink);
+  box-shadow: 0 0 0 2px var(--ar-line);
+}
+
+:root[data-game='armada'] .game-nav__item {
+  color: var(--ar-text);
+}
+
+:root[data-game='armada'] .game-nav__item--active {
+  color: var(--ar-sea);
+}
+
+:root[data-game='armada'] .home__credit strong {
+  color: var(--ar-accent);
+}
+
+:root[data-game='armada'] .lobby__players li {
+  font-size: 1.1rem;
+  background: var(--ar-sea);
+  border-left: var(--px) solid var(--ar-sonar);
+}
+
+:root[data-game='armada'] .lobby__players .lobby__empty {
+  border-left-color: transparent;
+}
+
+/* ---------- Warna pixel art (lihat Pixel.tsx) ---------- */
+
+.arpx-h { fill: var(--ar-muted); }
+.arpx-d { fill: #a9a98f; }
+.arpx-r { fill: var(--ar-hit); }
+.arpx-w { fill: var(--ar-ink); }
+.arpx-c { fill: var(--ar-accent-light); }
+.arpx-m { fill: var(--ar-ink); }
+.arpx-g { fill: var(--ar-line); }
+.arpx-b { fill: var(--ar-sonar); }
+.arpx-f { fill: var(--ar-text); }
+.arpx-y { fill: var(--ar-accent); }
+.arpx-o { fill: var(--ar-hit); }
+.arpx-s { fill: var(--ar-text); }
+.arpx-q { fill: var(--ar-water-light); }
+.arpx-e { fill: var(--ar-accent); }
+.arpx-z { fill: var(--ar-line); }
+.arpx-a { fill: var(--seat-color); }
+
+.ar-flag {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+
+.ar-flag--0 { --seat-color: var(--ar-accent); }
+.ar-flag--1 { --seat-color: var(--ar-hit); }
+.ar-flag--2 { --seat-color: var(--ar-ok); }
+.ar-flag--3 { --seat-color: var(--ar-sonar); }
+.ar-flag--4 { --seat-color: #c07f4a; }
+.ar-flag--5 { --seat-color: #9a86a8; }
+
+/* ---------- Tombol dan panel pixel ---------- */
+
+.ar-btn {
+  position: relative;
+  padding: 12px 16px;
+  font-family: var(--ar-title);
+  font-size: 0.6rem;
+  line-height: 1.4;
+  letter-spacing: 0.04em;
+  color: var(--ar-ink);
+  background: var(--ar-accent);
+  border: 0;
+  border-radius: 0;
+  box-shadow:
+    inset calc(var(--px) * -1) calc(var(--px) * -1) 0 var(--ar-accent-dark),
+    inset var(--px) var(--px) 0 var(--ar-accent-light),
+    0 0 0 var(--px) var(--ar-ink);
+  margin: var(--px);
+  cursor: pointer;
+  transition: translate 0.08s steps(2);
+}
+
+.ar-btn:hover:not(:disabled) {
+  translate: 0 -2px;
+  filter: brightness(1.06);
+}
+
+.ar-btn:active:not(:disabled) {
+  translate: 0 2px;
+  box-shadow:
+    inset var(--px) var(--px) 0 var(--ar-accent-dark),
+    0 0 0 var(--px) var(--ar-ink);
+}
+
+.ar-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ar-btn:focus-visible {
+  outline: var(--px) solid var(--ar-text);
+  outline-offset: var(--px);
+}
+
+.ar-btn--big {
+  padding: 16px;
+  font-size: 0.75rem;
+}
+
+.ar-btn--small {
+  padding: 8px 10px;
+  font-size: 0.45rem;
+}
+
+.ar-btn--alt {
+  color: var(--ar-text);
+  background: var(--ar-water);
+  box-shadow:
+    inset calc(var(--px) * -1) calc(var(--px) * -1) 0 var(--ar-water-dark),
+    inset var(--px) var(--px) 0 var(--ar-water-light),
+    0 0 0 var(--px) var(--ar-ink);
+}
+
+.ar-btn--wide {
+  width: calc(100% - var(--px) * 2);
+}
+
+.ar-icon-btn {
+  font-size: 0.75rem;
+}
+
+.ar-panel {
+  padding: 14px 16px;
+  color: var(--ar-text);
+  background: var(--ar-panel);
+  box-shadow:
+    inset calc(var(--px) * -1) calc(var(--px) * -1) 0 var(--ar-panel-dark),
+    0 0 0 var(--px) var(--ar-ink);
+  margin: var(--px);
+}
+
+.ar-panel__title {
+  margin-bottom: 8px;
+  font-family: var(--ar-title);
+  font-size: 0.5rem;
+  line-height: 1.6;
+  color: var(--ar-accent);
+}
+
+.ar-panel__empty,
+.ar-hint {
+  font-size: 1rem;
+  color: var(--ar-muted);
+}
+
+.ar-hint {
+  max-width: 520px;
+  text-align: center;
+}
+
+/* ---------- Papan ---------- */
+
+.ar-board {
+  --board-max: 520px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 4px 6px;
+  width: min(100%, var(--board-max));
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.ar-board__cols,
+.ar-board__rows {
+  display: grid;
+  font-family: var(--ar-title);
+  font-size: 0.45rem;
+  color: var(--ar-muted);
+}
+
+.ar-board__cols {
+  grid-template-columns: repeat(var(--n), minmax(0, 1fr));
+  text-align: center;
+}
+
+.ar-board__rows {
+  grid-template-rows: repeat(var(--n), minmax(0, 1fr));
+  align-items: center;
+  text-align: right;
+}
+
+/* Tanpa celah antarsel, supaya kapal dan tanda (posisi dalam persen) pas dengan sel */
+.ar-board__grid {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(var(--n), minmax(0, 1fr));
+  aspect-ratio: 1;
+  background: var(--ar-ink);
+  box-shadow: 0 0 0 var(--px) var(--ar-ink), 0 0 0 calc(var(--px) * 2) var(--ar-line);
+  margin: calc(var(--px) * 2);
+}
+
+.ar-cell {
+  position: relative;
+  min-width: 0;
+  aspect-ratio: 1;
+  padding: 0;
+  background: var(--ar-water);
+  border: 0;
+  border-radius: 0;
+  box-shadow: inset 0 0 0 1px rgb(13 15 13 / 55%);
+}
+
+/* Ombak tipis di tiap sel air */
+.ar-cell::after {
+  content: '';
+  position: absolute;
+  left: 22%;
+  top: 46%;
+  width: 22%;
+  height: 8%;
+  background: rgb(233 226 200 / 10%);
+  box-shadow: 0.4em 0.35em 0 rgb(233 226 200 / 6%);
+}
+
+.ar-cell:nth-child(2n) {
+  background: var(--ar-water-2);
+}
+
+.ar-cell--open {
+  cursor: crosshair;
+}
+
+.ar-cell--open:hover,
+.ar-cell--open:focus-visible {
+  z-index: 1;
+  outline: none;
+  background: var(--ar-water-hover);
+  box-shadow: inset 0 0 0 3px var(--ar-accent);
+}
+
+.ar-cell--miss {
+  background: var(--ar-water-miss);
+}
+
+.ar-cell--hit {
+  background: var(--ar-water-hit);
+}
+
+.ar-cell--ok {
+  background: var(--ar-ok-bg);
+  box-shadow: inset 0 0 0 3px var(--ar-ok);
+}
+
+.ar-cell--bad {
+  background: var(--ar-bad-bg);
+  box-shadow: inset 0 0 0 3px var(--ar-danger);
+}
+
+.ar-cell--sonar {
+  background-image: linear-gradient(rgb(143 179 188 / 30%), rgb(143 179 188 / 30%));
+  box-shadow: inset 0 0 0 2px var(--ar-sonar);
+}
+
+.ar-cell--last {
+  z-index: 1;
+  animation: ar-last 0.8s steps(2) 3;
+}
+
+@keyframes ar-last {
+  50% {
+    box-shadow: inset 0 0 0 4px var(--ar-accent);
+  }
+}
+
+.ar-board--sonar .ar-cell--open,
+.ar-focus--sonar .ar-cell--open {
+  cursor: cell;
+}
+
+.ar-focus--sonar .ar-cell--open:hover {
+  box-shadow: inset 0 0 0 3px var(--ar-sonar);
+}
+
+/* Lapisan di atas sel: kapal (2), tanda tembakan (3), teks hasil dan Sonar (4) */
+.ar-board__ships,
+.ar-board__marks {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.ar-board__marks {
+  z-index: 3;
+}
+
+.ar-ship {
+  position: absolute;
+  padding: 3%;
+}
+
+.ar-ship .ar-ship-art,
+.ar-dock__ship .ar-ship-art,
+.ar-ghost .ar-ship-art {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.ar-ship--drag {
+  pointer-events: auto;
+  cursor: grab;
+  touch-action: none;
+}
+
+.ar-ship--drag:hover .ar-ship-art {
+  filter: brightness(1.15) drop-shadow(0 0 3px var(--ar-accent));
+}
+
+.ar-ship--lifted {
+  opacity: 0.3;
+}
+
+.ar-ship--shake {
+  animation: ar-shake 0.3s steps(3);
+}
+
+@keyframes ar-shake {
+  33% {
+    translate: -4px 0;
+  }
+  66% {
+    translate: 4px 0;
+  }
+}
+
+.ar-ship--sunk {
+  background: rgb(166 61 50 / 35%);
+}
+
+.ar-ship-art--sunk {
+  filter: grayscale(0.7) brightness(0.65);
+}
+
+.ar-mark {
+  position: absolute;
+  width: calc(100% / var(--n));
+  height: calc(100% / var(--n));
+  display: grid;
+  place-items: center;
+}
+
+.ar-mark__art {
+  width: 64%;
+  height: 64%;
+}
+
+.ar-mark--miss .ar-mark__art {
+  width: 56%;
+  height: 56%;
+  opacity: 0.8;
+}
+
+.ar-board--locked .ar-board__grid {
+  box-shadow: 0 0 0 var(--px) var(--ar-ink), 0 0 0 calc(var(--px) * 2) var(--ar-ok);
+}
+
+/* Papan kecil di kartu pemain: tanpa label, bingkai tipis */
+.ar-board--mini {
+  --board-max: 100%;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto;
+  gap: 0;
+}
+
+.ar-board--mini .ar-board__grid {
+  margin: 2px;
+  box-shadow: 0 0 0 2px var(--ar-ink);
+}
+
+.ar-board--mini .ar-cell::after {
+  display: none;
+}
+
+.ar-board--mini .ar-ship {
+  padding: 2%;
+}
+
+.ar-board--mini .ar-mark__art {
+  width: 80%;
+  height: 80%;
+}
+
+.ar-board--medium {
+  --board-max: 300px;
+}
+
+/* Teks hasil tembakan di atas papan */
+.ar-flash {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: grid;
+  place-content: center;
+  gap: 8px;
+  padding: 12px;
+  text-align: center;
+  pointer-events: none;
+  animation: ar-flash 1.8s steps(12) forwards;
+}
+
+.ar-flash strong {
+  font-family: var(--ar-title);
+  font-size: clamp(1.1rem, 6vw, 2rem);
+  color: var(--ar-text);
+  text-shadow:
+    4px 4px 0 var(--ar-ink),
+    -2px -2px 0 var(--ar-ink);
+}
+
+.ar-flash span {
+  justify-self: center;
+  padding: 2px 8px;
+  font-size: 1.15rem;
+  color: var(--ar-text);
+  background: rgb(13 15 13 / 85%);
+}
+
+.ar-flash--hit strong { color: var(--ar-hit-light); }
+.ar-flash--sunk strong { color: var(--ar-hit-light); }
+.ar-flash--blocked strong { color: var(--ar-sonar); }
+.ar-flash--miss strong { color: var(--ar-text); }
+
+@keyframes ar-flash {
+  0% {
+    opacity: 0;
+    transform: scale(1.6);
+  }
+  12% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.ar-sonar {
+  position: absolute;
+  left: 50%;
+  bottom: 6px;
+  z-index: 4;
+  translate: -50% 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  font-size: 1.1rem;
+  white-space: nowrap;
+  color: var(--ar-ink);
+  background: var(--ar-sonar);
+  box-shadow: 0 0 0 3px var(--ar-ink);
+  pointer-events: none;
+}
+
+.ar-sonar svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* ---------- Waktu ---------- */
+
+.ar-timer {
+  position: relative;
+  width: min(100%, 360px);
+  height: 20px;
+  background: var(--ar-ink);
+  box-shadow: 0 0 0 2px var(--ar-line);
+}
+
+.ar-timer--idle {
+  visibility: hidden;
+}
+
+.ar-timer__bar {
+  position: absolute;
+  inset: 0;
+  background: var(--ar-ok);
+  transform: scaleX(var(--left));
+  transform-origin: left;
+  transition: transform 0.25s linear;
+}
+
+.ar-timer--low .ar-timer__bar {
+  background: var(--ar-danger);
+}
+
+.ar-timer__text {
+  position: relative;
+  display: block;
+  padding-left: 8px;
+  font-size: 1.05rem;
+  line-height: 20px;
+  color: var(--ar-ink);
+  text-shadow: 1px 1px 0 rgb(255 255 255 / 30%);
+}
+
+/* ---------- Homescreen ---------- */
+
+.ar-home {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 24px;
+  padding: 88px clamp(20px, 7vw, 120px) 72px;
+  color: var(--ar-text);
+  background-color: var(--ar-sea);
+  background-image:
+    linear-gradient(var(--ar-ink) 2px, transparent 2px),
+    linear-gradient(90deg, var(--ar-ink) 2px, transparent 2px);
+  background-size: 48px 48px;
+  background-position: -2px -2px;
+}
+
+.ar-home__menu {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 360px);
+  display: grid;
+  gap: 14px;
+}
+
+.ar-logo {
+  display: grid;
+  margin: 0 0 6px;
+  font-family: var(--ar-title);
+  font-size: clamp(1.6rem, 5vw, 2.8rem);
+  line-height: 1.2;
+  color: var(--ar-sonar);
+  text-shadow:
+    4px 4px 0 var(--ar-line),
+    8px 8px 0 var(--ar-ink);
+}
+
+.ar-logo span + span {
+  color: var(--ar-accent);
+  text-shadow:
+    4px 4px 0 var(--ar-hit),
+    8px 8px 0 var(--ar-ink);
+}
+
+.ar-home__tagline {
+  font-size: 1.25rem;
+  line-height: 1.2;
+}
+
+.ar-home__note {
+  font-size: 1rem;
+  color: var(--ar-muted);
+}
+
+.ar-home__stage {
+  justify-self: center;
+  width: min(100%, 440px);
+}
+
+.ar-home__sea {
+  position: relative;
+  aspect-ratio: 4 / 3;
+}
+
+.ar-home__ship {
+  position: absolute;
+  left: 8%;
+  bottom: 26%;
+  width: 84%;
+  height: auto;
+  aspect-ratio: 5;
+  animation: ar-bob 1.4s steps(4) infinite;
+}
+
+.ar-home__waves {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 12%;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 6;
+  animation: ar-waves 1.6s steps(4) infinite alternate;
+}
+
+.ar-home__splash,
+.ar-home__flame {
+  position: absolute;
+  width: 18%;
+  height: auto;
+  aspect-ratio: 1;
+}
+
+.ar-home__splash {
+  left: 2%;
+  top: 8%;
+  animation: ar-bob 1s steps(3) infinite;
+}
+
+.ar-home__flame {
+  right: 12%;
+  top: 18%;
+  animation: ar-bob 0.6s steps(2) infinite;
+}
+
+@keyframes ar-bob {
+  50% {
+    translate: 0 -8px;
+  }
+}
+
+@keyframes ar-waves {
+  to {
+    translate: -16px 0;
+  }
+}
+
+/* ---------- Menu online dan lobi ---------- */
+
+.ar-page {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 24px 16px;
+  color: var(--ar-text);
+  background-color: var(--ar-sea);
+  background-image:
+    linear-gradient(var(--ar-ink) 2px, transparent 2px),
+    linear-gradient(90deg, var(--ar-ink) 2px, transparent 2px);
+  background-size: 48px 48px;
+}
+
+.ar-setup {
+  grid-template-columns: minmax(0, 520px) auto;
+  justify-content: center;
+  gap: 48px;
+}
+
+.ar-setup__card {
+  width: min(100%, 480px);
+  display: grid;
+  gap: 16px;
+  padding: 24px;
+}
+
+.ar-setup__title {
+  font-family: var(--ar-title);
+  font-size: 1rem;
+  line-height: 1.3;
+  color: var(--ar-accent);
+  text-shadow: 3px 3px 0 var(--ar-ink);
+}
+
+.ar-setup__lead {
+  font-size: 1.15rem;
+}
+
+.ar-setup__note {
+  font-size: 1rem;
+  color: var(--ar-muted);
+}
+
+.ar-setup__deco {
+  width: 90px;
+  animation: ar-bob 1.4s steps(4) infinite;
+}
+
+.ar-setup__deco .ar-ship-art {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1 / 4;
+}
+
+.ar-field {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.ar-field input {
+  width: 100%;
+  min-width: 0;
+  padding: 8px 10px;
+}
+
+.ar-field__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.ar-presets {
+  padding: 0;
+  border: 0;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.ar-presets legend {
+  margin-bottom: 6px;
+}
+
+.ar-preset {
+  display: grid;
+  gap: 2px;
+  padding: 8px;
+  text-align: center;
+  background: var(--ar-sea);
+  box-shadow: 0 0 0 2px var(--ar-line);
+  cursor: pointer;
+}
+
+.ar-preset input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.ar-preset strong {
+  font-family: var(--ar-title);
+  font-size: 0.45rem;
+  line-height: 1.6;
+}
+
+.ar-preset span {
+  font-size: 0.95rem;
+  color: var(--ar-muted);
+}
+
+.ar-preset--on {
+  color: var(--ar-ink);
+  background: var(--ar-accent);
+  box-shadow: 0 0 0 2px var(--ar-ink), 0 0 0 4px var(--ar-accent);
+}
+
+.ar-preset--on span {
+  color: var(--ar-ink);
+}
+
+.ar-preset:has(input:focus-visible) {
+  outline: 3px solid var(--ar-text);
+  outline-offset: 3px;
+}
+
+/* ---------- Halaman permainan ---------- */
+
+.ar-game {
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 10px 12px 32px;
+  color: var(--ar-text);
+  background-color: var(--ar-sea);
+  background-image:
+    linear-gradient(rgb(13 15 13 / 70%) 2px, transparent 2px),
+    linear-gradient(90deg, rgb(13 15 13 / 70%) 2px, transparent 2px);
+  background-size: 40px 40px;
+}
+
+.ar-topbar {
+  max-width: 1180px;
+  margin: 0 auto 12px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  padding: 0 4px;
+}
+
+.ar-topbar__title {
+  font-family: var(--ar-title);
+  font-size: 0.8rem;
+  color: var(--ar-accent);
+  text-shadow: 3px 3px 0 var(--ar-ink);
+}
+
+.ar-topbar__room {
+  margin-right: auto;
+  font-family: var(--ar-title);
+  font-size: 0.45rem;
+  line-height: 1.6;
+  color: var(--ar-muted);
+}
+
+.ar-topbar__tools {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ar-layout {
+  max-width: 1180px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+}
+
+@media (min-width: 1000px) {
+  .ar-layout {
+    grid-template-columns: minmax(0, 1fr) 320px;
+    align-items: start;
+  }
+
+  .ar-side {
+    position: sticky;
+    top: 12px;
+  }
+}
+
+.ar-main,
+.ar-side {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.ar-banner {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.ar-banner__round {
+  font-family: var(--ar-title);
+  font-size: 0.45rem;
+  color: var(--ar-muted);
+}
+
+.ar-versus {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 8px 14px;
+  font-family: var(--ar-title);
+  font-size: clamp(0.55rem, 2.4vw, 0.8rem);
+  line-height: 1.5;
+}
+
+.ar-versus__side {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ar-versus__arrow {
+  color: var(--ar-hit);
+}
+
+.ar-versus--rolling .ar-versus__target {
+  color: var(--ar-muted);
+}
+
+.ar-versus__target--me {
+  color: var(--ar-danger);
+  animation: ar-blink 0.5s steps(2) 4;
+}
+
+@keyframes ar-blink {
+  50% {
+    opacity: 0.3;
+  }
+}
+
+.ar-status {
+  min-height: 1.3em;
+  font-size: 1.3rem;
+}
+
+.ar-status--me {
+  font-family: var(--ar-title);
+  font-size: 0.6rem;
+  line-height: 1.6;
+  color: var(--ar-accent);
+}
+
+.ar-focus {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+}
+
+.ar-focus__head {
+  justify-self: stretch;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.ar-focus__head .ar-panel__title {
+  margin: 0 auto 0 0;
+}
+
+.ar-focus__shield {
+  width: 22px;
+  height: 22px;
+}
+
+.ar-focus--shoot {
+  box-shadow:
+    inset calc(var(--px) * -1) calc(var(--px) * -1) 0 var(--ar-panel-dark),
+    0 0 0 var(--px) var(--ar-ink),
+    0 0 0 calc(var(--px) * 2) var(--ar-accent);
+}
+
+/* Skill */
+.ar-skills__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  margin-bottom: 8px;
+}
+
+.ar-skills__head .ar-panel__title {
+  margin: 0;
+}
+
+.ar-skills__sp {
+  font-size: 1.05rem;
+  color: var(--ar-accent);
+}
+
+.ar-skills__list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.ar-skill {
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 2px;
+  padding: 8px 6px;
+  font-family: var(--ar-body);
+  color: var(--ar-text);
+  text-align: center;
+  background: var(--ar-sea);
+  border: 0;
+  box-shadow: 0 0 0 2px var(--ar-line);
+  cursor: pointer;
+}
+
+.ar-skill:hover:not(:disabled) {
+  background: var(--ar-panel-hover);
+  box-shadow: 0 0 0 2px var(--ar-accent);
+}
+
+.ar-skill:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.ar-skill--on {
+  background: #4a4532;
+  box-shadow: 0 0 0 3px var(--ar-accent);
+}
+
+.ar-skill-icon {
+  width: 28px;
+  height: 28px;
+}
+
+.ar-skill__name {
+  font-family: var(--ar-title);
+  font-size: 0.42rem;
+  line-height: 1.6;
+}
+
+.ar-skill__cost {
+  font-size: 1rem;
+  color: var(--ar-accent);
+}
+
+.ar-skill__when {
+  font-size: 0.9rem;
+  line-height: 1;
+  color: var(--ar-muted);
+}
+
+.ar-sp {
+  display: inline-flex;
+  gap: 3px;
+}
+
+.ar-sp__pip {
+  width: 9px;
+  height: 9px;
+  background: var(--ar-ink);
+  box-shadow: inset 0 0 0 2px var(--ar-line);
+}
+
+.ar-sp__pip--on {
+  background: var(--ar-accent);
+  box-shadow: inset -2px -2px 0 var(--ar-accent-dark);
+}
+
+/* Kartu pemain */
+.ar-players__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.ar-card {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  padding: 8px;
+  font-family: var(--ar-body);
+  font-size: 1rem;
+  color: var(--ar-text);
+  text-align: left;
+  background: var(--ar-panel);
+  border: 0;
+  box-shadow: 0 0 0 var(--px) var(--ar-ink);
+  cursor: pointer;
+}
+
+.ar-card:hover {
+  background: var(--ar-panel-hover);
+}
+
+.ar-card:focus-visible {
+  outline: 3px solid var(--ar-text);
+  outline-offset: 4px;
+}
+
+.ar-card--focus {
+  box-shadow: 0 0 0 var(--px) var(--ar-ink), 0 0 0 calc(var(--px) * 2) var(--ar-sonar);
+}
+
+.ar-card--attacker {
+  box-shadow: 0 0 0 var(--px) var(--ar-ink), 0 0 0 calc(var(--px) * 2) var(--ar-accent);
+}
+
+.ar-card--target {
+  box-shadow: 0 0 0 var(--px) var(--ar-ink), 0 0 0 calc(var(--px) * 2) var(--ar-danger);
+}
+
+.ar-card--out {
+  opacity: 0.55;
+}
+
+.ar-card__head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.ar-card__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 1.1rem;
+}
+
+.ar-card--me .ar-card__name {
+  color: var(--ar-accent);
+}
+
+.ar-card__wins {
+  margin-left: auto;
+  color: var(--ar-accent);
+}
+
+.ar-card__stats {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 20px;
+}
+
+.ar-card__dead {
+  color: var(--ar-danger);
+}
+
+.ar-card__shield {
+  width: 18px;
+  height: 18px;
+}
+
+.ar-card__role {
+  position: absolute;
+  top: -10px;
+  right: 6px;
+  padding: 2px 6px;
+  font-family: var(--ar-title);
+  font-size: 0.35rem;
+  line-height: 1.6;
+  color: var(--ar-ink);
+}
+
+.ar-card__role--attacker {
+  background: var(--ar-accent);
+}
+
+.ar-card__role--target {
+  color: var(--ar-text);
+  background: var(--ar-danger);
+}
+
+.ar-card__offline {
+  font-size: 0.9rem;
+  color: var(--ar-hit);
+}
+
+.ar-log {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 2px;
+  font-size: 1rem;
+  color: var(--ar-muted);
+}
+
+.ar-log li:last-child {
+  color: var(--ar-text);
+}
+
+/* ---------- Penempatan kapal ---------- */
+
+.ar-placement {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+
+@media (min-width: 900px) {
+  .ar-placement {
+    grid-template-columns: minmax(0, 1fr) 340px;
+    align-items: start;
+  }
+}
+
+.ar-placement__main {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+}
+
+.ar-placement__head {
+  justify-self: stretch;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ar-placement__head .ar-panel__title {
+  margin: 0;
+}
+
+.ar-placement__side {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.ar-dock__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ar-dock {
+  --cell: 34px;
+  margin: 8px 0 12px;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 12px 16px;
+}
+
+.ar-dock__item {
+  display: grid;
+  justify-items: start;
+  gap: 4px;
+}
+
+.ar-dock__ship {
+  width: calc(var(--cell) * var(--len));
+  height: var(--cell);
+  padding: 2px;
+  background: var(--ar-water);
+  box-shadow: 0 0 0 2px var(--ar-ink);
+  cursor: grab;
+  touch-action: none;
+}
+
+.ar-dock--v .ar-dock__ship {
+  width: var(--cell);
+  height: calc(var(--cell) * var(--len));
+}
+
+.ar-dock__ship:hover .ar-ship-art {
+  filter: brightness(1.15) drop-shadow(0 0 3px var(--ar-accent));
+}
+
+.ar-dock__name {
+  font-size: 0.95rem;
+  color: var(--ar-muted);
+}
+
+.ar-placement__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.ar-ghost {
+  position: fixed;
+  z-index: 50;
+  padding: 2px;
+  pointer-events: none;
+  opacity: 0.9;
+  filter: drop-shadow(4px 6px 0 rgb(13 15 13 / 60%));
+}
+
+.ar-ghost--away {
+  opacity: 0.5;
+}
+
+body:has(.ar-ghost) {
+  cursor: grabbing;
+}
+
+.ar-ready-list {
+  margin: 0 0 8px;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 4px;
+}
+
+.ar-ready-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  font-size: 1.05rem;
+  background: var(--ar-sea);
+}
+
+.ar-ready-list strong {
+  margin-left: auto;
+  font-family: var(--ar-title);
+  font-size: 0.4rem;
+  color: var(--ar-muted);
+}
+
+.ar-ready-list__ok strong {
+  color: var(--ar-ok);
+}
+
+/* ---------- Statistik akhir ---------- */
+
+.ar-stats-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.ar-stats {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 1rem;
+}
+
+.ar-stats th,
+.ar-stats td {
+  padding: 4px 6px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.ar-stats th:nth-child(2),
+.ar-stats td:nth-child(2) {
+  text-align: left;
+}
+
+.ar-stats th {
+  font-weight: normal;
+  color: var(--ar-muted);
+  border-bottom: 2px solid var(--ar-line);
+}
+
+.ar-stats tbody tr:first-child {
+  color: var(--ar-accent);
+}
+
+.ar-stats__me td:nth-child(2) {
+  text-decoration: underline;
+}
+
+/* ---------- Layar sempit ---------- */
+
+@media (max-width: 720px) {
+  .ar-home {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    align-content: start;
+    gap: 8px;
+    padding: 76px 16px 150px;
+    text-align: center;
+  }
+
+  .ar-logo {
+    justify-items: center;
+  }
+
+  .ar-home__stage {
+    order: -1;
+    width: min(100%, 300px);
+  }
+
+  .ar-setup {
+    grid-template-columns: 1fr;
+  }
+
+  .ar-setup__deco {
+    display: none;
+  }
+
+  .ar-presets {
+    grid-template-columns: 1fr;
+  }
+
+  .ar-dock {
+    --cell: 28px;
+  }
+
+  .ar-skill__when {
+    display: none;
+  }
+
+  .ar-players__list {
+    grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+  }
+
+  .ar-board__cols,
+  .ar-board__rows {
+    font-size: 0.38rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-game='armada'] :is(.ar-home__ship, .ar-home__waves, .ar-home__splash, .ar-home__flame, .ar-setup__deco, .ar-cell--last, .ar-versus__target--me) {
+    animation: none;
+  }
+
+  .ar-flash {
+    animation-timing-function: step-end;
+  }
+}

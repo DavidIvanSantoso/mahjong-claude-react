@@ -6,6 +6,7 @@ import './index.css'
 import './uno/uno.css'
 import './capsa/capsa.css'
 import './bomkata/bomkata.css'
+import './armada/armada.css'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
