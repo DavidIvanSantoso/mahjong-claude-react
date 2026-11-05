@@ -529,10 +529,10 @@ p {
 }
 
 /*
- * Layar sempit (≤800px): navbar hanya menampilkan ikon supaya kelima game tidak bertabrakan dengan
+ * Layar sempit (≤900px): navbar hanya menampilkan ikon supaya keenam game tidak bertabrakan dengan
  * tombol di kanan; nama game tetap terbaca pembaca layar dan muncul sebagai tooltip.
  */
-@media (max-width: 800px) {
+@media (max-width: 900px) {
   .game-nav {
     left: 12px;
   }
@@ -555,8 +555,8 @@ p {
   }
 }
 
-/* Ponsel sangat sempit: ikon lebih rapat supaya kelima game tetap muat di samping tombol kanan */
-@media (max-width: 360px) {
+/* Ponsel sempit: ikon lebih kecil dan rapat supaya keenam game tetap muat di samping tombol kanan */
+@media (max-width: 400px) {
   .game-nav {
     gap: 0;
     padding: 4px;
@@ -564,6 +564,17 @@ p {
 
   .game-nav__item {
     padding: 6px;
+  }
+
+  .game-nav__item svg {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+@media (max-width: 360px) {
+  .game-nav__item {
+    padding: 5px;
   }
 }
 

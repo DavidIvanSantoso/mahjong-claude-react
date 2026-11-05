@@ -2,7 +2,7 @@
 
 Game mahjong 2D untuk 2–4 pemain, dibuat dengan React dan TypeScript. Bisa dimainkan bergantian di satu perangkat, atau online lewat room (PeerJS) dengan tiap pemain di perangkatnya sendiri.
 
-Situs yang sama juga memuat game kartu **UNO** (online, 2–6 pemain; [bagian 11](#11-game-uno)) **Capsa** (online, 2–4 pemain; [bagian 12](#12-game-capsa)), **KA-BOOM!** (online, 2–6 pemain; [bagian 13](#13-game-ka-boom)), dan **Armada Royale** (online, 2–6 pemain; [bagian 14](#14-game-armada-royale)). Navbar di pojok kiri atas homescreen dipakai untuk berpindah game.
+Situs yang sama juga memuat game kartu **UNO** (online, 2–6 pemain; [bagian 11](#11-game-uno)) **Capsa** (online, 2–4 pemain; [bagian 12](#12-game-capsa)), **KA-BOOM!** (online, 2–6 pemain; [bagian 13](#13-game-ka-boom)), **Armada Royale** (online, 2–6 pemain; [bagian 14](#14-game-armada-royale)), dan **ASBUN** (online, 4–10 pemain; [bagian 15](#15-game-asbun)). Navbar di pojok kiri atas homescreen dipakai untuk berpindah game.
 
 - Situs: https://davidivansantoso.github.io/mahjong-claude-react/
 - Repo: https://github.com/DavidIvanSantoso/mahjong-claude-react
@@ -23,6 +23,7 @@ Situs yang sama juga memuat game kartu **UNO** (online, 2–6 pemain; [bagian 11
 12. [Game Capsa](#12-game-capsa)
 13. [Game KA-BOOM!](#13-game-ka-boom)
 14. [Game Armada Royale](#14-game-armada-royale)
+15. [Game ASBUN](#15-game-asbun)
 
 ---
 
@@ -80,7 +81,7 @@ src/
     Seat.tsx               Satu kursi: tangan, set terbuka, bunga, buangan
     TileView.tsx           Gambar satu ubin (muka atau telungkup)
     OnlineGame.tsx         Lobi room dan pembungkus meja untuk mode online
-    GameNav.tsx            Navbar pemilih game (Mahjong / UNO / Capsa / KA-BOOM! / Armada) di homescreen
+    GameNav.tsx            Navbar pemilih game (Mahjong / UNO / Capsa / KA-BOOM! / Armada / ASBUN) di homescreen
   net/                     Mode online
     online.ts              Bentuk pesan, kode room, penyaringan state per pemain
     rooms.ts               Kelas HostRoom dan GuestRoom, plus hook React-nya
@@ -88,7 +89,9 @@ src/
   capsa/                   Game Capsa (lihat bagian 12)
   bomkata/                 Game KA-BOOM! (lihat bagian 13)
   armada/                  Game Armada Royale (lihat bagian 14)
+  asbun/                   Game ASBUN (lihat bagian 15)
 public/words/id/           Kamus kata KA-BOOM! (JSON)
+public/asbun/              Kamus pasangan kata ASBUN (JSON)
 .github/workflows/deploy.yml   Build dan deploy otomatis ke GitHub Pages
 vite.config.ts             Konfigurasi Vite (base path relatif)
 ```
@@ -444,6 +447,7 @@ GitHub Pages hanya menyajikan file statis, dan itu cukup: aplikasi ini tidak pun
 - Mahjong adalah permainan tradisional; aturan dan namanya tidak dimiliki pihak mana pun.
 - UNO adalah merek dagang Mattel. Game UNO di sini adalah projek penggemar non-komersial; kartunya digambar dengan CSS, tanpa aset gambar resmi.
 - Armada Royale memakai konsep tembak-tembakan kapal di papan berpetak, permainan kertas-pensil lama yang aturannya tidak dimiliki siapa pun. Nama "Battleship" (merek dagang Hasbro) tidak dipakai. Semua gambarnya pixel art yang digambar di kode (`src/armada/Pixel.tsx`), efek suaranya dibuat dengan Web Audio, dan fontnya (Press Start 2P, VT323; dimuat dari Google Fonts, sama dengan KA-BOOM!) berlisensi SIL Open Font License.
+- ASBUN terinspirasi dari permainan Under Cover (Yanstar Studio OU); kreditnya ditampilkan di tepi kiri layar desktop dan di beranda ASBUN pada layar sempit (`INSPIRED_BY` di `AsbunApp.tsx`). ASBUN memakai mekanik permainan pesta tebak kata dengan peran rahasia (genre *social deduction*). Nama peran, teks, dan kamus pasangan katanya ditulis sendiri untuk projek ini. Fontnya (Cormorant Garamond, DM Sans, Allura; dimuat dari Google Fonts) berlisensi SIL Open Font License. Ikon dan favicon digambar di kode (`src/asbun/Icons.tsx`, `src/assets/asbun-favicon.svg`).
 
 ## 11. Game UNO
 
@@ -783,3 +787,137 @@ src/armada/
 - **Font dan gaya pixel:** sama dengan KA-BOOM! (Press Start 2P dan VT323).
 - **Pixel art:** semua digambar di `Pixel.tsx`. Kapal dibuat prosedural sesuai panjangnya, lalu diputar untuk kapal tegak.
 - **Papan besar:** menampilkan papan target giliran itu. Kartu pemain bisa diketuk untuk melihat papan pemain lain.
+
+## 15. Game ASBUN
+
+*A Game of Deception.* Nama internalnya `asbun` (folder `src/asbun/`, link undangan `?game=asbun&room=KODE`, awalan ID room `asbun-claude-room-`). Dibuat dari brief desain `ASBUN_Game_Design_and_Implementation_Brief.md`, dengan penyesuaian yang dicatat di bawah.
+
+### Ringkasan
+
+Permainan tebak kata dengan peran rahasia untuk 4–10 pemain, online, tiap pemain di perangkatnya sendiri.
+
+- **Warga** mendapat kata Warga.
+- **Penyusup** mendapat kata yang mirip tapi berbeda. Ia tahu dirinya Penyusup, tapi tidak tahu kata Warga.
+- **Si Asbun** tidak mendapat kata dan harus "asal bunyi" dengan meyakinkan. Brief menyebut peran ini *White Man / Mr. White*.
+- **Kategori** pasangan kata (mis. Hewan) diumumkan ke semua pemain sejak berkas dibuka, termasuk Si Asbun, supaya petunjuk lebih terarah. Kategori tampil di berkas pribadi dan di kepala fase.
+
+### Alur (`src/asbun/state.ts`)
+
+1. **Lobi** (`net.ts`, saat `game === null`):
+   - Tamu menekan "Saya siap". Host dianggap selalu siap.
+   - Host mengatur jumlah pemain maksimal, pembagian peran, kategori, tingkat kesulitan, serta waktu petunjuk, diskusi, dan voting.
+   - Host baru bisa mulai kalau ada minimal 4 pemain dan semua tamu siap.
+2. **`reveal`**:
+   - Tiap pemain membuka berkasnya sendiri, lalu menekan "Saya mengerti".
+   - Lanjut setelah semua pemain yang tersambung mengerti, atau setelah 25 detik.
+3. **`clue`**:
+   - Pemain aktif bergiliran memberi satu petunjuk (maks. 30 karakter).
+   - Si Asbun tidak pernah membuka putaran pertama. Ronde berikutnya dimulai dari pemain aktif sesudah pembuka ronde sebelumnya.
+   - Petunjuk ditolak kalau berisi kata milik pemain itu sendiri, setelah normalisasi. Petunjuk tidak dicek terhadap kata Warga, karena penolakannya akan membocorkan kata itu ke Penyusup.
+   - Kalau waktu habis, petunjuk dicatat kosong.
+4. **`discussion`** (bawaan 30 detik):
+   - Countdown berjalan, dan host bisa langsung membuka voting.
+   - Pemain aktif bisa mengirim reaksi emoji (`REACTIONS` di `state.ts`): 🤔 👀 🤨 🤫 😏 😂 😱 👍 👎 🙏.
+   - Reaksi terlihat semua pemain, di umpan reaksi panel diskusi dan sebagai gelembung di samping nama pengirim.
+   - Host membatasi satu reaksi per 0,8 detik per pemain (`REACTION_COOLDOWN_MS`) dan menyimpan 24 reaksi terakhir per ronde.
+   - Pemain yang sudah tereliminasi hanya bisa melihat, supaya tidak memberi kode.
+   - Tidak ada chat teks. Diskusi lebih lanjut lewat suara atau tatap muka.
+5. **`voting`**:
+   - Rahasia dan bersamaan. Pemain tidak bisa memilih diri sendiri, dan hanya bisa memilih satu kali.
+   - Pilihan bisa diganti sampai menekan "Kunci suara".
+   - Pemain yang belum bisa menentukan bisa memilih **skip vote** (`SKIP_VOTE`). Skip dihitung seperti satu pilihan tersendiri.
+   - Voting ditutup setelah semua pemain aktif yang tersambung memilih, atau waktu habis.
+6. **`elimination`**:
+   - Pemain dengan suara terbanyak dieliminasi kalau tidak seri dengan pemain lain dan suaranya lebih banyak dari skip. Hanya perannya yang dibuka, bukan katanya.
+   - Kalau skip mendapat suara terbanyak, seri (termasuk seri dengan skip), atau tidak ada suara, tidak ada yang keluar dan ronde baru dimulai.
+7. **`guess`**:
+   - Si Asbun yang tereliminasi mendapat satu tebakan kata Warga dalam 40 detik.
+   - Pencocokan memakai `sameWord`: huruf besar/kecil, spasi, tanda hubung, dan diakritik diabaikan. Sinonim tidak diterima.
+8. **`over`**: semua peran, kedua kata, dan kronologi dibuka. Host bisa "Main lagi" atau "Kembali ke lobi".
+
+### Aturan menang (`checkVictory`, dicek setelah tiap eliminasi)
+
+1. **Si Asbun** langsung menang sendiri kalau tebakannya tepat. Ini dicek lebih dulu, di `resolveGuess`.
+2. **Penyusup** menang kalau jumlah Penyusup aktif ≥ jumlah pemain aktif lain (Warga + Si Asbun).
+3. **Warga** menang kalau semua Penyusup dan Si Asbun sudah keluar.
+4. **Si Asbun bertahan.** Kalau Penyusup sudah habis dan tinggal dua pemain dengan Si Asbun di antaranya, Si Asbun menang.
+   - Aturan ini tambahan dari pemilik projek, karena dalam kasus itu voting selalu seri dan permainan akan macet.
+
+### Pembagian peran (`roles.ts`)
+
+| Pemain | Standar (W/P/A) | Banyak Penyusup (W/P/A) |
+|---|---|---|
+| 4 | 2/1/1 | 2/1/1 |
+| 5 | 3/1/1 | 2/2/1 |
+| 6 | 4/1/1 | 3/2/1 |
+| 7 | 4/2/1 | 3/3/1 |
+| 8 | 5/2/1 | 4/3/1 |
+| 9 | 6/2/1 | 5/3/1 |
+| 10 | 6/2/2 | 5/3/2 |
+
+`roleSplit` menolak pembagian yang tidak sah. Syaratnya:
+- Tiap peran minimal satu.
+- Jumlahnya harus sama dengan jumlah pemain.
+- Penyusup harus kalah jumlah di awal.
+
+### Kamus pasangan kata (`public/asbun/word-pairs.json`)
+
+- Dimuat host saja.
+- Formatnya `{ version, locale, categories, pairs: [{ category, difficulty, warga, penyusup, tags? }] }`, dengan satu pasangan per baris.
+- Isinya 157 pasangan bahasa Indonesia dalam 9 kategori (Makanan & Minuman, Hewan, Tempat, Teknologi, Alam, Profesi, Benda, Olahraga, Hiburan) dan 3 tingkat kesulitan. Ini contoh awal, bukan daftar lengkap.
+- `selectPair` mencocokkan kategori dan kesulitan. Kalau tidak ada yang cocok, syaratnya dilonggarkan.
+- Pasangan yang sudah dipakai di room itu diutamakan tidak keluar lagi.
+- Kata mana yang jadi kata Warga diacak, jadi satu pasangan bisa dimainkan dua arah.
+
+### Privasi (`viewFor`)
+
+Host memegang semua peran dan kata. Setiap tamu hanya menerima:
+- peran dan kata miliknya sendiri;
+- kategori pasangan kata (terbuka untuk semua pemain);
+- peran pemain lain setelah pemain itu tereliminasi;
+- siapa saja yang sudah memilih, tapi bukan pilihannya;
+- jumlah suara setelah voting ditutup;
+- kedua kata hanya setelah permainan selesai.
+
+Teks tebakan Si Asbun yang salah juga disembunyikan dari pemain lain sampai permainan selesai, karena tebakan itu bisa saja kata Penyusup. Pesan penolakan petunjuk hanya dikirim ke pemain yang bersangkutan.
+
+### Penyesuaian dari brief
+
+- **Protokol:** brief mengusulkan event bertipe (`SUBMIT_CLUE`, `VOTING_RESULT`, dll.). ASBUN memakai pola yang sama dengan game lain:
+  - Tamu mengirim aksi, host memvalidasi lewat reducer, lalu host mengirim snapshot `viewFor` per kursi.
+  - Setiap aksi membawa `round` dan `phase`, jadi pesan basi atau salah fase ditolak.
+- **Identitas:** pemain dikenali dari nomor kursi, yang tetap selama permainan. Sambung ulang memakai token di `sessionStorage`. Setelah refresh, pemain menekan Gabung lagi dan kembali ke kursi serta perannya.
+- **Token warna:** brief memakai `--color-*`. Di sini diberi awalan `--as-*` supaya tidak bertabrakan dengan game lain.
+- **Bahasa:** UI dan nama peran berbahasa Indonesia. Tagline "A Game of Deception" tetap.
+- **Unit test:** tidak ditambahkan ke repo, sesuai keputusan pemilik projek. Logika diuji dengan simulasi di luar repo (3.000 permainan) dan tes 5 pemain di browser.
+- **Chat diskusi:** v1 memakai reaksi emoji, bukan chat teks. Diskusi lebih lanjut lewat suara atau tatap muka.
+
+### Batasan
+
+- **Host tepercaya.** Host secara teknis bisa mengintip semua peran dan kata lewat DevTools, dan bisa curang. Game ini tidak anti-curang. Itu baru mungkin dengan server tepercaya atau protokol kriptografi.
+- **Host keluar = room selesai.** Tidak ada perpindahan host. Tamu melihat pesan "Koneksi ke host terputus" dan harus membuat room baru.
+- **Pemain yang terputus:**
+  - Kursinya ditahan.
+  - Saat gilirannya memberi petunjuk atau menebak, ia dilewati setelah 6 detik.
+  - Voting tidak menunggu suaranya.
+- **Kursi pemain terputus dihapus** saat host menekan "Main lagi" atau "Kembali ke lobi".
+
+### Struktur folder
+
+```
+src/asbun/
+  roles.ts            Peran, preset pembagian peran, validasi, pembagian acak
+  words.ts            Memuat kamus, normalisasi kata, cek petunjuk, pilih pasangan kata
+  state.ts            State machine, reducer, checkVictory, viewFor (privasi)
+  net.ts              HostRoom/GuestRoom PeerJS, lobi (siap, pengaturan), pewaktu, hook React
+  AsbunApp.tsx        Layar-layar, buat/gabung room, tema (font, ikon tab)
+  AsbunHome.tsx       Homescreen bergaya berkas kasus
+  AsbunLobby.tsx      Ruang tunggu: tersangka, status siap/koneksi, pengaturan host
+  AsbunTable.tsx      Halaman permainan: fase, countdown, panel sesuai fase
+  AsbunPanels.tsx     Berkas pribadi, daftar tersangka, catatan petunjuk, voting, tebakan
+  AsbunResults.tsx    Putusan akhir: pemenang, identitas, kedua kata, kronologi
+  AsbunDialogs.tsx    Cara bermain dan konfirmasi keluar
+  Icons.tsx           Ikon garis SVG
+  asbun.css           Semua gaya ASBUN, termasuk token warna
+public/asbun/word-pairs.json
+```
