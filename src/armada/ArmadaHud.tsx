@@ -3,7 +3,7 @@ import { Board } from './Board'
 import { PRESETS } from './grid'
 import { PixelFlag, SkillIcon } from './Pixel'
 import { sfx } from './sfx'
-import { SKILL_CONFIG, SKILL_ORDER, SKILLS, type SkillId } from './skills'
+import { MINE_CONFIG, SKILL_CONFIG, SKILL_ORDER, SKILLS, type SkillId } from './skills'
 import { aliveSeats, type ArmadaView, type PlayerAction, type PlayerView } from './state'
 
 /** Lama animasi undian target (sedikit lebih pendek dari TARGET_MS di host). */
@@ -106,7 +106,7 @@ export function PlayerCard({ view, seat, me, offline, wins, focused, onSelect }:
           </span>
           {wins > 0 && <span className="ar-card__wins">★{wins}</span>}
         </span>
-        <Board variant="mini" size={size} label={`Papan ${player.name}`} shots={player.shots} ships={visibleShips(player)} />
+        <Board variant="mini" size={size} label={`Papan ${player.name}`} shots={player.shots} ships={visibleShips(player)} mines={player.mines ?? []} />
         <span className="ar-card__stats">
           {player.alive ? (
             <span>
@@ -115,7 +115,11 @@ export function PlayerCard({ view, seat, me, offline, wins, focused, onSelect }:
           ) : (
             <span className="ar-card__dead">☠ GUGUR</span>
           )}
-          {player.shield && <SkillIcon skill="shield" className="ar-card__shield" />}
+          {player.alive && (player.mines?.length ?? 0) > 0 && (
+            <span className="ar-card__mines" title="Ranjau aktif (hanya kamu yang melihat)">
+              <SkillIcon skill="mine" className="ar-card__mine" />×{player.mines!.length}
+            </span>
+          )}
         </span>
         {player.alive && <SpPips sp={player.sp} />}
         {role && <span className={`ar-card__role ar-card__role--${role}`}>{role === 'attacker' ? 'MENYERANG' : 'TARGET'}</span>}
@@ -125,29 +129,37 @@ export function PlayerCard({ view, seat, me, offline, wins, focused, onSelect }:
   )
 }
 
+/** Skill yang butuh memilih sel dulu: Sonar (papan target) atau Ranjau (papan sendiri). */
+export type PickMode = 'sonar' | 'mine' | null
+
 interface SkillPanelProps {
   view: ArmadaView
   me: number
-  sonarMode: boolean
-  onSonarMode: (on: boolean) => void
+  pick: PickMode
+  onPick: (mode: PickMode) => void
   send: (action: PlayerAction) => void
 }
 
-export function SkillPanel({ view, me, sonarMode, onSonarMode, send }: SkillPanelProps) {
+/** Sel papan sendiri yang boleh diberi ranjau: belum ditembak, bukan kapal, belum ada ranjau. */
+export function canArm(player: PlayerView, cell: number): boolean {
+  return player.shots[cell] === null && !player.mines?.includes(cell) && !player.fleet?.some((ship) => ship.cells.includes(cell))
+}
+
+export function SkillPanel({ view, me, pick, onPick, send }: SkillPanelProps) {
   const player = view.players[me]
   const myAim = view.phase === 'aim' && view.attacker === me
   const active = ['start', 'target', 'aim', 'result'].includes(view.phase)
 
   function usable(skill: SkillId): boolean {
     if (!player.alive || player.sp < SKILLS[skill].cost) return false
-    if (skill === 'shield') return active && !player.shield
+    if (skill === 'mine') return active && (player.mines?.length ?? 0) < MINE_CONFIG.limit && player.shots.some((_, cell) => canArm(player, cell))
     if (skill === 'sonar') return myAim && !view.sonarUsed
     return myAim && view.fired === 0 && !view.doubleUsed
   }
 
   function use(skill: SkillId) {
-    if (skill === 'sonar') {
-      onSonarMode(!sonarMode)
+    if (skill === 'sonar' || skill === 'mine') {
+      onPick(pick === skill ? null : skill)
       return
     }
     sfx.skill()
@@ -164,20 +176,23 @@ export function SkillPanel({ view, me, sonarMode, onSonarMode, send }: SkillPane
       <div className="ar-skills__list">
         {SKILL_ORDER.map((id) => {
           const skill = SKILLS[id]
-          const on = (id === 'sonar' && sonarMode) || (id === 'shield' && player.shield) || (id === 'double' && view.doubleUsed && myAim)
+          const on = pick === id || (id === 'double' && view.doubleUsed && myAim)
+          const picking = pick === id
           return (
             <button
               key={id}
               type="button"
               className={`ar-skill ${on ? 'ar-skill--on' : ''}`}
-              disabled={!usable(id) && !(id === 'sonar' && sonarMode)}
+              disabled={!usable(id) && !picking}
               onClick={() => use(id)}
               title={`${skill.description} (${skill.when})`}
             >
               <SkillIcon skill={id} />
               <span className="ar-skill__name">{skill.name}</span>
               <span className="ar-skill__cost">{skill.cost} SP</span>
-              <span className="ar-skill__when">{id === 'sonar' && sonarMode ? 'Pilih pusat area' : skill.when}</span>
+              <span className="ar-skill__when">
+                {picking ? (id === 'sonar' ? 'Pilih pusat area' : 'Pilih sel kosong') : id === 'mine' ? `${skill.when} · ${player.mines?.length ?? 0}/${MINE_CONFIG.limit} aktif` : skill.when}
+              </span>
             </button>
           )
         })}

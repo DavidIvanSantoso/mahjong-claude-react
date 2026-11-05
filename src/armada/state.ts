@@ -1,9 +1,18 @@
 import { areaCells, fleetCells, pickTarget, PRESETS, shuffled, type Cell, type Placement, type PresetId } from './grid'
-import { SKILL_CONFIG, SKILLS, type SkillId } from './skills'
+import { MINE_CONFIG, SKILL_CONFIG, SKILLS, type SkillId } from './skills'
 
-export type Shot = 'miss' | 'hit'
-/** Hasil satu tembakan; `blocked` berarti ditahan Perisai dan tidak dicatat di papan. */
-export type Result = 'miss' | 'hit' | 'sunk' | 'blocked'
+/** Tanda di papan; `mine` = ranjau yang sudah meledak (terlihat semua pemain). */
+export type Shot = 'miss' | 'hit' | 'mine'
+/** Hasil satu tembakan; `mine` berarti mengenai ranjau dan memicu serangan balik ke papan penyerang. */
+export type Result = 'miss' | 'hit' | 'sunk' | 'mine'
+
+/** Satu serangan acak dari ledakan ranjau, di papan penyerang. */
+export interface Blast {
+  cell: Cell
+  result: 'miss' | 'hit' | 'sunk'
+  /** Nama kapal, hanya kalau tenggelam. */
+  ship?: string
+}
 
 export interface Ship extends Placement {
   name: string
@@ -36,7 +45,8 @@ export interface Player {
   /** Urutan gugur (1 = pertama gugur); null selama masih hidup. */
   out: number | null
   sp: number
-  shield: boolean
+  /** PRIVAT: sel ranjau yang masih aktif di papan ini (lihat viewFor). */
+  mines: Cell[]
   lastTarget: number | null
   stats: Stats
 }
@@ -60,6 +70,10 @@ export interface LastShot {
   ship?: string
   /** Target gugur oleh tembakan ini. */
   out?: boolean
+  /** Hanya untuk `mine`: serangan balik di papan penyerang. */
+  blasts?: Blast[]
+  /** Penyerang gugur oleh ledakan ranjau. */
+  selfOut?: boolean
 }
 
 /**
@@ -98,7 +112,8 @@ export interface ArmadaState {
 /** Aksi dari pemain; host menambahkan `by` (kursi pengirim) sebelum dijalankan. */
 export type PlayerAction =
   | { type: 'ready'; fleet: Placement[] | null }
-  | { type: 'fire'; cell: Cell }
+  /** `roll` diisi host (angka acak 0–1) untuk ledakan ranjau; isian dari tamu ditimpa. */
+  | { type: 'fire'; cell: Cell; roll?: number }
   | { type: 'skill'; skill: SkillId; center?: Cell }
 
 export type Action =
@@ -130,7 +145,7 @@ export function newGame(names: string[], preset: PresetId): ArmadaState {
       alive: true,
       out: null,
       sp: SKILL_CONFIG.start,
-      shield: false,
+      mines: [],
       lastTarget: null,
       stats: emptyStats(),
     })),
@@ -190,7 +205,58 @@ export function planTurn(s: ArmadaState, rand: () => number = Math.random): Acti
   return { type: 'turn', order, turn, target: pickTarget(attacker, alive, s.players[attacker].lastTarget, rand) }
 }
 
-function fire(s: ArmadaState, cell: Cell): boolean {
+/** PRNG kecil (mulberry32): ledakan ranjau ditentukan dari satu angka acak dari host. */
+function seeded(seed: number): () => number {
+  let a = Math.floor(seed * 2 ** 32) >>> 0
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0
+    let t = a
+    t = Math.imul(t ^ (t >>> 15), t | 1)
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
+    return ((t ^ (t >>> 14)) >>> 0) / 2 ** 32
+  }
+}
+
+/** Menandai sel kapal yang kena di papan `victim`; mengembalikan kapal itu kalau tenggelam. */
+function strikeShip(s: ArmadaState, victim: Player, cell: Cell): Ship | null {
+  const ship = victim.fleet.find((candidate) => candidate.cells.includes(cell))!
+  victim.shots[cell] = 'hit'
+  victim.stats.damage++
+  gainSp(victim, SKILL_CONFIG.hit)
+  ship.sunk = ship.cells.every((c) => victim.shots[c] === 'hit')
+  if (!ship.sunk) return null
+  gainSp(victim, SKILL_CONFIG.sunk)
+  victim.alive = victim.fleet.some((other) => !other.sunk)
+  if (!victim.alive) {
+    victim.out = s.players.filter((player) => player.out !== null).length + 1
+    victim.mines = []
+  }
+  return ship
+}
+
+/**
+ * Ranjau meledak: `MINE_CONFIG.blasts` sel acak yang belum ditembak di papan penyerang diserang.
+ * Ranjau milik penyerang sendiri tidak ikut dipilih (tidak ada ledakan berantai).
+ */
+function detonate(s: ArmadaState, owner: Player, shooter: Player, roll: number): Blast[] {
+  const free = shooter.shots.flatMap((shot, c) => (shot === null && !shooter.mines.includes(c) ? [c] : []))
+  const blasts: Blast[] = []
+  for (const c of shuffled(free, seeded(roll)).slice(0, MINE_CONFIG.blasts)) {
+    if (!shooter.alive) break
+    if (!shooter.fleet.some((ship) => ship.cells.includes(c))) {
+      shooter.shots[c] = 'miss'
+      blasts.push({ cell: c, result: 'miss' })
+      continue
+    }
+    owner.stats.hits++
+    const sunk = strikeShip(s, shooter, c)
+    if (sunk) owner.stats.sunk++
+    blasts.push(sunk ? { cell: c, result: 'sunk', ship: sunk.name } : { cell: c, result: 'hit' })
+  }
+  return blasts
+}
+
+function fire(s: ArmadaState, cell: Cell, roll: number): boolean {
   const by = s.attacker
   const target = s.target
   if (by === null || target === null) return false
@@ -204,38 +270,34 @@ function fire(s: ArmadaState, cell: Cell): boolean {
   gainSp(victim, SKILL_CONFIG.target)
   const seq = (s.last?.seq ?? 0) + 1
 
-  if (victim.shield) {
-    victim.shield = false
-    s.last = { seq, by, target, cell, result: 'blocked' }
-    log(s, `${shooter.name} ➜ ${victim.name}: ditahan Perisai!`)
+  if (victim.mines.includes(cell)) {
+    victim.mines = victim.mines.filter((c) => c !== cell)
+    victim.shots[cell] = 'mine'
+    shooter.stats.misses++
+    // Ledakan ranjau mengakhiri giliran, termasuk sisa Tembakan Ganda.
+    s.shotsLeft = 0
+    const blasts = detonate(s, victim, shooter, roll)
+    s.last = { seq, by, target, cell, result: 'mine', blasts, selfOut: !shooter.alive }
+    const hits = blasts.filter((blast) => blast.result !== 'miss').length
+    log(s, `${shooter.name} kena RANJAU ${victim.name}! ${blasts.length} serangan balik, ${hits} kena.`)
+    for (const blast of blasts) if (blast.ship) log(s, `${blast.ship} milik ${shooter.name} tenggelam oleh ranjau!`)
+    if (!shooter.alive) log(s, `${shooter.name} gugur!`)
+  } else if (!victim.fleet.some((ship) => ship.cells.includes(cell))) {
+    victim.shots[cell] = 'miss'
+    shooter.stats.misses++
+    s.last = { seq, by, target, cell, result: 'miss' }
+    log(s, `${shooter.name} ➜ ${victim.name}: meleset.`)
   } else {
-    const ship = victim.fleet.find((candidate) => candidate.cells.includes(cell))
+    shooter.stats.hits++
+    const ship = strikeShip(s, victim, cell)
     if (!ship) {
-      victim.shots[cell] = 'miss'
-      shooter.stats.misses++
-      s.last = { seq, by, target, cell, result: 'miss' }
-      log(s, `${shooter.name} ➜ ${victim.name}: meleset.`)
+      s.last = { seq, by, target, cell, result: 'hit' }
+      log(s, `${shooter.name} ➜ ${victim.name}: KENA!`)
     } else {
-      victim.shots[cell] = 'hit'
-      shooter.stats.hits++
-      victim.stats.damage++
-      gainSp(victim, SKILL_CONFIG.hit)
-      ship.sunk = ship.cells.every((c) => victim.shots[c] === 'hit')
-      if (!ship.sunk) {
-        s.last = { seq, by, target, cell, result: 'hit' }
-        log(s, `${shooter.name} ➜ ${victim.name}: KENA!`)
-      } else {
-        shooter.stats.sunk++
-        gainSp(victim, SKILL_CONFIG.sunk)
-        victim.alive = victim.fleet.some((other) => !other.sunk)
-        s.last = { seq, by, target, cell, result: 'sunk', ship: ship.name, out: !victim.alive }
-        log(s, `${shooter.name} menenggelamkan ${ship.name} milik ${victim.name}!`)
-        if (!victim.alive) {
-          victim.out = s.players.filter((player) => player.out !== null).length + 1
-          victim.shield = false
-          log(s, `${victim.name} gugur!`)
-        }
-      }
+      shooter.stats.sunk++
+      s.last = { seq, by, target, cell, result: 'sunk', ship: ship.name, out: !victim.alive }
+      log(s, `${shooter.name} menenggelamkan ${ship.name} milik ${victim.name}!`)
+      if (!victim.alive) log(s, `${victim.name} gugur!`)
     }
   }
 
@@ -244,7 +306,7 @@ function fire(s: ArmadaState, cell: Cell): boolean {
     s.phase = 'over'
     s.winner = alive[0] ?? null
     if (s.winner !== null) log(s, `${s.players[s.winner].name} menang!`)
-  } else if (s.shotsLeft <= 0 || !victim.alive) s.phase = 'result'
+  } else if (s.shotsLeft <= 0 || !victim.alive || !shooter.alive) s.phase = 'result'
   return true
 }
 
@@ -253,11 +315,16 @@ function useSkill(s: ArmadaState, by: number, skill: SkillId, center: unknown): 
   if (!player?.alive || player.sp < SKILLS[skill].cost) return false
   const myAim = s.phase === 'aim' && s.attacker === by
   switch (skill) {
-    case 'shield':
-      if (player.shield || !['start', 'target', 'aim', 'result'].includes(s.phase)) return false
-      player.shield = true
-      log(s, `${player.name} memasang Perisai.`)
+    case 'mine': {
+      if (!['start', 'target', 'aim', 'result'].includes(s.phase) || player.mines.length >= MINE_CONFIG.limit) return false
+      // Hanya di sel kosong papan sendiri: belum ditembak, bukan kapal, belum ada ranjau.
+      const cell = center
+      if (typeof cell !== 'number' || !Number.isInteger(cell) || cell < 0 || cell >= player.shots.length) return false
+      if (player.shots[cell] !== null || player.mines.includes(cell) || player.fleet.some((ship) => ship.cells.includes(cell))) return false
+      player.mines = [...player.mines, cell]
+      log(s, `${player.name} memasang Ranjau.`)
       break
+    }
     case 'sonar': {
       const target = s.target
       if (!myAim || s.sonarUsed || target === null) return false
@@ -340,7 +407,7 @@ export function reducer(state: ArmadaState, action: Action): ArmadaState {
       s.phase = 'aim'
       return s
     case 'fire':
-      if (s.phase !== 'aim' || s.attacker !== action.by || !fire(s, action.cell)) return state
+      if (s.phase !== 'aim' || s.attacker !== action.by || !fire(s, action.cell, action.roll ?? Math.random())) return state
       return s
     case 'skill':
       return useSkill(s, action.by, action.skill, action.center) ? s : state
@@ -349,9 +416,11 @@ export function reducer(state: ArmadaState, action: Action): ArmadaState {
   }
 }
 
-export interface PlayerView extends Omit<Player, 'fleet' | 'lastTarget'> {
+export interface PlayerView extends Omit<Player, 'fleet' | 'mines' | 'lastTarget'> {
   /** Armada lengkap: hanya milik sendiri, atau semua pemain setelah permainan selesai. */
   fleet: Ship[] | null
+  /** Ranjau aktif: seperti armada, hanya milik sendiri atau semua setelah permainan selesai. */
+  mines: Cell[] | null
   /** Kapal yang sudah tenggelam; posisinya boleh diketahui semua pemain. */
   sunk: Ship[]
   afloat: number
@@ -362,16 +431,17 @@ export interface ArmadaView extends Omit<ArmadaState, 'players'> {
 }
 
 /**
- * State yang dikirim ke kursi `seat`. Posisi kapal lawan yang belum tenggelam dan hasil Sonar
- * pemain lain tidak pernah ikut terkirim.
+ * State yang dikirim ke kursi `seat`. Posisi kapal lawan yang belum tenggelam, ranjau lawan, dan
+ * hasil Sonar pemain lain tidak pernah ikut terkirim.
  */
 export function viewFor(s: ArmadaState, seat: number): ArmadaView {
   const reveal = s.phase === 'over'
   return {
     ...s,
-    players: s.players.map(({ fleet, lastTarget: _lastTarget, ...player }, i) => ({
+    players: s.players.map(({ fleet, mines, lastTarget: _lastTarget, ...player }, i) => ({
       ...player,
       fleet: i === seat || reveal ? fleet : null,
+      mines: i === seat || reveal ? mines : null,
       sunk: fleet.filter((ship) => ship.sunk),
       afloat: fleet.filter((ship) => !ship.sunk).length,
     })),

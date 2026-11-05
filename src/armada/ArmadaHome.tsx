@@ -44,7 +44,7 @@ export function ArmadaHome({ nav, onOnline, onGuide }: { nav: ReactNode; onOnlin
           CARA MAIN
         </button>
         <p className="ar-home__note">
-          {MIN_PLAYERS}–{MAX_PLAYERS} pemain · target diundi · skill Perisai, Sonar, Tembakan Ganda
+          {MIN_PLAYERS}–{MAX_PLAYERS} pemain · target diundi · skill Ranjau, Sonar, Tembakan Ganda
         </p>
       </div>
 

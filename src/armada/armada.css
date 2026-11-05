@@ -490,6 +490,30 @@
   opacity: 0.8;
 }
 
+/* Ranjau aktif (hanya terlihat pemiliknya) dan ranjau yang sudah meledak */
+.ar-mark--armed .ar-mark__art {
+  width: 58%;
+  height: 58%;
+  opacity: 0.9;
+}
+
+.ar-mark--mine .ar-mark__art {
+  width: 78%;
+  height: 78%;
+}
+
+.ar-cell--blast {
+  background-image: linear-gradient(rgb(166 61 50 / 35%), rgb(166 61 50 / 35%));
+}
+
+.ar-focus--mine .ar-cell--open {
+  cursor: copy;
+}
+
+.ar-focus--mine .ar-cell--open:hover {
+  box-shadow: inset 0 0 0 3px var(--ar-hit-light);
+}
+
 .ar-board--locked .ar-board__grid {
   box-shadow: 0 0 0 var(--px) var(--ar-ink), 0 0 0 calc(var(--px) * 2) var(--ar-ok);
 }
@@ -557,7 +581,8 @@
 
 .ar-flash--hit strong { color: var(--ar-hit-light); }
 .ar-flash--sunk strong { color: var(--ar-hit-light); }
-.ar-flash--blocked strong { color: var(--ar-sonar); }
+.ar-flash--mine { animation-duration: 3.4s; }
+.ar-flash--mine strong { color: var(--ar-accent); }
 .ar-flash--miss strong { color: var(--ar-text); }
 
 @keyframes ar-flash {
@@ -1047,11 +1072,6 @@
   margin: 0 auto 0 0;
 }
 
-.ar-focus__shield {
-  width: 22px;
-  height: 22px;
-}
-
 .ar-focus--shoot {
   box-shadow:
     inset calc(var(--px) * -1) calc(var(--px) * -1) 0 var(--ar-panel-dark),
@@ -1240,9 +1260,15 @@
   color: var(--ar-danger);
 }
 
-.ar-card__shield {
-  width: 18px;
-  height: 18px;
+.ar-card__mines {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.ar-card__mine {
+  width: 16px;
+  height: 16px;
 }
 
 .ar-card__role {

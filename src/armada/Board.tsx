@@ -1,6 +1,6 @@
 import type { CSSProperties, PointerEvent as ReactPointerEvent, ReactNode, Ref } from 'react'
 import { cellLabel, type Cell, type Dir } from './grid'
-import { PixelFlame, PixelSplash, ShipArt } from './Pixel'
+import { PixelBoom, PixelFlame, PixelMine, PixelSplash, ShipArt } from './Pixel'
 import type { Shot } from './state'
 
 export interface BoardShip {
@@ -17,6 +17,10 @@ interface BoardProps {
   label: string
   shots?: (Shot | null)[]
   ships?: BoardShip[]
+  /** Ranjau aktif yang boleh dilihat (milik sendiri). */
+  mines?: Cell[]
+  /** Kata kerja untuk label sel yang bisa diklik, mis. "Tembak" atau "Pasang ranjau di". */
+  cellAction?: string
   /** Kelas tambahan per sel, mis. pratinjau penempatan atau area Sonar. */
   marks?: Map<Cell, string>
   /** Sel yang bisa diklik (mis. sel yang belum ditembak saat giliranmu). */
@@ -51,6 +55,8 @@ export function Board({
   label,
   shots,
   ships = [],
+  mines = [],
+  cellAction = 'Tembak',
   marks,
   canClick,
   onCell,
@@ -85,7 +91,7 @@ export function Board({
           const classes = ['ar-cell', shot && `ar-cell--${shot}`, marks?.get(cell)].filter(Boolean).join(' ')
           const clickable = Boolean(onCell && canClick?.(cell))
           return clickable ? (
-            <button key={cell} type="button" className={`${classes} ar-cell--open`} aria-label={`Tembak ${cellLabel(cell, size)}`} onClick={() => onCell?.(cell)} />
+            <button key={cell} type="button" className={`${classes} ar-cell--open`} aria-label={`${cellAction} ${cellLabel(cell, size)}`} onClick={() => onCell?.(cell)} />
           ) : (
             <div key={cell} className={classes} />
           )
@@ -102,16 +108,31 @@ export function Board({
             </div>
           ))}
         </div>
-        {shots && (
+        {(shots || mines.length > 0) && (
           <div className="ar-board__marks" aria-hidden="true">
+            {mines.map((cell) => (
+              <span
+                key={`mine-${cell}`}
+                className="ar-mark ar-mark--armed"
+                style={{ left: `${((cell % size) / size) * 100}%`, top: `${(Math.floor(cell / size) / size) * 100}%` }}
+              >
+                <PixelMine className="ar-mark__art" />
+              </span>
+            ))}
             {cells.map((cell) =>
-              shots[cell] ? (
+              shots?.[cell] ? (
                 <span
                   key={cell}
-                  className={`ar-mark ar-mark--${shots[cell]}`}
+                  className={`ar-mark ar-mark--${shots?.[cell]}`}
                   style={{ left: `${((cell % size) / size) * 100}%`, top: `${(Math.floor(cell / size) / size) * 100}%` }}
                 >
-                  {shots[cell] === 'hit' ? <PixelFlame className="ar-mark__art" /> : <PixelSplash className="ar-mark__art" />}
+                  {shots?.[cell] === 'hit' ? (
+                    <PixelFlame className="ar-mark__art" />
+                  ) : shots?.[cell] === 'mine' ? (
+                    <PixelBoom className="ar-mark__art" />
+                  ) : (
+                    <PixelSplash className="ar-mark__art" />
+                  )}
                 </span>
               ) : null,
             )}

@@ -19,6 +19,8 @@ const START_MS = 1500
 const TARGET_MS = 1800
 /** Lama hasil tembakan ditampilkan sebelum giliran berikutnya. */
 const RESULT_MS = 1800
+/** Ledakan ranjau (3 serangan balik) butuh waktu tampil lebih lama. */
+const MINE_RESULT_MS = 3600
 
 export interface ArmadaLobby {
   /** `wins`: jumlah permainan yang dimenangkan selama room ini dibuka. */
@@ -159,7 +161,8 @@ class HostRoom {
 
   act(seat: number, action: PlayerAction) {
     if (!this.game || seat < 0 || !action || typeof action !== 'object' || !isAllowed(action)) return
-    this.apply({ ...action, by: seat } as Action)
+    // Angka acak ledakan ranjau selalu dari host, bukan dari tamu.
+    this.apply((action.type === 'fire' ? { ...action, by: seat, roll: Math.random() } : { ...action, by: seat }) as Action)
   }
 
   private apply(action: Action) {
@@ -178,7 +181,9 @@ class HostRoom {
     if (next.phase === 'aim') this.armAim(next)
     else this.aimKey = ''
     if (next.phase !== 'placement' && next.phase !== 'aim') this.setDeadline(null)
-    if (previous.phase !== 'result' && next.phase === 'result') this.later(RESULT_MS, () => this.nextTurn())
+    if (previous.phase !== 'result' && next.phase === 'result') {
+      this.later(next.last?.result === 'mine' ? MINE_RESULT_MS : RESULT_MS, () => this.nextTurn())
+    }
     if (previous.phase !== 'over' && next.phase === 'over' && next.winner !== null) this.seats[next.winner].wins++
   }
 
@@ -254,7 +259,7 @@ class HostRoom {
     if (!game || game.phase !== 'aim' || game.attacker === null || game.target === null) return
     const free = game.players[game.target].shots.flatMap((shot, cell) => (shot === null ? [cell] : []))
     if (!free.length) return
-    this.apply({ type: 'fire', by: game.attacker, cell: free[Math.floor(Math.random() * free.length)] })
+    this.apply({ type: 'fire', by: game.attacker, cell: free[Math.floor(Math.random() * free.length)], roll: Math.random() })
   }
 
   private publish() {

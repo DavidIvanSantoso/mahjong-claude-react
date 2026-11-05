@@ -698,7 +698,7 @@ Tembak-tembakan kapal dengan format *battle royale*: online, 2–6 pemain, masin
    - Target terakhir penyerang itu berbobot `REPEAT_WEIGHT` (0,5).
 4. **Menembak.**
    - Penyerang memilih satu sel di papan target dalam `TURN_SECONDS` (20 detik). Kalau waktunya habis, host menembak sel acak.
-   - Hasilnya (meleset, kena, tenggelam, atau ditahan Perisai) dicatat **di papan target** dan terlihat semua pemain.
+   - Hasilnya (meleset, kena, tenggelam, atau mengenai Ranjau) dicatat **di papan target** dan terlihat semua pemain.
 5. **Tenggelam dan gugur.**
    - Kapal tenggelam kalau semua selnya kena. Posisinya lalu terlihat semua pemain.
    - Pemain yang semua kapalnya tenggelam gugur dan menonton sampai selesai.
@@ -720,7 +720,7 @@ Host memilih ukuran papan saat membuat room. Kepadatan kapal dijaga sekitar 30% 
 ### Skill (`src/armada/skills.ts`)
 
 **Cara mendapat SP.** Pemain mendapat Skill Point (SP) saat **papannya ditembak**:
-- +1 setiap ditembak, termasuk kalau tembakannya ditahan Perisai;
+- +1 setiap ditembak, termasuk kalau tembakannya mengenai Ranjau;
 - +1 lagi kalau tembakannya kena;
 - +2 lagi kalau kapalnya tenggelam.
 
@@ -728,18 +728,26 @@ SP awal 0, maksimal 6. Angka-angka ini ada di `SKILL_CONFIG`.
 
 | Skill | SP | Kapan | Efek |
 |---|---|---|---|
-| Perisai | 2 | Kapan saja selama hidup | Menahan satu tembakan berikutnya; sel itu tidak dicatat. Perisai terlihat semua pemain |
+| Ranjau | 2 | Kapan saja selama hidup, maks. 2 aktif | Dipasang di sel kosong papan sendiri (bukan kapal, belum ditembak). Lawan yang menembak sel itu terkena 3 serangan acak di papannya sendiri dan gilirannya berakhir. Letaknya hanya diketahui pemiliknya |
 | Sonar | 2 | Giliran sendiri, 1× per giliran | Jumlah sel kapal yang belum kena di area 3×3 papan target. Hasilnya hanya dikirim ke pemakai |
 | Tembakan Ganda | 3 | Giliran sendiri, sebelum menembak | Dua tembakan ke sel berbeda di target yang sama |
 
-Teks dan biaya ada di `SKILLS`. Efeknya ada di reducer (`useSkill` di `state.ts`).
+Teks dan biaya ada di `SKILLS`, aturan ranjau di `MINE_CONFIG`. Efeknya ada di reducer (`useSkill` dan `fire` di `state.ts`).
+
+**Detail Ranjau** (menggantikan Perisai, yang terlalu kuat dan membuat permainan berlarut):
+- Sel ranjau yang terpicu ditandai ledakan di papan pemiliknya (terlihat semua pemain) dan ranjaunya habis.
+- 3 serangan balik memilih sel acak yang belum ditembak di papan penyerang, tidak termasuk ranjau penyerang sendiri (tidak ada ledakan berantai). Serangan balik bisa menenggelamkan kapal, bahkan menggugurkan penyerang; kapal yang tenggelam dihitung untuk pemilik ranjau.
+- Ledakan ranjau mengakhiri giliran, termasuk sisa Tembakan Ganda.
+- Angka acaknya dibuat host (`roll` pada aksi `fire`), bukan tamu.
+- SP: pemilik ranjau mendapat +1 seperti biasa karena papannya ditembak; penyerang mendapat SP kena/tenggelam dari serangan balik, tanpa +1 per serangan.
+- Sonar tidak mendeteksi ranjau.
 
 ### Privasi (`viewFor` di `state.ts`)
 
 Host memegang armada semua pemain, sama seperti host game lain memegang semua kartu. Tamu hanya menerima `viewFor(state, kursinya)`:
-- **Untuk semua pemain:** status hidup/gugur, SP, perisai, tembakan yang diterima tiap papan, jumlah kapal tersisa, kapal yang sudah tenggelam, dan statistik.
-- **Hanya untuk pemiliknya:** armada lengkap.
-- **Setelah permainan selesai:** armada semua pemain dibuka.
+- **Untuk semua pemain:** status hidup/gugur, SP, tembakan yang diterima tiap papan, jumlah kapal tersisa, kapal yang sudah tenggelam, dan statistik.
+- **Hanya untuk pemiliknya:** armada lengkap dan letak ranjau aktif.
+- **Setelah permainan selesai:** armada dan ranjau semua pemain dibuka.
 - **Hasil Sonar:** hanya dikirim ke pemakainya.
 
 ### Penempatan kapal (`ArmadaPlacement.tsx`)
@@ -756,7 +764,7 @@ Seret-dan-lepas dibuat dengan Pointer Events, jadi jalan dengan mouse maupun sen
 - `START_MS`: jeda sebelum giliran pertama.
 - `TARGET_MS`: animasi undian target.
 - `TURN_SECONDS`: batas bidikan. Tembakan kedua dari Tembakan Ganda mendapat waktu baru.
-- `RESULT_MS`: lama hasil tembakan ditampilkan.
+- `RESULT_MS`: lama hasil tembakan ditampilkan; `MINE_RESULT_MS` untuk ledakan ranjau (lebih lama karena ada 3 serangan balik).
 
 Pemain yang terputus tetap duduk dan tetap bisa menjadi target. Saat gilirannya, sel acak ditembak setelah batas waktu habis. Seperti game lain, setelah refresh pemain menekan GABUNG lagi untuk kembali ke kursinya.
 
@@ -776,7 +784,7 @@ src/armada/
   ArmadaDialogs.tsx    Panduan dan layar akhir (statistik)
   Board.tsx            Komponen papan N×N (besar, sedang, mini)
   Timer.tsx            Bar sisa waktu
-  Pixel.tsx            Pixel art SVG: kapal, cipratan, api, perisai, radar, bidikan, bendera, ombak
+  Pixel.tsx            Pixel art SVG: kapal, cipratan, api, ranjau, ledakan, radar, bidikan, bendera, ombak
   sfx.ts               Efek suara chiptune lewat Web Audio
   armada.css           Semua gaya Armada Royale, termasuk palet
 ```

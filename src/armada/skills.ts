@@ -5,7 +5,7 @@
 export const SKILL_CONFIG = {
   /** SP awal tiap pemain. */
   start: 0,
-  /** Didapat pemain yang papannya ditembak (juga kalau ditahan Shield). */
+  /** Didapat pemain yang papannya ditembak (juga kalau tembakannya kena Ranjau). */
   target: 1,
   /** Tambahan kalau tembakan itu kena kapal. */
   hit: 1,
@@ -14,7 +14,15 @@ export const SKILL_CONFIG = {
   max: 6,
 }
 
-export type SkillId = 'shield' | 'sonar' | 'double'
+/** Aturan Ranjau. */
+export const MINE_CONFIG = {
+  /** Ranjau aktif maksimal per pemain. */
+  limit: 2,
+  /** Serangan acak yang menghantam papan penyerang saat ranjau meledak. */
+  blasts: 3,
+}
+
+export type SkillId = 'mine' | 'sonar' | 'double'
 
 export interface Skill {
   id: SkillId
@@ -26,12 +34,13 @@ export interface Skill {
 }
 
 export const SKILLS: Record<SkillId, Skill> = {
-  shield: {
-    id: 'shield',
-    name: 'Perisai',
+  mine: {
+    id: 'mine',
+    name: 'Ranjau',
     cost: 2,
     when: 'Kapan saja',
-    description: 'Menahan satu tembakan berikutnya ke papanmu. Sel itu tidak tercatat. Semua pemain melihat perisaimu.',
+    description:
+      'Pasang ranjau di sel kosong papanmu (bukan sel kapal), maksimal 2 ranjau aktif. Hanya kamu yang tahu letaknya. Lawan yang menembak ranjau itu terkena 3 serangan acak di papannya sendiri dan gilirannya berakhir.',
   },
   sonar: {
     id: 'sonar',
@@ -49,7 +58,7 @@ export const SKILLS: Record<SkillId, Skill> = {
   },
 }
 
-export const SKILL_ORDER: SkillId[] = ['shield', 'sonar', 'double']
+export const SKILL_ORDER: SkillId[] = ['mine', 'sonar', 'double']
 
 export function isSkillId(value: unknown): value is SkillId {
   return typeof value === 'string' && value in SKILLS

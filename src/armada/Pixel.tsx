@@ -88,11 +88,23 @@ export function PixelFlame({ className }: { className?: string }) {
   return <PixelArt rows={FLAME} className={className} title="Kena" />
 }
 
-const SHIELD = ['ssssssss', 'sqqwqqqs', 'sqwqqqqs', 'sqqqqqqs', '.sqqqqs.', '.sqqqqs.', '..sqqs..', '...ss...']
+/** Ranjau laut: bola gelap berduri, titik pemicu merah. */
+const MINE = ['...ss...', '.s.zz.s.', '..zzzz..', 'szzfzzzs', 'szzzzozs', '..zzzz..', '.s.zz.s.', '...ss...']
+/** Ranjau yang sudah meledak. */
+const BOOM = ['y..o...y', '.y.oo.y.', '..oyyo..', 'ooyffyoo', 'ooyffyoo', '..oyyo..', '.y.oo.y.', 'y...o..y']
+
+export function PixelMine({ className }: { className?: string }) {
+  return <PixelArt rows={MINE} className={className} title="Ranjau" />
+}
+
+export function PixelBoom({ className }: { className?: string }) {
+  return <PixelArt rows={BOOM} className={className} title="Ranjau meledak" />
+}
+
 const RADAR = ['..eeee..', '.e....e.', 'e..ee..e', 'e.e..e.e', 'e.e.ye.e', 'e..ee..e', '.e....e.', '..eeee..']
 const CROSSHAIR = ['...oo...', '..o..o..', '.o.oo.o.', 'ooo..ooo', 'ooo..ooo', '.o.oo.o.', '..o..o..', '...oo...']
 
-const SKILL_ART = { shield: SHIELD, sonar: RADAR, double: CROSSHAIR }
+const SKILL_ART = { mine: MINE, sonar: RADAR, double: CROSSHAIR }
 
 export function SkillIcon({ skill, className }: { skill: keyof typeof SKILL_ART; className?: string }) {
   return <PixelArt rows={SKILL_ART[skill]} className={className ?? 'ar-skill-icon'} />

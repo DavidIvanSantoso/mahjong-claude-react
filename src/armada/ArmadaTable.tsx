@@ -1,28 +1,34 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { MusicSlot } from '../components/MusicPlayer'
 import { ArmadaResultDialog, GuideDialog } from './ArmadaDialogs'
-import { PlayerCard, SkillPanel, SpPips, TargetRoller, visibleShips } from './ArmadaHud'
+import { canArm, PlayerCard, SkillPanel, SpPips, TargetRoller, visibleShips, type PickMode } from './ArmadaHud'
 import { ArmadaPlacement } from './ArmadaPlacement'
 import { Board } from './Board'
 import { areaCells, cellLabel, PRESETS, type Cell } from './grid'
 import { TURN_SECONDS, type ArmadaRoom } from './net'
-import { SkillIcon } from './Pixel'
 import { sfx, toggleSfx, useSfxEnabled } from './sfx'
 import { TimerBar } from './Timer'
+import { SkillIcon } from './Pixel'
+import { MINE_CONFIG } from './skills'
 import type { ArmadaView, LastShot } from './state'
 
 const RESULT_TEXT: Record<LastShot['result'], string> = {
   miss: 'MELESET!',
   hit: 'KENA!',
   sunk: 'TENGGELAM!',
-  blocked: 'DITAHAN!',
+  mine: 'RANJAU!',
 }
 
 function resultDetail(view: ArmadaView, last: LastShot, me: number): string {
   const size = PRESETS[view.preset].size
   const owner = last.target === me ? 'milikmu' : `milik ${view.players[last.target].name}`
   const where = cellLabel(last.cell, size)
-  if (last.result === 'blocked') return `Perisai ${last.target === me ? 'kamu' : view.players[last.target].name} menahan tembakan di ${where}`
+  if (last.result === 'mine') {
+    const shooter = last.by === me ? 'papanmu' : `papan ${view.players[last.by].name}`
+    const hits = last.blasts?.filter((blast) => blast.result !== 'miss').length ?? 0
+    const sunk = last.blasts?.filter((blast) => blast.ship).map((blast) => blast.ship) ?? []
+    return `Ranjau di ${where} meledak: ${last.blasts?.length ?? 0} serangan balik ke ${shooter}, ${hits} kena${sunk.length ? ` · ${sunk.join(', ')} tenggelam` : ''}${last.selfOut ? ` — ${last.by === me ? 'kamu' : view.players[last.by].name} gugur!` : ''}`
+  }
   if (last.result === 'sunk') return `${last.ship} ${owner} tenggelam${last.out ? ` — ${last.target === me ? 'kamu' : view.players[last.target].name} gugur!` : ''}`
   return `${view.players[last.by].name} menembak ${where}`
 }
@@ -54,12 +60,16 @@ export function ArmadaTable({ room, onExit }: { room: ArmadaRoom; onExit: () => 
   const [guideOpen, setGuideOpen] = useState(false)
   const [resultClosed, setResultClosed] = useState(false)
   const [inspect, setInspect] = useState<number | null>(null)
-  const [sonarMode, setSonarMode] = useState(false)
+  const [pick, setPick] = useState<PickMode>(null)
   const { phase, attacker, target, last } = view
   const myAim = phase === 'aim' && attacker === me
   const turnKey = `${view.round}-${view.turn}`
   if (phase !== 'over' && resultClosed) setResultClosed(false)
-  if (sonarMode && (!myAim || view.sonarUsed)) setSonarMode(false)
+  const mine = view.players[me]
+  const armable = mine.alive && ['start', 'target', 'aim', 'result'].includes(phase) && (mine.mines?.length ?? 0) < MINE_CONFIG.limit
+  if ((pick === 'sonar' && (!myAim || view.sonarUsed)) || (pick === 'mine' && !armable)) setPick(null)
+  const sonarMode = pick === 'sonar'
+  const mineMode = pick === 'mine'
 
   // Giliran baru: papan besar kembali mengikuti target.
   useEffect(() => setInspect(null), [turnKey])
@@ -71,7 +81,7 @@ export function ArmadaTable({ room, onExit }: { room: ArmadaRoom; onExit: () => 
   useEffect(() => {
     if (!last) return
     sfx[last.result]()
-    if (last.out) sfx.out()
+    if (last.out || last.selfOut) sfx.out()
   }, [last?.seq])
 
   useEffect(() => {
@@ -86,22 +96,34 @@ export function ArmadaTable({ room, onExit }: { room: ArmadaRoom; onExit: () => 
     )
   }
 
-  const focus = myAim ? target! : (inspect ?? target ?? me)
+  // Ranjau meledak: semua pemain melihat papan penyerang yang terkena serangan balik.
+  const mineBlast = last?.result === 'mine' && (phase === 'result' || phase === 'over') ? last : null
+  const focus = mineMode ? me : myAim ? target! : (inspect ?? mineBlast?.by ?? target ?? me)
   const focused = view.players[focus]
-  const shooting = myAim && focus === target
+  const shooting = myAim && focus === target && !mineMode
   const marks = new Map<Cell, string>()
-  if (view.sonar && view.sonar.target === focus) areaCells(view.sonar.center, size).forEach((cell) => marks.set(cell, 'ar-cell--sonar'))
-  if (last && last.target === focus && phase !== 'target') marks.set(last.cell, `${marks.get(last.cell) ?? ''} ar-cell--last`)
-  const showResult = last && last.target === focus && (phase === 'aim' || phase === 'result' || phase === 'over') && last.by === attacker
+  const mark = (cell: Cell, cls: string) => marks.set(cell, `${marks.get(cell) ?? ''} ${cls}`)
+  if (view.sonar && view.sonar.target === focus) areaCells(view.sonar.center, size).forEach((cell) => mark(cell, 'ar-cell--sonar'))
+  if (last && last.target === focus && phase !== 'target' && !mineMode) mark(last.cell, 'ar-cell--last')
+  if (mineBlast && mineBlast.by === focus && !mineMode) mineBlast.blasts?.forEach((blast) => mark(blast.cell, 'ar-cell--last ar-cell--blast'))
+  const showResult =
+    last &&
+    !mineMode &&
+    (phase === 'aim' || phase === 'result' || phase === 'over') &&
+    last.by === attacker &&
+    (last.target === focus || mineBlast?.by === focus)
 
-  function shoot(cell: Cell) {
-    if (sonarMode) {
+  function onCell(cell: Cell) {
+    if (mineMode) {
+      sfx.arm()
+      room.send({ type: 'skill', skill: 'mine', center: cell })
+      setPick(null)
+    } else if (sonarMode) {
       sfx.skill()
       room.send({ type: 'skill', skill: 'sonar', center: cell })
     } else room.send({ type: 'fire', cell })
   }
 
-  const mine = view.players[me]
   return (
     <Shell room={room} onExit={onExit} sfxOn={sfxOn} onGuide={() => setGuideOpen(true)} guideOpen={guideOpen} onGuideClose={() => setGuideOpen(false)}>
       <div className="ar-layout">
@@ -113,14 +135,18 @@ export function ArmadaTable({ room, onExit }: { room: ArmadaRoom; onExit: () => 
             <TimerBar deadline={phase === 'aim' ? room.deadline : null} total={TURN_SECONDS} />
           </section>
 
-          <section className={`ar-panel ar-focus ${shooting ? 'ar-focus--shoot' : ''} ${sonarMode ? 'ar-focus--sonar' : ''}`}>
+          <section className={`ar-panel ar-focus ${shooting || mineMode ? 'ar-focus--shoot' : ''} ${sonarMode ? 'ar-focus--sonar' : ''} ${mineMode ? 'ar-focus--mine' : ''}`}>
             <header className="ar-focus__head">
               <h2 className="ar-panel__title">
                 {focus === me ? 'Papanmu' : `Papan ${focused.name}`}
                 {focus === target && phase !== 'over' && ' · TARGET'}
               </h2>
-              {focused.shield && <SkillIcon skill="shield" className="ar-focus__shield" />}
-              {inspect !== null && !myAim && (
+              {mineMode && (
+                <button type="button" className="ar-btn ar-btn--small" onClick={() => setPick(null)}>
+                  BATAL
+                </button>
+              )}
+              {inspect !== null && !myAim && !mineMode && (
                 <button type="button" className="ar-btn ar-btn--small" onClick={() => setInspect(null)}>
                   IKUTI GILIRAN
                 </button>
@@ -131,9 +157,11 @@ export function ArmadaTable({ room, onExit }: { room: ArmadaRoom; onExit: () => 
               label={focus === me ? 'Papanmu' : `Papan ${focused.name}`}
               shots={focused.shots}
               ships={visibleShips(focused)}
+              mines={focused.mines ?? []}
               marks={marks}
-              canClick={(cell) => shooting && focused.shots[cell] === null}
-              onCell={shooting ? shoot : undefined}
+              cellAction={mineMode ? 'Pasang ranjau di' : sonarMode ? 'Pindai' : 'Tembak'}
+              canClick={(cell) => (mineMode ? canArm(focused, cell) : shooting && focused.shots[cell] === null)}
+              onCell={shooting || mineMode ? onCell : undefined}
             >
               {showResult && (
                 <div key={last.seq} className={`ar-flash ar-flash--${last.result}`}>
@@ -149,10 +177,11 @@ export function ArmadaTable({ room, onExit }: { room: ArmadaRoom; onExit: () => 
               )}
             </Board>
             {sonarMode && <p className="ar-hint">Pilih pusat area 3×3 untuk dipindai Sonar.</p>}
+            {mineMode && <p className="ar-hint">Pilih sel kosong di papanmu (bukan kapal) untuk dipasangi ranjau.</p>}
           </section>
 
           {mine.alive && phase !== 'over' && (
-            <SkillPanel view={view} me={me} sonarMode={sonarMode} onSonarMode={setSonarMode} send={room.send} />
+            <SkillPanel view={view} me={me} pick={pick} onPick={setPick} send={room.send} />
           )}
 
           <section className="ar-players" aria-label="Pemain">
@@ -178,10 +207,9 @@ export function ArmadaTable({ room, onExit }: { room: ArmadaRoom; onExit: () => 
             <section className="ar-panel">
               <div className="ar-skills__head">
                 <h2 className="ar-panel__title">Armadaku</h2>
-                {mine.shield && <SkillIcon skill="shield" className="ar-card__shield" />}
                 {mine.alive ? <SpPips sp={mine.sp} /> : <span className="ar-card__dead">☠ GUGUR</span>}
               </div>
-              <Board variant="medium" size={size} label="Papanmu" shots={mine.shots} ships={visibleShips(mine)} />
+              <Board variant="medium" size={size} label="Papanmu" shots={mine.shots} ships={visibleShips(mine)} mines={mine.mines ?? []} />
             </section>
           )}
           <section className="ar-panel">

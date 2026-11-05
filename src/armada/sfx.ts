@@ -112,10 +112,16 @@ export const sfx = {
     noise(1, { volume: 0.4, to: 80 })
     ;[392, 330, 262, 196].forEach((freq, i) => setTimeout(() => tone(freq, 0.16, { volume: 0.05 }), 250 + i * 130))
   },
-  /** Tembakan ditahan Perisai: dentang logam. */
-  blocked: () => {
-    tone(1200, 0.12, { type: 'triangle', volume: 0.07 })
-    tone(1800, 0.2, { type: 'triangle', volume: 0.04 })
+  /** Tembakan mengenai ranjau: bip pemicu, ledakan besar, lalu tiga dentuman serangan balik. */
+  mine: () => {
+    tone(1400, 0.08, { volume: 0.05 })
+    setTimeout(() => noise(0.9, { volume: 0.45, to: 60 }), 90)
+    ;[0, 1, 2].forEach((i) => setTimeout(() => noise(0.35, { volume: 0.25 }), 900 + i * 380))
+  },
+  /** Ranjau dipasang: klik logam. */
+  arm: () => {
+    tone(900, 0.05, { type: 'triangle', volume: 0.06 })
+    setTimeout(() => tone(600, 0.08, { type: 'triangle', volume: 0.05 }), 60)
   },
   skill: () => [440, 554, 659, 880].forEach((freq, i) => setTimeout(() => tone(freq, 0.07, { volume: 0.04 }), i * 50)),
   /** Seorang pemain gugur. */
