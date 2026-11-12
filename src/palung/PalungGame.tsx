@@ -46,18 +46,30 @@ export function PalungGame({ onOver, onExit, frozen }: { onOver: (result: Summar
     let scale = 1
 
     // Lebar dunia mengikuti rasio layar (tinggi tetap), lalu kanvas diperbesar agar pas di wadahnya.
+    // Ukuran diambil dari area isi (tanpa padding): kalau padding ikut terhitung, kanvas sedikit
+    // melebihi wadah -> scrollbar muncul -> wadah mengecil -> scrollbar hilang -> berulang (layar
+    // bergetar dan hitam karena kanvas terus dikosongkan).
     function resize() {
-      const rect = wrap.getBoundingClientRect()
-      if (!rect.width || !rect.height) return
-      const width = Math.max(WORLD.minWidth, Math.min(WORLD.maxWidth, (rect.width / rect.height) * WORLD.height))
-      const css = Math.min(rect.width / width, rect.height / WORLD.height)
+      const style = getComputedStyle(wrap)
+      const boxW = wrap.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight)
+      const boxH = wrap.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom)
+      if (boxW <= 0 || boxH <= 0) return
+      const width = Math.max(WORLD.minWidth, Math.min(WORLD.maxWidth, (boxW / boxH) * WORLD.height))
+      const css = Math.min(boxW / width, boxH / WORLD.height)
       const dpr = Math.min(window.devicePixelRatio || 1, 2)
-      canvas.style.width = `${Math.floor(width * css)}px`
-      canvas.style.height = `${Math.floor(WORLD.height * css)}px`
-      canvas.width = Math.floor(width * css * dpr)
-      canvas.height = Math.floor(WORLD.height * css * dpr)
+      const cssW = Math.floor(width * css)
+      const cssH = Math.floor(WORLD.height * css)
       scale = css * dpr
       game.width = width
+      // Mengubah canvas.width mengosongkan isinya, jadi hanya dilakukan bila ukurannya benar-benar berubah,
+      // lalu langsung digambar ulang supaya tidak sempat terlihat hitam.
+      if (canvas.width !== Math.floor(cssW * dpr) || canvas.height !== Math.floor(cssH * dpr)) {
+        canvas.style.width = `${cssW}px`
+        canvas.style.height = `${cssH}px`
+        canvas.width = Math.floor(cssW * dpr)
+        canvas.height = Math.floor(cssH * dpr)
+        render(ctx, game, scale, performance.now() / 1000)
+      }
     }
     resize()
     const observer = new ResizeObserver(resize)

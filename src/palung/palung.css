@@ -432,6 +432,8 @@
   display: grid;
   place-items: center;
   padding: 8px;
+  /* Pengaman: kanvas tidak pernah boleh mendorong ukuran halaman (memicu scrollbar). */
+  overflow: hidden;
   touch-action: manipulation;
   cursor: text;
 }
