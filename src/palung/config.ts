@@ -35,7 +35,7 @@ export const DESCENT = {
   max: 4,
 }
 
-export type EnemyKind = 'teri' | 'piranha' | 'hiu' | 'martil' | 'bayangan' | 'kraken' | 'oksigen' | 'mutiara'
+export type EnemyKind = 'teri' | 'piranha' | 'hiu' | 'martil' | 'bayangan' | 'kraken' | 'megalodon' | 'misil' | 'oksigen' | 'mutiara'
 
 export interface EnemyType {
   kind: EnemyKind
@@ -73,6 +73,13 @@ export const ENEMIES: Record<EnemyKind, EnemyType> = {
   bayangan: { kind: 'bayangan', name: 'Ikan Bayangan', length: [4, 6], speed: 46, points: 35, damage: 1, motion: 'swim', size: 1, wobble: 7, sonarable: true, reveal: 330 },
   /** Penjaga zona: beberapa kata berurutan (BOSS_PHRASES). */
   kraken: { kind: 'kraken', name: 'Kraken', length: [0, 99], speed: 17, points: 200, damage: 2, motion: 'swim', size: 1.7, wobble: 14, sonarable: false },
+  /**
+   * Bos robot (lihat MEGALODON). Tidak diketik langsung dan tidak pernah berupa musuh biasa; entri ini
+   * dipakai untuk nama, skor, dan gambar panduan.
+   */
+  megalodon: { kind: 'megalodon', name: 'Megalodon Robot', length: [0, 0], speed: 0, points: 400, damage: 1, motion: 'swim', size: 2.2, wobble: 0, sonarable: false },
+  /** Misil dari Megalodon: meluncur ke penyelam; diketik = dipantulkan ke bos. */
+  misil: { kind: 'misil', name: 'Misil', length: [4, 7], speed: 95, points: 8, damage: 1, motion: 'swim', size: 0.75, wobble: 0, sonarable: true },
   /** Gelembung oksigen: +1 hati. */
   oksigen: { kind: 'oksigen', name: 'Gelembung Oksigen', length: [4, 8], speed: 34, points: 15, damage: 0, motion: 'rise', size: 1, wobble: 18, sonarable: false },
   /** Kerang mutiara: +1 Sonar dan skor bonus. */
@@ -147,8 +154,58 @@ export const EVENTS = {
   /** Gelembung oksigen hanya muncul kalau hati berkurang. */
   oxygen: { firstAt: 70, every: 140 },
   mutiara: { firstAt: 120, every: 160 },
-  /** Penjaga zona muncul di awal tiap zona, lalu tiap `every` meter setelah zona terakhir. */
-  boss: { every: 500 },
+  /**
+   * Penjaga zona muncul di awal tiap zona, lalu tiap `every` meter setelah zona terakhir. Jenisnya
+   * bergiliran menurut `order` (100 m Kraken, 300 m Megalodon, 600 m Kraken, ...).
+   */
+  boss: { every: 500, order: ['kraken', 'megalodon'] as EnemyKind[] },
+}
+
+/**
+ * Megalodon Robot. Selama pertarungan tidak ada ikan lain yang muncul dan penyelam berhenti turun.
+ * `round` = berapa Megalodon yang sudah dikalahkan sebelumnya (pertarungan berikutnya lebih berat).
+ */
+export const MEGALODON = {
+  /** Jeda minimal setelah peringatan; bos baru masuk setelah semua ikan berbahaya di layar habis. */
+  warning: 2.2,
+  hp: 10,
+  hpPerRound: 3,
+  /** Jarak titik tengah bos dari tepi kanan saat bertarung. */
+  homeOffset: 150,
+  /** Kecepatan pindah posisi naik-turun (px/detik). */
+  moveSpeed: 120,
+  moveSpeedPerRound: 20,
+  /** Lama diam di satu posisi (sambil menembak): `hold` saat HP penuh, menyusut ke `holdMin` saat HP hampir habis. */
+  hold: 3.6,
+  holdMin: 2.3,
+  /** Tembakan pertama setelah berhenti, lalu tiap `fireEvery` detik selama diam. */
+  fireDelay: 0.45,
+  fireEvery: 1.7,
+  /** Tidak menembak kalau sisa waktu diam kurang dari ini, supaya setiap misil masih sempat dipantulkan kena. */
+  fireCutoff: 1.1,
+  maxMissiles: 2,
+  /** Misil boleh 3 sekaligus mulai pertarungan ke berapa (0 = pertama). */
+  threeMissilesFromRound: 1,
+  missileSpeed: 95,
+  missileSpeedPerRound: 12,
+  /** Kecepatan misil yang dipantulkan kembali ke bos. */
+  returnSpeed: 620,
+  /** Area badan bos (elips) untuk menentukan pantulan kena atau meleset. */
+  hitbox: { rx: 108, ry: 44 },
+  /** QTE "gigitan" dimulai saat HP turun melewati pecahan ini. */
+  qteAt: [0.65, 0.3],
+  qte: {
+    keys: 3,
+    keysPerRound: 1,
+    maxKeys: 6,
+    /** Waktu per huruf (detik); huruf pertama dapat tambahan `lead` untuk bersiap. */
+    time: 1.35,
+    timePerRound: -0.12,
+    minTime: 0.8,
+    lead: 0.6,
+    /** HP bos yang hilang kalau QTE berhasil. */
+    damage: 2,
+  },
 }
 
 /** Pengali skor dari kombo (kata beruntun tanpa salah ketik). */

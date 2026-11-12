@@ -1,6 +1,6 @@
-import { ENEMIES, multiplierFor, PLAYER, WORLD, ZONES } from './config'
+import { ENEMIES, MEGALODON, multiplierFor, PLAYER, WORLD, ZONES } from './config'
 import { drawAmbience, drawBioluminescence, seaAt } from './ambience'
-import { accuracy, diverY, lockedEnemy, wpm, type Enemy, type GameState } from './engine'
+import { accuracy, diverY, lockedEnemy, wpm, type Enemy, type GameState, type Megalodon } from './engine'
 
 /**
  * Menggambar PALUNG ke kanvas. Semua gambar (penyelam, ikan, gelembung) dibuat dari bentuk kanvas,
@@ -215,6 +215,15 @@ function drawEnemy(ctx: CanvasRenderingContext2D, enemy: Enemy, locked: boolean)
   if (enemy.flash > 0) ctx.translate(Math.sin(enemy.flash * 80) * 3, 0)
 
   switch (enemy.kind) {
+    case 'misil': {
+      // Menghadap arah luncurnya (dari titik tembak ke penyelam).
+      if (enemy.origin) ctx.rotate(Math.atan2(WORLD.height / 2 - enemy.origin.y, WORLD.diverX - enemy.origin.x) - Math.PI)
+      missileShape(ctx, k, enemy.age, false)
+      break
+    }
+    case 'megalodon':
+      drawMegalodonBody(ctx, enemy.age, 0.25, 0, 0.6)
+      break
     case 'bayangan': {
       // Ikan pucat tembus pandang dengan tulang samar dan mata bercahaya
       fishBody(ctx, 74 * k, 30 * k, '#a9cfe3', '#e8f7ff', tail)
@@ -406,7 +415,7 @@ function drawEnemy(ctx: CanvasRenderingContext2D, enemy: Enemy, locked: boolean)
 
 /** Umpan bercahaya ikan di zona gelap (digambar di atas kegelapan). */
 function drawGlow(ctx: CanvasRenderingContext2D, enemy: Enemy, darkness: number) {
-  if (darkness < 0.3 || !enemy.revealed || enemy.kind === 'oksigen' || enemy.kind === 'mutiara') return
+  if (darkness < 0.3 || !enemy.revealed || enemy.kind === 'oksigen' || enemy.kind === 'mutiara' || enemy.kind === 'misil') return
   const k = ENEMIES[enemy.kind].size
   const x = enemy.x - 26 * k
   const y = enemy.y - 8 * k
@@ -417,6 +426,424 @@ function drawGlow(ctx: CanvasRenderingContext2D, enemy: Enemy, darkness: number)
   ctx.beginPath()
   ctx.arc(x, y, 14 * k, 0, Math.PI * 2)
   ctx.fill()
+}
+
+// ---------- Megalodon Robot ----------
+
+/** Misil menghadap kiri di titik (0,0). `friendly` = sudah dipantulkan (kuning). */
+function missileShape(ctx: CanvasRenderingContext2D, k: number, age: number, friendly: boolean) {
+  ctx.save()
+  ctx.scale(k, k)
+  // Api pendorong (di belakang = kanan)
+  const flicker = 0.75 + Math.sin(age * 40) * 0.25
+  const flame = ctx.createLinearGradient(20, 0, 20 + 26 * flicker, 0)
+  flame.addColorStop(0, friendly ? 'rgba(255, 240, 150, 0.95)' : 'rgba(255, 200, 90, 0.95)')
+  flame.addColorStop(1, 'rgba(255, 90, 40, 0)')
+  ctx.fillStyle = flame
+  ctx.beginPath()
+  ctx.moveTo(20, -5)
+  ctx.lineTo(20 + 28 * flicker, 0)
+  ctx.lineTo(20, 5)
+  ctx.closePath()
+  ctx.fill()
+  // Sirip
+  ctx.fillStyle = friendly ? '#b38a1c' : '#7a1f24'
+  for (const side of [-1, 1]) {
+    ctx.beginPath()
+    ctx.moveTo(8, 5 * side)
+    ctx.lineTo(22, 14 * side)
+    ctx.lineTo(22, 4 * side)
+    ctx.closePath()
+    ctx.fill()
+  }
+  // Badan
+  ctx.fillStyle = friendly ? '#ffe27a' : '#c9d2da'
+  roundRect(ctx, -18, -7, 40, 14, 6)
+  ctx.fill()
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.18)'
+  ctx.fillRect(-18, 1, 40, 6)
+  // Hulu ledak
+  ctx.fillStyle = friendly ? '#ff9f1c' : '#e0343c'
+  ctx.beginPath()
+  ctx.moveTo(-18, -7)
+  ctx.quadraticCurveTo(-34, 0, -18, 7)
+  ctx.closePath()
+  ctx.fill()
+  ctx.fillStyle = '#20262c'
+  ctx.fillRect(-6, -7, 3, 14)
+  ctx.restore()
+}
+
+/**
+ * Badan Megalodon Robot menghadap kiri, titik tengah di (0,0), panjang ±280. `jaw` 0 (tertutup) – 1
+ * (menganga), `flash` kilatan putih saat terkena, `eye` terang mata (0–1).
+ */
+function drawMegalodonBody(ctx: CanvasRenderingContext2D, age: number, jaw: number, flash: number, eye: number) {
+  const steel = '#4d5b69'
+  ctx.lineJoin = 'round'
+  // Ekor (bergerak pelan, ada sambungan logam)
+  ctx.save()
+  ctx.translate(106, -2)
+  ctx.rotate(Math.sin(age * 4.5) * 0.16)
+  ctx.fillStyle = steel
+  ctx.beginPath()
+  ctx.moveTo(0, -8)
+  ctx.lineTo(50, -60)
+  ctx.lineTo(38, -4)
+  ctx.lineTo(44, 46)
+  ctx.lineTo(0, 8)
+  ctx.closePath()
+  ctx.fill()
+  ctx.strokeStyle = 'rgba(15, 22, 30, 0.55)'
+  ctx.lineWidth = 2
+  ctx.beginPath()
+  ctx.moveTo(14, -18)
+  ctx.lineTo(38, -4)
+  ctx.lineTo(16, 18)
+  ctx.stroke()
+  ctx.restore()
+  // Sirip punggung dan dada
+  ctx.fillStyle = steel
+  ctx.beginPath()
+  ctx.moveTo(-14, -38)
+  ctx.lineTo(26, -90)
+  ctx.lineTo(46, -32)
+  ctx.closePath()
+  ctx.fill()
+  ctx.beginPath()
+  ctx.moveTo(-34, 22)
+  ctx.lineTo(6, 70)
+  ctx.lineTo(18, 24)
+  ctx.closePath()
+  ctx.fill()
+  // Peluncur misil di punggung
+  ctx.fillStyle = '#323d48'
+  roundRect(ctx, -66, -54, 50, 18, 4)
+  ctx.fill()
+  ctx.fillStyle = '#e0343c'
+  for (const ty of [-49, -41]) {
+    ctx.beginPath()
+    ctx.arc(-66, ty, 3, 0, Math.PI * 2)
+    ctx.fill()
+  }
+  // Rongga mulut (terlihat saat menganga)
+  if (jaw > 0.05) {
+    const mouth = ctx.createRadialGradient(-96, 20, 2, -96, 20, 40)
+    mouth.addColorStop(0, `rgba(255, 70, 40, ${0.9 * jaw})`)
+    mouth.addColorStop(1, 'rgba(40, 0, 0, 0.95)')
+    ctx.fillStyle = mouth
+    ctx.beginPath()
+    ctx.ellipse(-94, 18 + jaw * 10, 32, 6 + jaw * 16, 0, 0, Math.PI * 2)
+    ctx.fill()
+  }
+  // Rahang bawah (berputar saat menganga)
+  ctx.save()
+  ctx.translate(-66, 16)
+  ctx.rotate(-jaw * 0.5)
+  ctx.fillStyle = '#7d8a97'
+  ctx.beginPath()
+  ctx.moveTo(4, -2)
+  ctx.lineTo(-54, 0)
+  ctx.quadraticCurveTo(-44, 22, 6, 20)
+  ctx.closePath()
+  ctx.fill()
+  ctx.fillStyle = '#eef3f7'
+  for (let i = 0; i < 6; i++) {
+    const tx = -50 + i * 8
+    ctx.beginPath()
+    ctx.moveTo(tx, 0)
+    ctx.lineTo(tx + 3, -8)
+    ctx.lineTo(tx + 6, 0)
+    ctx.fill()
+  }
+  ctx.restore()
+  // Badan utama
+  const body = new Path2D()
+  body.moveTo(-126, 8)
+  body.quadraticCurveTo(-114, -30, -60, -42)
+  body.quadraticCurveTo(20, -52, 82, -22)
+  body.quadraticCurveTo(110, -10, 116, -2)
+  body.quadraticCurveTo(100, 14, 70, 22)
+  body.quadraticCurveTo(0, 38, -66, 18)
+  body.lineTo(-120, 16)
+  body.closePath()
+  const metal = ctx.createLinearGradient(0, -48, 0, 34)
+  metal.addColorStop(0, '#7a8a9a')
+  metal.addColorStop(0.45, '#56646f')
+  metal.addColorStop(0.75, '#a8b4bf')
+  metal.addColorStop(1, '#c9d3dc')
+  ctx.fillStyle = metal
+  ctx.fill(body)
+  // Garis pelat dan paku keling
+  ctx.save()
+  ctx.clip(body)
+  ctx.strokeStyle = 'rgba(18, 26, 34, 0.5)'
+  ctx.lineWidth = 1.6
+  ctx.beginPath()
+  for (const sx of [-44, 6, 56]) {
+    ctx.moveTo(sx, -60)
+    ctx.quadraticCurveTo(sx + 8, 0, sx, 60)
+  }
+  ctx.moveTo(-130, 2)
+  ctx.quadraticCurveTo(0, -12, 120, -4)
+  ctx.stroke()
+  ctx.fillStyle = 'rgba(220, 230, 240, 0.55)'
+  for (const sx of [-44, 6, 56]) {
+    for (const ry of [-26, -12, 10]) {
+      ctx.beginPath()
+      ctx.arc(sx + 4 + (ry > 0 ? 2 : 0), ry, 1.6, 0, Math.PI * 2)
+      ctx.fill()
+    }
+  }
+  // Kilau logam di punggung
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.12)'
+  ctx.beginPath()
+  ctx.ellipse(-10, -34, 70, 7, -0.05, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.restore()
+  // Gigi rahang atas
+  ctx.fillStyle = '#eef3f7'
+  for (let i = 0; i < 6; i++) {
+    const tx = -116 + i * 8
+    ctx.beginPath()
+    ctx.moveTo(tx, 15)
+    ctx.lineTo(tx + 3, 24)
+    ctx.lineTo(tx + 6, 15)
+    ctx.fill()
+  }
+  // Ventilasi insang (menyala)
+  ctx.strokeStyle = '#ff8a3d'
+  ctx.lineWidth = 3
+  ctx.lineCap = 'round'
+  for (let i = 0; i < 3; i++) {
+    ctx.beginPath()
+    ctx.moveTo(-50 + i * 9, -16)
+    ctx.lineTo(-56 + i * 9, 6)
+    ctx.stroke()
+  }
+  // Mata: lensa merah dalam soket
+  ctx.fillStyle = '#1a2129'
+  ctx.beginPath()
+  ctx.arc(-88, -14, 10, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.fillStyle = `rgb(255, ${Math.round(90 - eye * 50)}, ${Math.round(70 - eye * 40)})`
+  ctx.beginPath()
+  ctx.arc(-89, -14, 5.5, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.8)'
+  ctx.fillRect(-92, -17, 2, 2)
+  if (flash > 0) {
+    ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(0.75, flash * 2.5)})`
+    ctx.fill(body)
+  }
+}
+
+/** Posisi, kemiringan, dan getaran bos sesuai fasenya. */
+function megaTransform(ctx: CanvasRenderingContext2D, m: Megalodon) {
+  const bob = m.phase === 'fight' || m.phase === 'enter' ? Math.sin(m.age * 1.6) * 4 : 0
+  ctx.translate(m.x, m.y + bob)
+  if (m.phase === 'qte') ctx.translate((Math.random() - 0.5) * 3, (Math.random() - 0.5) * 3)
+  if (m.phase === 'stunned') ctx.rotate(0.14 + Math.sin(m.age * 18) * 0.06)
+  if (m.phase === 'dying') ctx.rotate(Math.min(0.7, (1 - m.timer / 2.2) * 0.7))
+}
+
+function megaJaw(m: Megalodon): number {
+  if (m.phase === 'qte') return 0.65 + Math.sin(m.age * 14) * 0.15
+  if (m.phase === 'chomp') return m.struck ? 0.1 : 1
+  if (m.phase === 'stunned' || m.phase === 'dying') return 0.35
+  return Math.max(0.08, m.fired / 0.4)
+}
+
+function drawMegalodon(ctx: CanvasRenderingContext2D, m: Megalodon) {
+  if (m.phase === 'warning') return
+  ctx.save()
+  if (m.phase === 'dying') ctx.globalAlpha = Math.max(0, Math.min(1, m.timer / 0.9))
+  megaTransform(ctx, m)
+  drawMegalodonBody(ctx, m.age, megaJaw(m), m.hitFlash, m.phase === 'qte' || m.phase === 'chomp' ? 1 : 0.4)
+  ctx.restore()
+}
+
+/** Mata dan ventilasi menyala, digambar di atas kegelapan laut dalam. */
+function drawMegaGlow(ctx: CanvasRenderingContext2D, m: Megalodon, clock: number) {
+  if (m.phase === 'warning' || m.phase === 'dying') return
+  const angry = m.phase === 'qte' || m.phase === 'chomp'
+  ctx.save()
+  megaTransform(ctx, m)
+  ctx.globalCompositeOperation = 'lighter'
+  const r = angry ? 34 : 20 + Math.sin(clock * 4) * 3
+  const eye = ctx.createRadialGradient(-89, -14, 0, -89, -14, r)
+  eye.addColorStop(0, `rgba(255, 60, 50, ${angry ? 0.9 : 0.55})`)
+  eye.addColorStop(1, 'rgba(255, 60, 50, 0)')
+  ctx.fillStyle = eye
+  ctx.beginPath()
+  ctx.arc(-89, -14, r, 0, Math.PI * 2)
+  ctx.fill()
+  const vent = ctx.createRadialGradient(-44, -5, 0, -44, -5, 26)
+  vent.addColorStop(0, 'rgba(255, 140, 60, 0.35)')
+  vent.addColorStop(1, 'rgba(255, 140, 60, 0)')
+  ctx.fillStyle = vent
+  ctx.beginPath()
+  ctx.arc(-44, -5, 26, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.restore()
+}
+
+/** Misil yang dipantulkan: kuning, menghadap arah terbangnya, dengan jejak cahaya. */
+function drawRebounds(ctx: CanvasRenderingContext2D, m: Megalodon, clock: number) {
+  for (const r of m.rebounds) {
+    const angle = Math.atan2(r.vy, r.vx)
+    ctx.save()
+    ctx.strokeStyle = 'rgba(255, 220, 110, 0.45)'
+    ctx.lineWidth = 3
+    ctx.beginPath()
+    ctx.moveTo(r.x, r.y)
+    ctx.lineTo(r.x - Math.cos(angle) * 60, r.y - Math.sin(angle) * 60)
+    ctx.stroke()
+    ctx.translate(r.x, r.y)
+    ctx.rotate(angle - Math.PI)
+    missileShape(ctx, 0.85, clock, true)
+    ctx.restore()
+  }
+}
+
+/** Misil terkunci: jalur pantulnya ke titik tembak, supaya terlihat apakah bos masih di sana. */
+function drawReturnPath(ctx: CanvasRenderingContext2D, missile: Enemy, clock: number) {
+  const { x, y } = missile.origin!
+  ctx.save()
+  ctx.strokeStyle = 'rgba(255, 212, 71, 0.35)'
+  ctx.lineWidth = 1.5
+  ctx.setLineDash([2, 7])
+  ctx.lineDashOffset = clock * 20
+  ctx.beginPath()
+  ctx.moveTo(missile.x, missile.y)
+  ctx.lineTo(x, y)
+  ctx.stroke()
+  ctx.setLineDash([])
+  const r = 9 + Math.sin(clock * 6) * 1.5
+  ctx.strokeStyle = 'rgba(255, 212, 71, 0.8)'
+  ctx.beginPath()
+  ctx.arc(x, y, r, 0, Math.PI * 2)
+  ctx.moveTo(x - r - 5, y)
+  ctx.lineTo(x - r + 3, y)
+  ctx.moveTo(x + r - 3, y)
+  ctx.lineTo(x + r + 5, y)
+  ctx.moveTo(x, y - r - 5)
+  ctx.lineTo(x, y - r + 3)
+  ctx.moveTo(x, y + r - 3)
+  ctx.lineTo(x, y + r + 5)
+  ctx.stroke()
+  ctx.restore()
+}
+
+/** Peringatan sebelum Megalodon masuk: denyut merah di tepi kanan. */
+function drawMegaWarning(ctx: CanvasRenderingContext2D, s: GameState, m: Megalodon, clock: number) {
+  if (m.phase !== 'warning') return
+  const pulse = 0.5 + Math.sin(clock * 7) * 0.5
+  const edge = ctx.createLinearGradient(s.width, 0, s.width - 160, 0)
+  edge.addColorStop(0, `rgba(255, 40, 50, ${0.18 + pulse * 0.22})`)
+  edge.addColorStop(1, 'rgba(255, 40, 50, 0)')
+  ctx.fillStyle = edge
+  ctx.fillRect(s.width - 160, 0, 160, s.height)
+}
+
+/** Bar HP bos menggantikan nama zona di HUD. */
+function drawBossBar(ctx: CanvasRenderingContext2D, s: GameState, m: Megalodon) {
+  const w = Math.min(240, s.width * 0.34)
+  const x = s.width / 2 - w / 2
+  const y = 58
+  ctx.textAlign = 'center'
+  ctx.font = `700 11px ${FONT}`
+  ctx.fillStyle = '#ff8a7a'
+  ctx.fillText(ENEMIES.megalodon.name.toUpperCase(), s.width / 2, 48)
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.15)'
+  roundRect(ctx, x, y, w, 8, 4)
+  ctx.fill()
+  const ratio = m.hp / m.maxHp
+  if (ratio > 0) {
+    const fill = ctx.createLinearGradient(x, 0, x + w, 0)
+    fill.addColorStop(0, '#ff3b4e')
+    fill.addColorStop(1, '#ff9f45')
+    ctx.fillStyle = fill
+    roundRect(ctx, x, y, Math.max(8, w * ratio), 8, 4)
+    ctx.fill()
+  }
+  // Tanda batas QTE
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.7)'
+  for (const fraction of MEGALODON.qteAt) ctx.fillRect(x + w * fraction - 1, y - 2, 2, 12)
+}
+
+/** Layar QTE: huruf besar yang harus ditekan, cincin waktu, dan urutan huruf. */
+function drawQte(ctx: CanvasRenderingContext2D, s: GameState, clock: number) {
+  const qte = s.mega?.qte
+  if (!qte) return
+  ctx.save()
+  ctx.fillStyle = 'rgba(0, 4, 12, 0.32)'
+  ctx.fillRect(0, 0, s.width, s.height)
+  const pulse = 0.5 + Math.sin(clock * 10) * 0.5
+  const vignette = ctx.createRadialGradient(s.width / 2, s.height / 2, s.height * 0.35, s.width / 2, s.height / 2, s.width * 0.75)
+  vignette.addColorStop(0, 'rgba(255, 30, 50, 0)')
+  vignette.addColorStop(1, `rgba(255, 30, 50, ${0.18 + pulse * 0.14})`)
+  ctx.fillStyle = vignette
+  ctx.fillRect(0, 0, s.width, s.height)
+
+  const cx = Math.min(s.width * 0.42, s.width - 260)
+  const cy = s.height * 0.5
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.font = `400 ${s.width < 700 ? 22 : 28}px ${TITLE_FONT}`
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.5)'
+  ctx.fillText('AWAS GIGITAN!', cx + 2, cy - 104)
+  ctx.fillStyle = '#ffffff'
+  ctx.fillText('AWAS GIGITAN!', cx, cy - 106)
+  ctx.font = `600 13px ${FONT}`
+  ctx.fillStyle = 'rgba(220, 240, 255, 0.9)'
+  ctx.fillText('Tekan huruf ini, cepat!', cx, cy - 78)
+
+  // Cincin waktu
+  const total = qte.index === 0 ? qte.per + MEGALODON.qte.lead : qte.per
+  const left = Math.max(0, qte.timer / total)
+  ctx.lineWidth = 6
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)'
+  ctx.beginPath()
+  ctx.arc(cx, cy, 58, 0, Math.PI * 2)
+  ctx.stroke()
+  ctx.strokeStyle = left < 0.35 ? COLORS.error : COLORS.typed
+  ctx.lineCap = 'round'
+  ctx.beginPath()
+  ctx.arc(cx, cy, 58, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * left)
+  ctx.stroke()
+  // Tombol
+  const size = 80 + pulse * 4
+  ctx.fillStyle = '#0b1a2b'
+  roundRect(ctx, cx - size / 2, cy - size / 2, size, size, 14)
+  ctx.fill()
+  ctx.lineWidth = 3
+  ctx.strokeStyle = COLORS.typed
+  ctx.stroke()
+  ctx.fillStyle = '#ffffff'
+  ctx.font = `800 48px ${FONT}`
+  ctx.fillText(qte.keys[qte.index].toUpperCase(), cx, cy + 2)
+
+  // Urutan huruf
+  const cap = 30
+  const gap = 8
+  const rowW = qte.keys.length * cap + (qte.keys.length - 1) * gap
+  ctx.font = `800 15px ${FONT}`
+  qte.keys.forEach((key, i) => {
+    const x = cx - rowW / 2 + i * (cap + gap)
+    const y = cy + 84
+    const done = i < qte.index
+    const current = i === qte.index
+    ctx.fillStyle = done ? COLORS.typed : 'rgba(3, 14, 28, 0.85)'
+    roundRect(ctx, x, y, cap, cap, 7)
+    ctx.fill()
+    ctx.lineWidth = current ? 2.5 : 1
+    ctx.strokeStyle = current ? COLORS.typed : 'rgba(160, 220, 255, 0.3)'
+    ctx.stroke()
+    ctx.fillStyle = done ? '#1a1300' : current ? '#ffffff' : 'rgba(255, 255, 255, 0.45)'
+    ctx.fillText(key.toUpperCase(), x + cap / 2, y + cap / 2 + 1)
+  })
+  ctx.restore()
 }
 
 /** Label kata di atas musuh: huruf yang sudah diketik kuning, sisanya putih. */
@@ -548,9 +975,12 @@ function drawHud(ctx: CanvasRenderingContext2D, s: GameState) {
   ctx.fillStyle = '#ffffff'
   ctx.font = `400 30px ${TITLE_FONT}`
   ctx.fillText(`${Math.floor(s.depth)} m`, w / 2, 26)
-  ctx.font = `600 12px ${FONT}`
-  ctx.fillStyle = 'rgba(200, 235, 255, 0.85)'
-  ctx.fillText(ZONES[s.zone].name.toUpperCase(), w / 2, 52)
+  if (s.mega && s.mega.phase !== 'warning') drawBossBar(ctx, s, s.mega)
+  else {
+    ctx.font = `600 12px ${FONT}`
+    ctx.fillStyle = 'rgba(200, 235, 255, 0.85)'
+    ctx.fillText(ZONES[s.zone].name.toUpperCase(), w / 2, 52)
+  }
 
   // Kanan: skor, WPM, akurasi, kombo
   ctx.textAlign = 'right'
@@ -628,6 +1058,13 @@ export function drawPreview(canvas: HTMLCanvasElement, kind: Enemy['kind']) {
   ctx.clearRect(0, 0, w, h)
   const k = ENEMIES[kind].size
   const enemy: Enemy = { id: 0, kind, words: [''], segment: 0, progress: 0, x: 0, y: 0, base: 0, speed: 0, phase: 0, age: 0.4, flash: 0, revealed: false }
+  if (kind === 'megalodon') {
+    const fit = Math.min(w / 300, h / 170)
+    ctx.translate(w / 2 - 14 * fit, h / 2 + 8 * fit)
+    ctx.scale(fit, fit)
+    drawEnemy(ctx, enemy, false)
+    return
+  }
   const fit = kind === 'kraken' ? Math.min(w / 240, h / 120) : Math.min(1, (w * 0.82) / (130 * k), (h * 0.8) / (60 * k))
   ctx.translate(kind === 'kraken' ? w * 0.58 : w / 2 - 6 * fit, h / 2 + (kind === 'kraken' ? 4 : 0))
   ctx.scale(fit, fit)
@@ -654,12 +1091,19 @@ export function render(ctx: CanvasRenderingContext2D, s: GameState, scale: numbe
     ctx.setLineDash([])
   }
   drawRevealLine(ctx, s, clock)
+  if (locked?.origin) drawReturnPath(ctx, locked, clock)
+  if (s.mega) drawMegalodon(ctx, s.mega)
   for (const enemy of s.enemies) drawEnemy(ctx, enemy, enemy === locked)
+  if (s.mega) drawRebounds(ctx, s.mega, clock)
   drawDiver(ctx, s, clock)
   drawDarkness(ctx, s)
   drawBioluminescence(ctx, s, clock)
   const { darkness } = seaAt(s.depth)
   for (const enemy of s.enemies) drawGlow(ctx, enemy, darkness)
+  if (s.mega) {
+    drawMegaGlow(ctx, s.mega, clock)
+    drawMegaWarning(ctx, s, s.mega, clock)
+  }
   drawEffects(ctx, s)
   // Label digambar terakhir (di atas kegelapan) supaya selalu terbaca; yang terkunci paling atas.
   for (const enemy of s.enemies) if (enemy !== locked) drawLabel(ctx, s, enemy, false)
@@ -668,4 +1112,5 @@ export function render(ctx: CanvasRenderingContext2D, s: GameState, scale: numbe
   drawHurt(ctx, s)
   drawHud(ctx, s)
   drawBanner(ctx, s)
+  drawQte(ctx, s, clock)
 }

@@ -118,6 +118,30 @@ const SOUNDS: Record<GameEvent, () => void> = {
     tone(70, 1.4, { type: 'sawtooth', volume: 0.06, slide: 20 })
     tone(105, 1.4, { type: 'sawtooth', volume: 0.04, slide: 15 })
   },
+  // Megalodon Robot
+  alarm: () => [0, 0.35, 0.7].forEach((delay) => tone(620, 0.25, { type: 'square', volume: 0.03, slide: -220, delay })),
+  missile: () => {
+    noise(0.35, { filter: 'bandpass', from: 900, to: 2600, volume: 0.1 })
+    tone(240, 0.3, { type: 'sawtooth', volume: 0.025, slide: 180 })
+  },
+  deflect: () => tone(500, 0.22, { type: 'triangle', volume: 0.05, slide: 900 }),
+  'boss-hit': () => {
+    noise(0.3, { volume: 0.3, from: 2400, to: 200 })
+    tone(160, 0.25, { type: 'square', volume: 0.05, slide: -80 })
+    tone(1200, 0.12, { type: 'square', volume: 0.02, slide: -600, delay: 0.04 })
+  },
+  'boss-miss': () => tone(330, 0.3, { type: 'triangle', volume: 0.035, slide: -180 }),
+  qte: () => [0, 0.14].forEach((delay) => tone(880, 0.12, { type: 'square', volume: 0.04, delay })),
+  'qte-key': () => tone(1320, 0.07, { type: 'square', volume: 0.035, slide: 300 }),
+  'qte-win': () => [659, 880, 1175].forEach((freq, i) => tone(freq, 0.12, { type: 'square', volume: 0.035, delay: i * 0.06 })),
+  'qte-fail': () => {
+    tone(90, 0.5, { type: 'sawtooth', volume: 0.06, slide: -40 })
+    noise(0.4, { volume: 0.25, to: 80 })
+  },
+  'boss-down': () => {
+    noise(1.2, { volume: 0.35, from: 1200, to: 40 })
+    ;[392, 494, 587, 784].forEach((freq, i) => tone(freq, 0.25, { type: 'triangle', volume: 0.05, delay: 0.4 + i * 0.1 }))
+  },
   zone: () => [392, 523, 659].forEach((freq, i) => tone(freq, 0.4, { volume: 0.04, delay: i * 0.15 })),
   over: () => [392, 330, 262, 196].forEach((freq, i) => tone(freq, 0.35, { type: 'triangle', volume: 0.06, delay: 0.3 + i * 0.22 })),
 }

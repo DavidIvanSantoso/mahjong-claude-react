@@ -82,6 +82,10 @@ const GUIDE_KINDS: { kind: EnemyKind; text: string }[] = [
   { kind: 'martil', text: 'Lambat, kata panjang (8–12 huruf).' },
   { kind: 'bayangan', text: 'Samar (tembus pandang) dan baru bisa diketik setelah melewati garis putus-putus dekat penyelam. Muncul mulai 150 m.' },
   { kind: 'kraken', text: 'Penjaga zona: beberapa kata berurutan. Penyelam berhenti turun sampai ia kalah. Kalau sampai menyentuhmu, hilang 2 hati.' },
+  {
+    kind: 'megalodon',
+    text: 'Penjaga zona bergiliran dengan Kraken (pertama di 300 m); ikan lain berhenti muncul. Ia menembakkan misil berkata: ketik untuk memantulkannya ke titik tembak, kena kalau bos masih di sana. Saat ia bersiap menggigit, tekan huruf yang muncul sebelum waktunya habis.',
+  },
   { kind: 'oksigen', text: 'Gelembung oksigen (muncul kalau hatimu berkurang): ketik katanya untuk +1 hati.' },
   { kind: 'mutiara', text: 'Kerang mutiara: +1 Sonar dan skor bonus.' },
 ]
@@ -109,7 +113,7 @@ function GuideDialog({ open, onClose }: { open: boolean; onClose: () => void }) 
           <li>Ikan yang mencapaimu mengambil 1 hati. Salah ketik tidak mengurangi hati, tapi memutus kombo dan menurunkan akurasi.</li>
           <li>
             <kbd>Backspace</kbd> melepas target (kemajuan kata itu diulang). <kbd>Enter</kbd> menembakkan <strong>Sonar</strong> yang
-            menghancurkan semua ikan di layar (kecuali Kraken). Kamu mulai dengan {PLAYER.sonar} Sonar, maksimal {PLAYER.maxSonar}.
+            menghancurkan semua ikan dan misil di layar (kecuali bos). Kamu mulai dengan {PLAYER.sonar} Sonar, maksimal {PLAYER.maxSonar}.
           </li>
           <li>
             Kombo (kata beruntun tanpa salah) menggandakan skor:{' '}

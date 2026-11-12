@@ -939,13 +939,13 @@ Game mengetik untuk 1 pemain, tanpa jaringan. Pemain adalah penyelam yang terus 
 
 ### Alur
 
-1. **Turun terus.** Kedalaman = waktu bertahan × laju turun (`DESCENT`, 2,4 m/detik, naik pelan sampai 4 m/detik). Laju berhenti selama Kraken (penjaga zona) masih hidup.
+1. **Turun terus.** Kedalaman = waktu bertahan × laju turun (`DESCENT`, 2,4 m/detik, naik pelan sampai 4 m/detik). Laju berhenti selama penjaga zona (Kraken atau Megalodon Robot) masih hidup.
 2. **Mengunci target.** Huruf pertama yang diketik mengunci ikan **terdekat ke penyelam** yang katanya diawali huruf itu. Ikan bisa dikunci begitu labelnya terlihat, walau badannya baru separuh masuk layar (kecuali Ikan Bayangan). Huruf berikutnya melanjutkan ikan itu. Huruf yang sudah benar berwarna kuning, sisanya putih; target terkunci diberi lingkaran putus-putus.
    - Saat ikan baru muncul, mesin memilih kata yang huruf awalnya **belum dipakai** ikan lain di layar, supaya penguncian jarang ambigu.
    - Salah ketik tidak mengurangi hati, tapi memutus kombo dan menurunkan akurasi.
    - **Backspace** melepas kunci (kemajuan kata itu diulang dari awal).
-3. **Terkena.** Ikan yang mencapai penyelam mengambil hati (Kraken 2 hati), lalu hancur. Setelah terkena ada jeda kebal singkat (`hurtGrace`).
-4. **Sonar** (**Enter**): menghancurkan semua ikan di layar kecuali Kraken dan bonus. Mulai dengan 1, maksimal 3.
+3. **Terkena.** Ikan atau misil yang mencapai penyelam mengambil hati (Kraken 2 hati), lalu hancur. Setelah terkena ada jeda kebal singkat (`hurtGrace`).
+4. **Sonar** (**Enter**): menghancurkan semua ikan dan misil di layar kecuali bos dan bonus. Misil yang dihancurkan Sonar tidak memantul ke bos. Mulai dengan 1, maksimal 3.
 5. **Selesai** saat hati habis. Ringkasan menampilkan kedalaman, waktu bertahan, skor, WPM, akurasi, kombo terbaik, dan jumlah musuh per jenis. Rekor terbaik disimpan di perangkat (`localStorage`, kunci `palung-best`).
 
 ### Musuh dan bonus (`ENEMIES` di `config.ts`)
@@ -958,6 +958,8 @@ Game mengetik untuk 1 pemain, tanpa jaringan. Pemain adalah penyelam yang terus 
 | Hiu Martil | 8–12 huruf | lambat | Mulai muncul setelah 40 m |
 | Ikan Bayangan | 4–6 huruf | sedang | Mulai 150 m. Ikan dan katanya tampil samar (50%) dan **baru bisa diketik setelah kepalanya melewati garis putus-putus** 330 px dari penyelam (`reveal`). Mengetik huruf awalnya sebelum itu dihitung salah ketik |
 | Kraken | frasa 3–5 kata | sangat lambat | Penjaga zona; kata diketik berurutan |
+| Megalodon Robot | – | – | Penjaga zona; lihat [Megalodon Robot](#megalodon-robot-megalodon-di-configts) |
+| Misil | 4–7 huruf | sedang | Hanya ditembakkan Megalodon; meluncur lurus ke penyelam |
 | Gelembung Oksigen | kata bonus | naik dari dasar | +1 hati; hanya muncul kalau hati berkurang |
 | Kerang Mutiara | kata bonus | naik dari dasar | +1 Sonar dan skor bonus |
 
@@ -967,18 +969,32 @@ Game mengetik untuk 1 pemain, tanpa jaringan. Pemain adalah penyelam yang terus 
 - **Kesulitan** (`difficultyAt`): jeda kemunculan makin pendek, ikan makin cepat, jumlah ikan maksimal di layar bertambah, dan porsi Hiu/Hiu Martil naik. Setelah 1000 m kesulitan tetap naik pelan, supaya tidak ada titik aman untuk bertahan selamanya.
 - **Kejadian berkala** (`EVENTS`):
   - Kawanan Teri pertama di 40 m, lalu tiap 100 m; jumlah ikannya bertambah dengan kedalaman (6–18).
-  - Kraken muncul di awal tiap zona, lalu tiap 500 m setelah zona terakhir.
+  - Penjaga zona muncul di awal tiap zona, lalu tiap 500 m setelah zona terakhir. Jenisnya bergiliran (`EVENTS.boss.order`): Kraken di 100 m, Megalodon Robot di 300 m, Kraken di 600 m, Megalodon di 1000 m, dan seterusnya.
   - Gelembung Oksigen tiap 140 m (kalau hati berkurang), Kerang Mutiara tiap 160 m.
 
-Hasil simulasi bot (30 permainan per baris; bot mengetik pada WPM tertentu dengan reaksi 0,3 detik saat berganti target):
+Hasil simulasi bot (30 permainan per baris; bot mengetik pada WPM tertentu dengan reaksi 0,3 detik saat berganti target, dan 0,4 detik per huruf QTE):
 
-| Bot | Bertahan (median) | Kedalaman (median) |
-|---|---|---|
-| 20 WPM, akurasi 90% | ±1 menit | ±100 m (Kraken pertama) |
-| 30 WPM, akurasi 92% | ±1,9 menit | ±253 m |
-| 45 WPM, akurasi 94% | ±3 menit | ±437 m |
-| 60 WPM, akurasi 95% | ±3,8 menit | ±600 m |
-| 100 WPM, akurasi 97% | ±6,8 menit | ±1.254 m |
+| Bot | Bertahan (median) | Kedalaman (median) | Pertarungan Megalodon |
+|---|---|---|---|
+| 20 WPM, akurasi 90% | ±1 menit | ±100 m (Kraken pertama) | – |
+| 30 WPM, akurasi 92% | ±1,9 menit | ±253 m | jarang sampai |
+| 45 WPM, akurasi 94% | ±3,5 menit | ±450 m | menang 25 dari 29, ±42 detik |
+| 60 WPM, akurasi 95% | ±4,9 menit | ±700 m | menang 30 dari 30, ±38 detik |
+| 100 WPM, akurasi 97% | ±8 menit | ±1.260 m | ±37 detik |
+
+### Megalodon Robot (`MEGALODON` di `config.ts`)
+
+Bos kedua, bergiliran dengan Kraken. Selama pertarungan **tidak ada ikan atau bonus yang muncul** dan penyelam berhenti turun.
+
+1. **Peringatan.** Banner "SINYAL LOGAM TERDETEKSI" dan denyut merah di tepi kanan. Kemunculan berhenti; bos baru masuk setelah semua ikan berbahaya yang tersisa habis (minimal `warning` detik).
+2. **Bertarung.** Bos berpindah naik-turun, lalu diam beberapa detik (`hold`, makin singkat saat HP-nya turun) sambil menembakkan **misil berkata** dari mulutnya, lurus ke penyelam. Paling banyak 2 misil sekaligus (3 mulai Megalodon kedua). Bos tidak menembak kalau sisa waktu diamnya kurang dari `fireCutoff`, supaya setiap misil masih sempat dipantulkan dan kena.
+3. **Memantulkan misil.** Misil yang diketik habis **terbang balik ke titik tembaknya**. Kalau badan bos masih di jalurnya (`hitbox`), HP bos −1; kalau bos sudah pindah, tertulis "MELESET" dan HP tidak berkurang. Saat misil terkunci, jalur pantul dan titik tembaknya ditandai garis kuning putus-putus, jadi pemain bisa melihat apakah bos masih di sana.
+4. **QTE gigitan.** Saat HP turun melewati 65% dan 30% (`qteAt`, ditandai di bar HP), bos menunggu misil di layar habis lalu bersiap menggigit. Layar menampilkan huruf besar yang harus ditekan, satu per satu (3 huruf; +1 per Megalodon berikutnya, maks. 6), masing-masing sebelum cincin waktunya habis (1,35 detik, makin singkat untuk Megalodon berikutnya; huruf pertama dapat tambahan 0,6 detik).
+   - Semua benar: bos terpental dan pingsan sebentar, HP −2.
+   - Salah tombol atau terlambat: bos menerjang dan menggigit, −1 hati (menembus jeda kebal), kombo putus.
+5. **Kalah.** HP habis: misil yang tersisa meledak, bos tenggelam sambil meledak, lalu banner "MEGALODON HANCUR!" dan penyelaman berlanjut.
+
+HP awal 10, +3 untuk tiap Megalodon berikutnya; kecepatan pindah dan kecepatan misil juga naik. Skor: +20 per HP yang hilang dan 400 saat kalah (keduanya dikali kombo). Selama QTE, Backspace dan Sonar tidak berlaku. Bar HP bos menggantikan nama zona di HUD.
 
 ### Suasana latar (`ambience.ts`)
 
@@ -999,8 +1015,8 @@ Hiasan saja, tidak memengaruhi permainan, dan ditentukan dari kedalaman + waktu 
 
 ### Menambah kata dan menyetel game
 
-- **Kata:** tambahkan ke `WORDS` di `src/palung/words.ts`. Mesin otomatis memakai kata itu untuk jenis ikan yang rentang panjangnya cocok. Hanya huruf a–z tanpa spasi; kata lain dan duplikat dibuang (`clean`). Frasa Kraken ada di `BOSS_PHRASES`, kata bonus di `BONUS_WORDS`, huruf Teri di `LETTERS`.
-- **Angka keseimbangan:** semuanya di `src/palung/config.ts` (kecepatan, skor, hati, Sonar, zona, kurva kesulitan, jadwal kejadian, kombo).
+- **Kata:** tambahkan ke `WORDS` di `src/palung/words.ts`. Mesin otomatis memakai kata itu untuk jenis ikan yang rentang panjangnya cocok. Hanya huruf a–z tanpa spasi; kata lain dan duplikat dibuang (`clean`). Frasa Kraken ada di `BOSS_PHRASES` (kata misil diambil dari `WORDS` sesuai panjangnya), kata bonus di `BONUS_WORDS`, huruf Teri di `LETTERS`.
+- **Angka keseimbangan:** semuanya di `src/palung/config.ts` (kecepatan, skor, hati, Sonar, zona, kurva kesulitan, jadwal kejadian, urutan bos, Megalodon, kombo).
 - **Jenis ikan baru:** tambahkan ke `EnemyKind` dan `ENEMIES` (config.ts), beri bobot di `difficultyAt`, lalu gambarnya di `drawEnemy` (render.ts).
 
 ### Teknis
@@ -1020,10 +1036,10 @@ Hiasan saja, tidak memengaruhi permainan, dan ditentukan dari kedalaman + waktu 
 
 ```
 src/palung/
-  config.ts        Angka keseimbangan: dunia, hati, Sonar, musuh, zona, kesulitan, kejadian, kombo
+  config.ts        Angka keseimbangan: dunia, hati, Sonar, musuh, zona, kesulitan, kejadian, Megalodon, kombo
   words.ts         Daftar kata, frasa Kraken, kata bonus, huruf Teri
-  engine.ts        State dan aturan: kemunculan, penguncian, tabrakan, skor, WPM, akurasi (tanpa DOM)
-  render.ts        Menggambar penyelam, ikan, efek, label kata, HUD, banner (Canvas)
+  engine.ts        State dan aturan: kemunculan, penguncian, tabrakan, Megalodon (misil, pantulan, QTE), skor, WPM, akurasi (tanpa DOM)
+  render.ts        Menggambar penyelam, ikan, Megalodon dan misil, efek, label kata, HUD, banner, layar QTE (Canvas)
   ambience.ts      Suasana latar per zona (dinding palung, karang, paus, bangkai kapal, cahaya hayati)
   sfx.ts           Efek suara Web Audio
   PalungGame.tsx   Kanvas, game loop, input keyboard, jeda
