@@ -1,6 +1,7 @@
 import { ENEMIES, MEGALODON, multiplierFor, PLAYER, WORLD, ZONES } from './config'
 import { drawAmbience, drawBioluminescence, seaAt } from './ambience'
-import { accuracy, diverY, lockedEnemy, wpm, type Enemy, type GameState, type Megalodon } from './engine'
+import { drawCave, drawCaveBar } from './caveRender'
+import { accuracy, diverAt, diverY, lockedEnemy, steering, wpm, type Enemy, type GameState, type Megalodon } from './engine'
 
 /**
  * Menggambar PALUNG ke kanvas. Semua gambar (penyelam, ikan, gelembung) dibuat dari bentuk kanvas,
@@ -53,8 +54,9 @@ function heartPath(ctx: CanvasRenderingContext2D, x: number, y: number, size: nu
 function drawDarkness(ctx: CanvasRenderingContext2D, s: GameState) {
   const { darkness } = seaAt(s.depth)
   if (darkness <= 0.01) return
-  const cx = WORLD.diverX + 150
-  const cy = diverY(s)
+  const diver = diverAt(s)
+  const cx = diver.x + 150
+  const cy = diver.y
   const gradient = ctx.createRadialGradient(cx, cy, 40, cx, cy, Math.max(s.width, 600) * 0.75)
   gradient.addColorStop(0, 'rgba(0, 4, 12, 0)')
   gradient.addColorStop(0.35, `rgba(0, 4, 12, ${darkness * 0.45})`)
@@ -66,8 +68,9 @@ function drawDarkness(ctx: CanvasRenderingContext2D, s: GameState) {
 // ---------- Penyelam ----------
 
 function drawDiver(ctx: CanvasRenderingContext2D, s: GameState, clock: number) {
-  const x = WORLD.diverX
-  const y = diverY(s) + Math.sin(clock * 1.8) * 4
+  const diver = diverAt(s)
+  const x = diver.x
+  const y = diver.y + (steering(s) ? 0 : Math.sin(clock * 1.8) * 4)
   if (s.grace > 0 && Math.floor(clock * 14) % 2 === 0) return
   const kick = Math.sin(clock * 5) * 0.35
 
@@ -976,6 +979,7 @@ function drawHud(ctx: CanvasRenderingContext2D, s: GameState) {
   ctx.font = `400 30px ${TITLE_FONT}`
   ctx.fillText(`${Math.floor(s.depth)} m`, w / 2, 26)
   if (s.mega && s.mega.phase !== 'warning') drawBossBar(ctx, s, s.mega)
+  else if (s.cave && steering(s)) drawCaveBar(ctx, s, s.cave)
   else {
     ctx.font = `600 12px ${FONT}`
     ctx.fillStyle = 'rgba(200, 235, 255, 0.85)'
@@ -1077,6 +1081,19 @@ export function render(ctx: CanvasRenderingContext2D, s: GameState, scale: numbe
   ctx.save()
   if (s.shake > 0) ctx.translate((Math.random() - 0.5) * 12 * s.shake, (Math.random() - 0.5) * 12 * s.shake)
   drawAmbience(ctx, s, clock)
+  if (s.cave && steering(s)) {
+    // Arus Gua: gua punya pencahayaan sendiri, digambar di atas kegelapan laut; tidak ada ikan.
+    // Tanpa cahaya hayati latar: ubur-ubur hiasan bisa dikira rintangan.
+    drawDarkness(ctx, s)
+    drawCave(ctx, s, s.cave, clock)
+    drawDiver(ctx, s, clock)
+    drawEffects(ctx, s)
+    ctx.restore()
+    drawHurt(ctx, s)
+    drawHud(ctx, s)
+    drawBanner(ctx, s)
+    return
+  }
   const locked = lockedEnemy(s)
 
   // Garis bidik ke target terkunci

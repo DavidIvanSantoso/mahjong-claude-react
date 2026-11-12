@@ -434,7 +434,8 @@
   padding: 8px;
   /* Pengaman: kanvas tidak pernah boleh mendorong ukuran halaman (memicu scrollbar). */
   overflow: hidden;
-  touch-action: manipulation;
+  /* none: geser jari di Arus Gua tidak boleh menggulir halaman. */
+  touch-action: none;
   cursor: text;
 }
 

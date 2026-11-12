@@ -208,6 +208,57 @@ export const MEGALODON = {
   },
 }
 
+/**
+ * Arus Gua: penyelam berhenti turun dan berenang mendatar melewati terowongan acak, digerakkan dengan
+ * panah/WASD (atau sentuh di HP). Selama event tidak ada ikan yang muncul dan tidak ada yang diketik.
+ * Jarak dalam piksel dunia; `round` = gua ke berapa (0 = pertama).
+ */
+export const CAVE = {
+  firstAt: 200,
+  every: 250,
+  /** Jeda minimal setelah peringatan; gua baru dimulai setelah ikan berbahaya di layar habis. */
+  warning: 2,
+  /** Jarak antartitik kerangka terowongan. */
+  segment: 140,
+  /** Panjang bagian sempit terowongan. */
+  length: 3600,
+  lengthPerRound: 350,
+  /** Kecepatan gulir (px/detik): dasar + per meter kedalaman, sampai maks. */
+  speed: 230,
+  speedPerMeter: 0.09,
+  maxSpeed: 330,
+  /** Lebar celah di awal dan akhir gua (menyempit pelan), dikurangi sedikit per meter. */
+  gapStart: 260,
+  gapEnd: 190,
+  gapShrinkPerMeter: 0.035,
+  minGap: 150,
+  /** Pergeseran pusat terowongan maksimal antartitik (makin besar makin berkelok). */
+  maxStep: 62,
+  diverSpeed: 300,
+  /**
+   * Rintangan: jarak minimal `spacing` titik (berkurang 1 mulai gua ke-`denserFromRound`+1, minimal 2),
+   * dengan peluang `chance` per titik.
+   */
+  spacing: 3,
+  denserFromRound: 2,
+  chance: 0.8,
+  /** Peluang rintangan di gua pertama (lebih jarang, untuk belajar kontrol). */
+  firstChance: 0.65,
+  weights: { moray: 0.45, urchin: 0.3, jelly: 0.25 },
+  /** Peluang mutiara di titik tanpa rintangan. */
+  pearlChance: 0.4,
+  pearlPoints: 30,
+  /** Satu gelembung oksigen di paruh kedua tiap gua: +1 hati (skor kalau hati penuh). */
+  oxygenPoints: 60,
+  /** Belut Moray: panjang terjangan (pecahan celah) dan waktu tiap tahap (detik). */
+  moray: { reach: 0.35, peek: 0.45, out: 0.22, hold: 0.9, back: 0.5 },
+  /** Kebal setelah tergores di gua (lebih lama dari biasa supaya sempat keluar dari bahaya). */
+  grace: 1.4,
+  /** Bonus lolos: (dasar + kedalaman × perMeter), ×2 dan +1 Sonar kalau tanpa tergores. */
+  bonus: 150,
+  bonusPerMeter: 0.25,
+}
+
 /** Pengali skor dari kombo (kata beruntun tanpa salah ketik). */
 export const COMBO_STEPS: { at: number; multiplier: number }[] = [
   { at: 0, multiplier: 1 },

@@ -939,7 +939,7 @@ Game mengetik untuk 1 pemain, tanpa jaringan. Pemain adalah penyelam yang terus 
 
 ### Alur
 
-1. **Turun terus.** Kedalaman = waktu bertahan × laju turun (`DESCENT`, 2,4 m/detik, naik pelan sampai 4 m/detik). Laju berhenti selama penjaga zona (Kraken atau Megalodon Robot) masih hidup.
+1. **Turun terus.** Kedalaman = waktu bertahan × laju turun (`DESCENT`, 2,4 m/detik, naik pelan sampai 4 m/detik). Laju berhenti selama penjaga zona (Kraken atau Megalodon Robot) masih hidup dan selama Arus Gua.
 2. **Mengunci target.** Huruf pertama yang diketik mengunci ikan **terdekat ke penyelam** yang katanya diawali huruf itu. Ikan bisa dikunci begitu labelnya terlihat, walau badannya baru separuh masuk layar (kecuali Ikan Bayangan). Huruf berikutnya melanjutkan ikan itu. Huruf yang sudah benar berwarna kuning, sisanya putih; target terkunci diberi lingkaran putus-putus.
    - Saat ikan baru muncul, mesin memilih kata yang huruf awalnya **belum dipakai** ikan lain di layar, supaya penguncian jarang ambigu.
    - Salah ketik tidak mengurangi hati, tapi memutus kombo dan menurunkan akurasi.
@@ -971,16 +971,19 @@ Game mengetik untuk 1 pemain, tanpa jaringan. Pemain adalah penyelam yang terus 
   - Kawanan Teri pertama di 40 m, lalu tiap 100 m; jumlah ikannya bertambah dengan kedalaman (6–18).
   - Penjaga zona muncul di awal tiap zona, lalu tiap 500 m setelah zona terakhir. Jenisnya bergiliran (`EVENTS.boss.order`): Kraken di 100 m, Megalodon Robot di 300 m, Kraken di 600 m, Megalodon di 1000 m, dan seterusnya.
   - Gelembung Oksigen tiap 140 m (kalau hati berkurang), Kerang Mutiara tiap 160 m.
+  - **Arus Gua** pertama di 200 m, lalu tiap 250 m (lihat [Arus Gua](#arus-gua-cave-di-configts-dan-cavets)). Tidak dimulai saat ada bos atau Kawanan Teri; ditunda sampai keduanya selesai.
 
-Hasil simulasi bot (30 permainan per baris; bot mengetik pada WPM tertentu dengan reaksi 0,3 detik saat berganti target, dan 0,4 detik per huruf QTE):
+Hasil simulasi bot (30 permainan per baris; bot mengetik pada WPM tertentu dengan reaksi 0,3 detik saat berganti target, 0,4 detik per huruf QTE, dan menghindar di gua dengan memilih ketinggian paling aman di depannya):
 
-| Bot | Bertahan (median) | Kedalaman (median) | Pertarungan Megalodon |
+| Bot | Bertahan (median) | Kedalaman (median) | Catatan |
 |---|---|---|---|
-| 20 WPM, akurasi 90% | ±1 menit | ±100 m (Kraken pertama) | – |
-| 30 WPM, akurasi 92% | ±1,9 menit | ±253 m | jarang sampai |
-| 45 WPM, akurasi 94% | ±3,5 menit | ±450 m | menang 25 dari 29, ±42 detik |
-| 60 WPM, akurasi 95% | ±4,9 menit | ±700 m | menang 30 dari 30, ±38 detik |
-| 100 WPM, akurasi 97% | ±8 menit | ±1.260 m | ±37 detik |
+| 20 WPM, akurasi 90% | ±1 menit | ±100 m (Kraken pertama) | |
+| 30 WPM, akurasi 92% | ±2,4 menit | ±252 m | Megalodon jarang tercapai |
+| 45 WPM, akurasi 94% | ±4,4 menit | ±454 m | Megalodon dikalahkan ±85%, ±40 detik |
+| 60 WPM, akurasi 95% | ±5,2 menit | ±600 m | |
+| 100 WPM, akurasi 97% | ±7,4 menit | ±960 m | |
+
+Di gua, bot rata-rata tergores ±0,4 kali di 200 m dan ±1 kali di 950 m; sekitar 60% gua dilewati tanpa tergores. Kematian di gua umumnya terjadi pada pemain yang masuk dengan 1 hati.
 
 ### Megalodon Robot (`MEGALODON` di `config.ts`)
 
@@ -995,6 +998,31 @@ Bos kedua, bergiliran dengan Kraken. Selama pertarungan **tidak ada ikan atau bo
 5. **Kalah.** HP habis: misil yang tersisa meledak, bos tenggelam sambil meledak, lalu banner "MEGALODON HANCUR!" dan penyelaman berlanjut.
 
 HP awal 10, +3 untuk tiap Megalodon berikutnya; kecepatan pindah dan kecepatan misil juga naik. Skor: +20 per HP yang hilang dan 400 saat kalah (keduanya dikali kombo). Selama QTE, Backspace dan Sonar tidak berlaku. Bar HP bos menggantikan nama zona di HUD.
+
+### Arus Gua (`CAVE` di `config.ts` dan `cave.ts`)
+
+Event tanpa mengetik: penyelam berhenti turun dan berenang **mendatar** melewati terowongan gua yang dibuat acak, sambil digerakkan pemain.
+
+1. **Peringatan.** Banner "ARUS GUA DI DEPAN". Kemunculan berhenti; gua baru dimulai setelah semua ikan berbahaya di layar habis (minimal `warning` detik). Bonus yang masih naik ikut hilang saat gua dimulai.
+2. **Di dalam gua.** Layar bergulir ke kiri (`speed`, naik dengan kedalaman). Penyelam bebas bergerak ke 4 arah:
+   - Keyboard: **← ↑ → ↓**, atau **W A S D** (WASD hanya berlaku di gua; di luar gua huruf tetap dipakai mengetik).
+   - Layar sentuh/mouse: tahan dan geser; penyelam berenang menuju titik itu.
+   - Mengetik, Backspace, dan Sonar tidak berlaku. Bar HUD menampilkan kemajuan gua, jumlah mutiara, dan berapa kali tergores.
+3. **Terowongan** dibuat dari titik kerangka tiap `segment` px: pusat celah bergeser acak (`maxStep`), lebar celah menyempit dari `gapStart` ke `gapEnd` (lebih sempit di kedalaman, minimal `minGap`). Mulut gua di awal dan akhir terbuka lebar. **Dinding padat**: menyentuhnya mengambil 1 hati dan penyelam terdorong keluar.
+4. **Penghuni gua** (jaraknya minimal `spacing` titik; lebih rapat mulai gua ke-3, lebih jarang di gua pertama):
+
+| Rintangan | Perilaku |
+|---|---|
+| Belut Moray | Bersembunyi di lubang dinding, terlihat dari sepasang **mata kuning berkilat**. Saat penyelam ±1 detik lagi sampai, ia mengintip lalu **menerjang keluar** menutup ±sepertiga celah (`moray.reach`), bertahan sebentar, lalu masuk lagi. Hindari dengan berenang ke sisi seberang. |
+| Bulu Babi | Diam; menempel di dinding atau melayang di celah. |
+| Ubur-ubur Api | Naik-turun di tengah celah. |
+| Mutiara emas | +30 skor (dikali kombo). |
+| Gelembung oksigen | Satu per gua, di paruh kedua: +1 hati (skor kalau hati penuh). |
+
+5. **Tergores** = −1 hati, lalu kebal `grace` detik (penyelam berkedip) supaya sempat keluar dari bahaya. Tabrakan rintangan sedikit memaafkan (badan penyelam dihitung 80%).
+6. **Keluar gua.** Bonus (`bonus` + kedalaman × `bonusPerMeter`); **tanpa tergores: bonus ×2 dan +1 Sonar**. Penyelam kembali ke posisinya lalu lanjut turun.
+
+Gua punya pencahayaan sendiri (gelap kecuali di sekitar lampu penyelam); cahaya hayati latar disembunyikan selama di gua supaya ubur-ubur hiasan tidak dikira rintangan. Gambarnya ada di `caveRender.ts`.
 
 ### Suasana latar (`ambience.ts`)
 
@@ -1016,14 +1044,14 @@ Hiasan saja, tidak memengaruhi permainan, dan ditentukan dari kedalaman + waktu 
 ### Menambah kata dan menyetel game
 
 - **Kata:** tambahkan ke `WORDS` di `src/palung/words.ts`. Mesin otomatis memakai kata itu untuk jenis ikan yang rentang panjangnya cocok. Hanya huruf a–z tanpa spasi; kata lain dan duplikat dibuang (`clean`). Frasa Kraken ada di `BOSS_PHRASES` (kata misil diambil dari `WORDS` sesuai panjangnya), kata bonus di `BONUS_WORDS`, huruf Teri di `LETTERS`.
-- **Angka keseimbangan:** semuanya di `src/palung/config.ts` (kecepatan, skor, hati, Sonar, zona, kurva kesulitan, jadwal kejadian, urutan bos, Megalodon, kombo).
+- **Angka keseimbangan:** semuanya di `src/palung/config.ts` (kecepatan, skor, hati, Sonar, zona, kurva kesulitan, jadwal kejadian, urutan bos, Megalodon, Arus Gua, kombo).
 - **Jenis ikan baru:** tambahkan ke `EnemyKind` dan `ENEMIES` (config.ts), beri bobot di `difficultyAt`, lalu gambarnya di `drawEnemy` (render.ts).
 
 ### Teknis
 
 - **Game loop:** `requestAnimationFrame` di `PalungGame.tsx` memanggil `update(state, dt)` (dt dibatasi 0,05 detik) lalu `render`. State permainan diubah langsung (bukan disalin) karena berjalan 60× per detik; React hanya dipakai untuk layar di luar kanvas (beranda, jeda, ringkasan).
 - **Ukuran:** tinggi dunia tetap 540 satuan; lebarnya mengikuti rasio layar (560–1100), lalu kanvas diperbesar agar pas dan tajam di layar ber-DPI tinggi.
-- **Input:** ketikan ditangkap oleh `<input>` tersembunyi yang selalu difokus. Keyboard fisik diproses di `keydown`; keyboard virtual HP (yang sering mengirim tombol "Unidentified") diproses lewat `input`. Kalau fokus hilang atau tab disembunyikan, game otomatis dijeda. **Esc** menjeda/melanjutkan.
+- **Input:** ketikan ditangkap oleh `<input>` tersembunyi yang selalu difokus. Tombol panah/WASD untuk Arus Gua dibaca dari `keydown`/`keyup` input yang sama (`steer`), sentuhan dari pointer event area permainan (`setPointer`); semuanya dilepas saat dijeda. Keyboard fisik diproses di `keydown`; keyboard virtual HP (yang sering mengirim tombol "Unidentified") diproses lewat `input`. Kalau fokus hilang atau tab disembunyikan, game otomatis dijeda. **Esc** menjeda/melanjutkan.
 - **Mode pengembangan:** `window.__palung` berisi state permainan untuk dibaca dari konsol atau tes browser; tidak ikut di build produksi.
 
 ### Batasan
@@ -1036,10 +1064,12 @@ Hiasan saja, tidak memengaruhi permainan, dan ditentukan dari kedalaman + waktu 
 
 ```
 src/palung/
-  config.ts        Angka keseimbangan: dunia, hati, Sonar, musuh, zona, kesulitan, kejadian, Megalodon, kombo
+  config.ts        Angka keseimbangan: dunia, hati, Sonar, musuh, zona, kesulitan, kejadian, Megalodon, Arus Gua, kombo
   words.ts         Daftar kata, frasa Kraken, kata bonus, huruf Teri
   engine.ts        State dan aturan: kemunculan, penguncian, tabrakan, Megalodon (misil, pantulan, QTE), skor, WPM, akurasi (tanpa DOM)
   render.ts        Menggambar penyelam, ikan, Megalodon dan misil, efek, label kata, HUD, banner, layar QTE (Canvas)
+  cave.ts          Arus Gua: pembuatan terowongan acak, rintangan, tabrakan (data murni)
+  caveRender.ts    Menggambar Arus Gua: dinding batu, belut, bulu babi, ubur-ubur, mutiara, cahaya gua
   ambience.ts      Suasana latar per zona (dinding palung, karang, paus, bangkai kapal, cahaya hayati)
   sfx.ts           Efek suara Web Audio
   PalungGame.tsx   Kanvas, game loop, input keyboard, jeda

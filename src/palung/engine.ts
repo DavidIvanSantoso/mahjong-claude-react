@@ -1,4 +1,6 @@
+import { createCave, DIVER_PROBES, hazardCircles, wallsAt, CAVE_TOP, type Cave } from './cave'
 import {
+  CAVE,
   DEPTH_POINTS,
   DESCENT,
   difficultyAt,
@@ -145,8 +147,15 @@ export type GameEvent =
   | 'qte-win'
   | 'qte-fail'
   | 'boss-down'
+  | 'cave'
+  | 'cave-start'
+  | 'eel'
+  | 'pickup'
+  | 'cave-clear'
   | 'zone'
   | 'over'
+
+export type Direction = 'up' | 'down' | 'left' | 'right'
 
 export interface Banner {
   title: string
@@ -176,9 +185,16 @@ export interface GameState {
   lockId: number | null
   spawnTimer: number
   swarm: { left: number; timer: number } | null
-  next: { swarm: number; oxygen: number; mutiara: number; boss: number }
+  next: { swarm: number; oxygen: number; mutiara: number; boss: number; cave: number }
   bossCount: number
   mega: Megalodon | null
+  /** Arus Gua yang sedang berlangsung (lihat cave.ts). */
+  cave: Cave | null
+  caveCount: number
+  /** Tombol arah yang sedang ditekan (dipakai di Arus Gua). */
+  steer: Record<Direction, boolean>
+  /** Titik sentuh/klik yang ditahan, dalam koordinat dunia (Arus Gua di layar sentuh). */
+  pointer: { x: number; y: number } | null
   /** Sisa waktu kebal setelah terkena. */
   grace: number
   /** Kilatan merah di layar dan getaran saat terkena. */
@@ -241,9 +257,13 @@ export function createGame(width: number, rand: () => number = Math.random): Gam
     lockId: null,
     spawnTimer: 1.6,
     swarm: null,
-    next: { swarm: EVENTS.swarm.firstAt, oxygen: EVENTS.oxygen.firstAt, mutiara: EVENTS.mutiara.firstAt, boss: nextBossDepth(0) },
+    next: { swarm: EVENTS.swarm.firstAt, oxygen: EVENTS.oxygen.firstAt, mutiara: EVENTS.mutiara.firstAt, boss: nextBossDepth(0), cave: CAVE.firstAt },
     bossCount: 0,
     mega: null,
+    cave: null,
+    caveCount: 0,
+    steer: { up: false, down: false, left: false, right: false },
+    pointer: null,
     grace: 0,
     hurtFlash: 0,
     shake: 0,
@@ -278,6 +298,14 @@ export function lockedEnemy(s: GameState): Enemy | null {
 }
 
 export const diverY = (s: GameState) => s.height / 2
+
+/** Posisi penyelam di layar: tetap, kecuali saat berenang bebas di Arus Gua. */
+export function diverAt(s: GameState): { x: number; y: number } {
+  return s.cave && s.cave.phase !== 'warning' ? { x: s.cave.x, y: s.cave.y } : { x: WORLD.diverX, y: diverY(s) }
+}
+
+/** Arus Gua sedang berjalan: penyelam digerakkan, mengetik tidak berlaku. */
+export const steering = (s: GameState) => s.cave !== null && s.cave.phase !== 'warning'
 
 /** Jari-jari tabrakan musuh (dari titik tengahnya). */
 export function reachOf(enemy: Enemy): number {
@@ -364,8 +392,8 @@ function banner(s: GameState, title: string, subtitle: string, time = 2.6) {
 }
 
 function schedule(s: GameState, dt: number) {
-  // Selama Megalodon: tidak ada yang muncul sama sekali.
-  if (s.mega) return
+  // Selama Megalodon atau Arus Gua: tidak ada yang muncul sama sekali.
+  if (s.mega || s.cave) return
   const boss = bossAlive(s)
 
   if (!boss && s.depth >= s.next.boss) {
@@ -380,6 +408,13 @@ function schedule(s: GameState, dt: number) {
     spawn(s, 'kraken', [...BOSS_PHRASES[(s.kills.kraken ?? 0) % BOSS_PHRASES.length]])
     s.events.push('boss')
     banner(s, 'KRAKEN MENGHADANG!', 'Ketik semua katanya berurutan · penyelam berhenti turun', 3)
+    return
+  }
+  if (!boss && !s.swarm && s.depth >= s.next.cave) {
+    s.next.cave += CAVE.every
+    s.cave = createCave(s.width, s.height, s.depth, s.caveCount, s.rand)
+    s.events.push('cave')
+    banner(s, 'ARUS GUA DI DEPAN', 'Bersiap berenang mendatar · ikan berhenti datang', 3)
     return
   }
   if (!boss && !s.swarm && s.depth >= s.next.swarm) {
@@ -495,7 +530,7 @@ export function isTypeable(enemy: Enemy): boolean {
 /** Mengetik satu huruf: mengunci musuh terdekat yang cocok, atau melanjutkan musuh yang terkunci. */
 export function typeKey(s: GameState, key: string) {
   const c = key.toLowerCase()
-  if (s.over || !/^[a-z]$/.test(c)) return
+  if (s.over || !/^[a-z]$/.test(c) || steering(s)) return
   if (s.mega?.qte) {
     qteKey(s, s.mega, c)
     return
@@ -546,7 +581,7 @@ function mistake(s: GameState, target: Enemy | null) {
 /** Backspace: melepas kunci; kemajuan kata itu diulang dari awal. */
 export function release(s: GameState) {
   const target = lockedEnemy(s)
-  if (!target || s.over || s.mega?.qte) return
+  if (!target || s.over || s.mega?.qte || steering(s)) return
   target.progress = 0
   s.lockId = null
   s.events.push('release')
@@ -554,7 +589,7 @@ export function release(s: GameState) {
 
 /** Enter: Sonar menghancurkan semua musuh biasa dan teri di layar (tanpa kombo). */
 export function fireSonar(s: GameState) {
-  if (s.over || s.mega?.qte) return
+  if (s.over || s.mega?.qte || steering(s)) return
   if (s.sonar <= 0) {
     s.events.push('sonar-empty')
     return
@@ -596,7 +631,7 @@ export function update(s: GameState, rawDt: number) {
   if (s.over) return
 
   s.time += dt
-  if (!bossAlive(s)) s.depth += Math.min(DESCENT.max, DESCENT.base + (s.depth / 100) * DESCENT.per100m) * dt
+  if (!bossAlive(s) && !s.cave) s.depth += Math.min(DESCENT.max, DESCENT.base + (s.depth / 100) * DESCENT.per100m) * dt
   const zone = ZONES.indexOf(zoneAt(s.depth))
   if (zone !== s.zone) {
     s.zone = zone
@@ -606,6 +641,7 @@ export function update(s: GameState, rawDt: number) {
   s.grace = Math.max(0, s.grace - dt)
   schedule(s, dt)
   updateMegalodon(s, dt)
+  updateCave(s, dt)
   if (s.over) return
 
   for (const enemy of [...s.enemies]) {
@@ -929,6 +965,176 @@ function updateMegalodon(s: GameState, dt: number) {
   }
 }
 
+// ---------- Arus Gua ----------
+
+/** Tombol arah ditekan / dilepas. */
+export function steer(s: GameState, direction: Direction, on: boolean) {
+  s.steer[direction] = on
+}
+
+/** Sentuhan/klik yang ditahan (koordinat dunia), atau null saat dilepas. */
+export function setPointer(s: GameState, point: { x: number; y: number } | null) {
+  s.pointer = point
+}
+
+/** Melepas semua kontrol arah (misalnya saat dijeda), supaya penyelam tidak terus bergerak. */
+export function releaseSteer(s: GameState) {
+  s.steer = { up: false, down: false, left: false, right: false }
+  s.pointer = null
+}
+
+function caveHit(s: GameState, cave: Cave, x: number, y: number) {
+  if (s.grace > 0) return
+  cave.hits++
+  burst(s, x, y, 14, 'spark', 1.1)
+  damagePlayer(s, 1)
+  s.grace = CAVE.grace
+}
+
+function moveDiver(s: GameState, cave: Cave, dt: number) {
+  let dx = (s.steer.right ? 1 : 0) - (s.steer.left ? 1 : 0)
+  let dy = (s.steer.down ? 1 : 0) - (s.steer.up ? 1 : 0)
+  if (s.pointer) {
+    // Layar sentuh: berenang menuju jari (pelan saat sudah dekat).
+    const px = s.pointer.x - cave.x
+    const py = s.pointer.y - cave.y
+    const length = Math.hypot(px, py)
+    const pull = Math.min(1, length / 60)
+    dx = length > 4 ? (px / length) * pull : 0
+    dy = length > 4 ? (py / length) * pull : 0
+  } else if (dx && dy) {
+    dx *= Math.SQRT1_2
+    dy *= Math.SQRT1_2
+  }
+  const response = Math.min(1, dt * 10)
+  cave.vx += (dx * CAVE.diverSpeed - cave.vx) * response
+  cave.vy += (dy * CAVE.diverSpeed - cave.vy) * response
+  cave.x = Math.max(50, Math.min(s.width * 0.62, cave.x + cave.vx * dt))
+  cave.y = Math.max(CAVE_TOP + 10, Math.min(s.height - 10, cave.y + cave.vy * dt))
+
+  // Dinding padat: penyelam didorong keluar dari batu, dan tergores kalau menyentuhnya.
+  for (const probe of DIVER_PROBES) {
+    const { top, bottom } = wallsAt(cave, cave.dist + cave.x + probe.dx)
+    const y = cave.y + probe.dy
+    if (y - probe.r < top) {
+      cave.y += top - (y - probe.r)
+      cave.vy = Math.max(cave.vy, 60)
+      caveHit(s, cave, cave.x + probe.dx, top)
+    } else if (y + probe.r > bottom) {
+      cave.y -= y + probe.r - bottom
+      cave.vy = Math.min(cave.vy, -60)
+      caveHit(s, cave, cave.x + probe.dx, bottom)
+    }
+  }
+}
+
+function updateHazards(s: GameState, cave: Cave, dt: number) {
+  for (const h of cave.hazards) {
+    const x = h.wx - cave.dist
+    if (x < -120 || x > s.width + 120) continue
+    if (h.kind === 'moray') {
+      // Mulai mengintip saat penyelam ±1 detik lagi sampai.
+      if (h.t < 0 && x - cave.x < cave.speed * 1.0 + 40) {
+        h.t = 0
+        s.events.push('eel')
+      } else if (h.t >= 0) h.t += dt
+    }
+    if (h.done) continue
+    const circles = hazardCircles(cave, h)
+    const pickup = h.kind === 'pearl' || h.kind === 'oxygen'
+    const touch = circles.some((c) =>
+      // Rintangan sedikit memaafkan (badan penyelam dihitung 80%), hadiah sebaliknya mudah diambil.
+      DIVER_PROBES.some((p) => Math.hypot(cave.x + p.dx - c.x, cave.y + p.dy - c.y) < c.r + (pickup ? p.r + 10 : p.r * 0.8)),
+    )
+    if (!touch) continue
+    if (h.kind === 'oxygen') {
+      h.done = true
+      burst(s, circles[0].x, circles[0].y, 14, 'bubble', 0.8)
+      if (s.hearts < PLAYER.maxHearts) {
+        s.hearts++
+        popup(s, circles[0].x, circles[0].y - 20, '+1 ♥', 'heal')
+        s.events.push('heal')
+      } else {
+        s.score += CAVE.oxygenPoints
+        popup(s, circles[0].x, circles[0].y - 20, `+${CAVE.oxygenPoints}`, 'bonus')
+        s.events.push('pickup')
+      }
+    } else if (h.kind === 'pearl') {
+      h.done = true
+      cave.pearls++
+      const points = Math.round(CAVE.pearlPoints * multiplierFor(s.combo))
+      s.score += points
+      popup(s, circles[0].x, circles[0].y - 16, `+${points}`, 'bonus')
+      burst(s, circles[0].x, circles[0].y, 8, 'bubble', 0.6)
+      s.events.push('pickup')
+    } else if (s.grace <= 0) {
+      caveHit(s, cave, cave.x + 10, cave.y)
+      // Dorong menjauh dari rintangan.
+      const c = circles[circles.length - 1]
+      cave.vy = (cave.y < c.y ? -1 : 1) * 260
+      cave.vx = -120
+    }
+  }
+}
+
+function updateCave(s: GameState, dt: number) {
+  const cave = s.cave
+  if (!cave) return
+  cave.age += dt
+  cave.timer -= dt
+  switch (cave.phase) {
+    case 'warning':
+      if (cave.timer <= 0 && !s.enemies.some((enemy) => ENEMIES[enemy.kind].damage > 0)) {
+        // Bonus yang masih naik ikut hilang (gelembung pecah).
+        for (const enemy of s.enemies) burst(s, enemy.x, enemy.y, 10)
+        s.enemies = []
+        s.lockId = null
+        cave.phase = 'run'
+        cave.x = WORLD.diverX
+        cave.y = diverY(s)
+        s.events.push('cave-start')
+        banner(s, 'ARUS GUA!', 'Gerak dengan ← ↑ → ↓ / WASD (atau tahan & geser di layar) · hindari dinding dan penghuninya', 3.4)
+      }
+      break
+    case 'run':
+      cave.dist += cave.speed * dt
+      moveDiver(s, cave, dt)
+      if (s.over) return
+      updateHazards(s, cave, dt)
+      if (cave.dist >= cave.end) {
+        cave.phase = 'exit'
+        cave.timer = 1.1
+      }
+      break
+    case 'exit': {
+      // Mulut gua: arus mereda, penyelam kembali ke posisinya lalu lanjut turun.
+      cave.dist += cave.speed * dt * Math.max(0, cave.timer)
+      const pull = Math.min(1, dt * 4)
+      cave.x += (WORLD.diverX - cave.x) * pull
+      cave.y += (diverY(s) - cave.y) * pull
+      if (cave.timer <= 0) finishCave(s, cave)
+      break
+    }
+  }
+}
+
+function finishCave(s: GameState, cave: Cave) {
+  s.cave = null
+  s.caveCount++
+  releaseSteer(s)
+  const perfect = cave.hits === 0
+  const points = Math.round((CAVE.bonus + s.depth * CAVE.bonusPerMeter) * (perfect ? 2 : 1))
+  s.score += points
+  popup(s, WORLD.diverX + 40, diverY(s) - 50, `+${points}`, 'bonus')
+  if (perfect && s.sonar < PLAYER.maxSonar) {
+    s.sonar++
+    popup(s, WORLD.diverX + 40, diverY(s) - 76, '+1 SONAR', 'bonus')
+  }
+  s.spawnTimer = 1.4
+  banner(s, perfect ? 'LOLOS TANPA GORESAN!' : 'LOLOS DARI GUA!', `${cave.pearls} mutiara · ${perfect ? 'bonus ×2' : `${cave.hits}× tergores`}`, 2.6)
+  s.events.push('cave-clear')
+}
+
 /** Partikel, tombak, teks melayang, dan efek layar; tetap berjalan setelah permainan selesai. */
 function updateEffects(s: GameState, dt: number) {
   s.hurtFlash = Math.max(0, s.hurtFlash - dt * 2)
@@ -940,9 +1146,10 @@ function updateEffects(s: GameState, dt: number) {
   s.bubbleTimer -= dt
   if (!s.over && s.bubbleTimer <= 0) {
     s.bubbleTimer = 0.9 + s.rand() * 0.8
+    const diver = diverAt(s)
     for (let i = 0; i < 3; i++) {
       const life = 1.6 + s.rand()
-      s.particles.push({ x: WORLD.diverX + 14, y: diverY(s) - 18, vx: (s.rand() - 0.5) * 14, vy: -40 - s.rand() * 30 - i * 12, r: 1.5 + s.rand() * 2.5, life, max: life, kind: 'bubble' })
+      s.particles.push({ x: diver.x + 14, y: diver.y - 18, vx: (s.rand() - 0.5) * 14, vy: -40 - s.rand() * 30 - i * 12, r: 1.5 + s.rand() * 2.5, life, max: life, kind: 'bubble' })
     }
   }
 

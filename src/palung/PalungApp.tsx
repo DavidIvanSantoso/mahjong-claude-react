@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import palungFavicon from '../assets/palung-favicon.svg'
 import { MusicSlot } from '../components/MusicPlayer'
 import { CreatorCredit } from '../components/HomeScreen'
-import { COMBO_STEPS, ENEMIES, PLAYER, ZONES, type EnemyKind } from './config'
+import { CAVE, COMBO_STEPS, ENEMIES, PLAYER, ZONES, type EnemyKind } from './config'
 import type { Summary } from './engine'
 import { PalungGame } from './PalungGame'
 import { drawPreview } from './render'
@@ -123,6 +123,12 @@ function GuideDialog({ open, onClose }: { open: boolean; onClose: () => void }) 
             .
           </li>
           <li>Makin dalam, laut makin gelap, ikan makin banyak dan makin cepat.</li>
+          <li>
+            <strong>Arus Gua</strong> (mulai {CAVE.firstAt} m, lalu tiap {CAVE.every} m): penyelam berenang mendatar melewati gua. Gerak dengan{' '}
+            <kbd>←</kbd> <kbd>↑</kbd> <kbd>→</kbd> <kbd>↓</kbd> atau <kbd>WASD</kbd> (di HP: tahan dan geser jari). Hindari dinding, Belut Moray
+            yang menerjang dari lubang bermata kuning, bulu babi, dan ubur-ubur api. Ambil mutiara emas untuk skor. Lolos tanpa tergores: bonus ×2
+            dan +1 Sonar.
+          </li>
         </ol>
         <ul className="pl-guide__kinds">
           {GUIDE_KINDS.map(({ kind, text }) => (

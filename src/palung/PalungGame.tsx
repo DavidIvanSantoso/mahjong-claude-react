@@ -1,11 +1,29 @@
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent, type PointerEvent } from 'react'
 import { WORLD } from './config'
-import { createGame, release, summary, typeKey, update, fireSonar, type GameState, type Summary } from './engine'
+import {
+  createGame,
+  fireSonar,
+  release,
+  releaseSteer,
+  setPointer,
+  steer,
+  steering,
+  summary,
+  typeKey,
+  update,
+  type Direction,
+  type GameState,
+  type Summary,
+} from './engine'
 import { render } from './render'
 import { playEvents, toggleSfx, useSfxEnabled } from './sfx'
 
 /** Jeda setelah hati habis sebelum ringkasan muncul, supaya ledakan terakhir sempat terlihat. */
 const OVER_DELAY_MS = 1300
+
+/** Tombol arah (Arus Gua). WASD hanya berlaku saat sedang di gua, karena di luar itu huruf dipakai mengetik. */
+const ARROWS: Record<string, Direction> = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' }
+const WASD: Record<string, Direction> = { w: 'up', a: 'left', s: 'down', d: 'right' }
 
 /** Mencegah tombol mencuri fokus dari input tersembunyi (kalau fokus hilang, game dijeda). */
 const keepFocus = (event: PointerEvent) => event.preventDefault()
@@ -30,6 +48,7 @@ export function PalungGame({ onOver, onExit, frozen }: { onOver: (result: Summar
 
   function pause(on: boolean) {
     if (gameRef.current?.over) return
+    if (gameRef.current) releaseSteer(gameRef.current)
     pausedRef.current = on
     setPaused(on)
     if (!on) inputRef.current?.focus()
@@ -118,8 +137,20 @@ export function PalungGame({ onOver, onExit, frozen }: { onOver: (result: Summar
     game.events = []
   }
 
+  /** Tombol arah: true kalau tombol ini dipakai untuk bergerak (dan sudah ditangani). */
+  function steerKey(event: KeyboardEvent<HTMLInputElement>, on: boolean): boolean {
+    const game = gameRef.current
+    if (!game) return false
+    const direction = ARROWS[event.key] ?? (steering(game) || !on ? WASD[event.key.toLowerCase()] : undefined)
+    if (!direction) return false
+    event.preventDefault()
+    steer(game, direction, on)
+    return true
+  }
+
   function onKeyDown(event: KeyboardEvent<HTMLInputElement>) {
     if (event.ctrlKey || event.metaKey || event.altKey) return
+    if (steerKey(event, true)) return
     if (event.key === 'Escape') {
       event.preventDefault()
       pause(!pausedRef.current)
@@ -139,6 +170,30 @@ export function PalungGame({ onOver, onExit, frozen }: { onOver: (result: Summar
       event.preventDefault()
       act((game) => typeKey(game, event.key))
     }
+  }
+
+  function onKeyUp(event: KeyboardEvent<HTMLInputElement>) {
+    steerKey(event, false)
+  }
+
+  /** Layar sentuh / mouse saat di gua: penyelam berenang menuju titik yang ditahan. */
+  function pointAt(event: PointerEvent<HTMLDivElement>) {
+    const game = gameRef.current
+    const canvas = canvasRef.current
+    if (!game || !canvas || !steering(game) || pausedRef.current) return
+    if (event.pointerType === 'mouse' && event.buttons === 0) {
+      setPointer(game, null)
+      return
+    }
+    const rect = canvas.getBoundingClientRect()
+    setPointer(game, {
+      x: ((event.clientX - rect.left) / rect.width) * game.width,
+      y: ((event.clientY - rect.top) / rect.height) * game.height,
+    })
+  }
+
+  function stopPointing() {
+    if (gameRef.current) setPointer(gameRef.current, null)
   }
 
   function onInput(event: FormEvent<HTMLInputElement>) {
@@ -184,7 +239,12 @@ export function PalungGame({ onOver, onExit, frozen }: { onOver: (result: Summar
         onPointerDown={(event) => {
           event.preventDefault()
           inputRef.current?.focus()
+          pointAt(event)
         }}
+        onPointerMove={pointAt}
+        onPointerUp={stopPointing}
+        onPointerCancel={stopPointing}
+        onPointerLeave={stopPointing}
       >
         <canvas ref={canvasRef} className="pl-canvas" aria-label="Arena PALUNG: ketik kata di atas ikan untuk mengalahkannya" />
         <input
@@ -198,6 +258,7 @@ export function PalungGame({ onOver, onExit, frozen }: { onOver: (result: Summar
           enterKeyHint="send"
           aria-label="Ketik di sini"
           onKeyDown={onKeyDown}
+          onKeyUp={onKeyUp}
           onInput={onInput}
           onBlur={onBlur}
         />
@@ -217,7 +278,7 @@ export function PalungGame({ onOver, onExit, frozen }: { onOver: (result: Summar
         )}
       </div>
       <p className="pl-keys" aria-hidden="true">
-        <kbd>a–z</kbd> ketik · <kbd>Backspace</kbd> lepas target · <kbd>Enter</kbd> Sonar · <kbd>Esc</kbd> jeda
+        <kbd>a–z</kbd> ketik · <kbd>Backspace</kbd> lepas target · <kbd>Enter</kbd> Sonar · <kbd>Esc</kbd> jeda · <kbd>←↑→↓</kbd> gerak di Arus Gua
       </p>
     </div>
   )

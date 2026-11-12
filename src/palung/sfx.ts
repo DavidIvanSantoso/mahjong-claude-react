@@ -142,6 +142,15 @@ const SOUNDS: Record<GameEvent, () => void> = {
     noise(1.2, { volume: 0.35, from: 1200, to: 40 })
     ;[392, 494, 587, 784].forEach((freq, i) => tone(freq, 0.25, { type: 'triangle', volume: 0.05, delay: 0.4 + i * 0.1 }))
   },
+  // Arus Gua
+  cave: () => {
+    noise(1.2, { from: 400, to: 60, volume: 0.25 })
+    tone(55, 1.2, { type: 'sawtooth', volume: 0.04, slide: 10 })
+  },
+  'cave-start': () => noise(0.9, { filter: 'bandpass', from: 300, to: 2400, volume: 0.18 }),
+  eel: () => noise(0.25, { filter: 'highpass', from: 2500, to: 5000, volume: 0.05 }),
+  pickup: () => [1047, 1568].forEach((freq, i) => tone(freq, 0.1, { type: 'triangle', volume: 0.04, delay: i * 0.05 })),
+  'cave-clear': () => [523, 659, 784, 1047].forEach((freq, i) => tone(freq, 0.16, { type: 'triangle', volume: 0.05, delay: i * 0.08 })),
   zone: () => [392, 523, 659].forEach((freq, i) => tone(freq, 0.4, { volume: 0.04, delay: i * 0.15 })),
   over: () => [392, 330, 262, 196].forEach((freq, i) => tone(freq, 0.35, { type: 'triangle', volume: 0.06, delay: 0.3 + i * 0.22 })),
 }
