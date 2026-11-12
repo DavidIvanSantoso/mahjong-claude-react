@@ -1,0 +1,169 @@
+/**
+ * Semua angka keseimbangan PALUNG ada di sini, supaya game bisa disetel tanpa menyentuh mesin
+ * (engine.ts) atau gambar (render.ts). Satuan: piksel dunia, detik, meter kedalaman.
+ */
+
+/** Ukuran dunia. Tinggi tetap; lebar menyesuaikan rasio layar dalam batas ini. */
+export const WORLD = {
+  height: 540,
+  minWidth: 560,
+  maxWidth: 1100,
+  /** Posisi x penyelam. Musuh yang mencapai `diverX + reach` menyerang. */
+  diverX: 82,
+  reach: 26,
+  /** Batas atas/bawah jalur renang musuh (HUD di atas, dasar di bawah). */
+  laneTop: 96,
+  laneBottom: 500,
+}
+
+export const PLAYER = {
+  hearts: 3,
+  maxHearts: 3,
+  /** Sonar: tekan Enter untuk menghancurkan semua musuh biasa di layar. */
+  sonar: 1,
+  maxSonar: 3,
+  /** Kebal sebentar setelah terkena, supaya dua ikan yang datang bersamaan tidak langsung menghabisi. */
+  hurtGrace: 0.9,
+}
+
+/** Kecepatan turun penyelam. Kedalaman = waktu bertahan × laju ini (laju naik pelan seiring kedalaman). */
+export const DESCENT = {
+  /** m/detik di permukaan. */
+  base: 2.4,
+  /** Tambahan laju per 100 m. */
+  per100m: 0.15,
+  max: 4,
+}
+
+export type EnemyKind = 'teri' | 'piranha' | 'hiu' | 'martil' | 'bayangan' | 'kraken' | 'oksigen' | 'mutiara'
+
+export interface EnemyType {
+  kind: EnemyKind
+  /** Nama tampilan (panduan, ringkasan). */
+  name: string
+  /** Panjang kata [min, maks]. */
+  length: [number, number]
+  /** Kecepatan dasar (px/detik) sebelum dikali skala kedalaman. */
+  speed: number
+  /** Skor dasar sebelum dikali kombo. */
+  points: number
+  /** Hati yang hilang kalau menyentuh penyelam (0 = tidak berbahaya). */
+  damage: number
+  /** 'swim' berenang ke kiri, 'rise' naik dari dasar (bonus). */
+  motion: 'swim' | 'rise'
+  /** Skala gambar. */
+  size: number
+  /** Ayunan naik-turun (px). */
+  wobble: number
+  /** Ikut hancur oleh Sonar. */
+  sonarable: boolean
+  /**
+   * Hanya untuk ikan tak kasatmata: tampil samar (50%) dan baru bisa diketik setelah kepalanya berjarak
+   * sekian piksel dari penyelam.
+   */
+  reveal?: number
+}
+
+export const ENEMIES: Record<EnemyKind, EnemyType> = {
+  teri: { kind: 'teri', name: 'Teri', length: [1, 1], speed: 165, points: 4, damage: 1, motion: 'swim', size: 0.55, wobble: 10, sonarable: true },
+  piranha: { kind: 'piranha', name: 'Piranha', length: [3, 4], speed: 88, points: 10, damage: 1, motion: 'swim', size: 0.8, wobble: 8, sonarable: true },
+  hiu: { kind: 'hiu', name: 'Hiu', length: [5, 7], speed: 60, points: 25, damage: 1, motion: 'swim', size: 1.15, wobble: 5, sonarable: true },
+  martil: { kind: 'martil', name: 'Hiu Martil', length: [8, 12], speed: 40, points: 50, damage: 1, motion: 'swim', size: 1.35, wobble: 4, sonarable: true },
+  /** Ikan bayangan: samar dan tidak bisa diketik sampai dekat penyelam (`reveal`). */
+  bayangan: { kind: 'bayangan', name: 'Ikan Bayangan', length: [4, 6], speed: 46, points: 35, damage: 1, motion: 'swim', size: 1, wobble: 7, sonarable: true, reveal: 330 },
+  /** Penjaga zona: beberapa kata berurutan (BOSS_PHRASES). */
+  kraken: { kind: 'kraken', name: 'Kraken', length: [0, 99], speed: 17, points: 200, damage: 2, motion: 'swim', size: 1.7, wobble: 14, sonarable: false },
+  /** Gelembung oksigen: +1 hati. */
+  oksigen: { kind: 'oksigen', name: 'Gelembung Oksigen', length: [4, 8], speed: 34, points: 15, damage: 0, motion: 'rise', size: 1, wobble: 18, sonarable: false },
+  /** Kerang mutiara: +1 Sonar dan skor bonus. */
+  mutiara: { kind: 'mutiara', name: 'Kerang Mutiara', length: [4, 8], speed: 30, points: 40, damage: 0, motion: 'rise', size: 1, wobble: 12, sonarable: false },
+}
+
+/** Zona kedalaman: warna laut, nama, dan kegelapan (0 terang – 1 gelap total di luar lampu penyelam). */
+export interface Zone {
+  from: number
+  name: string
+  top: string
+  bottom: string
+  darkness: number
+}
+
+export const ZONES: Zone[] = [
+  { from: 0, name: 'Zona Cahaya', top: '#3fa7c9', bottom: '#1b6f96', darkness: 0 },
+  { from: 100, name: 'Zona Senja', top: '#1d5d84', bottom: '#123e63', darkness: 0.25 },
+  { from: 300, name: 'Zona Tengah Malam', top: '#0d2a46', bottom: '#081a30', darkness: 0.55 },
+  { from: 600, name: 'Zona Abisal', top: '#07172a', bottom: '#040c18', darkness: 0.62 },
+  { from: 1000, name: 'Palung Hadal', top: '#050d1a', bottom: '#02050c', darkness: 0.7 },
+]
+
+export function zoneAt(depth: number): Zone {
+  let zone = ZONES[0]
+  for (const candidate of ZONES) if (depth >= candidate.from) zone = candidate
+  return zone
+}
+
+/** Tingkat kesulitan pada kedalaman tertentu. */
+export interface Difficulty {
+  /** Jeda antar kemunculan musuh biasa (detik). */
+  spawnInterval: number
+  /** Pengali kecepatan semua musuh. */
+  speedScale: number
+  /** Musuh biasa maksimal di layar. */
+  maxEnemies: number
+  /** Bobot peluang tiap tipe musuh biasa. */
+  weights: Partial<Record<EnemyKind, number>>
+}
+
+export function difficultyAt(depth: number): Difficulty {
+  const d = Math.max(0, depth)
+  // Setelah 1000 m kesulitan tetap naik pelan, supaya tidak ada titik aman untuk bertahan selamanya.
+  const beyond = Math.max(0, d - 1000)
+  return {
+    spawnInterval: Math.max(0.35, Math.max(0.6, 2.2 * 0.5 ** (d / 330)) - beyond / 4000),
+    speedScale: 1 + Math.min(1.1, d / 750) + beyond / 1500,
+    maxEnemies: Math.min(13, 4 + Math.floor(d / 100)),
+    weights: {
+      piranha: Math.max(0.6, 1.2 - d / 800),
+      hiu: Math.min(1.1, 0.35 + d / 250),
+      martil: d < 40 ? 0 : Math.min(0.8, (d - 40) / 350),
+      bayangan: d < 150 ? 0 : Math.min(0.55, (d - 150) / 450),
+    },
+  }
+}
+
+/** Kejadian berkala, dihitung dalam meter. */
+export const EVENTS = {
+  /** Kawanan Teri: banyak ikan kecil berhuruf satu, cepat, datang beruntun. */
+  swarm: {
+    firstAt: 40,
+    every: 100,
+    /** Jumlah ikan: min + 1 per `growPer` meter, sampai maks. */
+    min: 6,
+    max: 18,
+    growPer: 60,
+    /** Jeda antar ikan dalam kawanan (detik). */
+    gap: 0.32,
+  },
+  /** Gelembung oksigen hanya muncul kalau hati berkurang. */
+  oxygen: { firstAt: 70, every: 140 },
+  mutiara: { firstAt: 120, every: 160 },
+  /** Penjaga zona muncul di awal tiap zona, lalu tiap `every` meter setelah zona terakhir. */
+  boss: { every: 500 },
+}
+
+/** Pengali skor dari kombo (kata beruntun tanpa salah ketik). */
+export const COMBO_STEPS: { at: number; multiplier: number }[] = [
+  { at: 0, multiplier: 1 },
+  { at: 10, multiplier: 2 },
+  { at: 25, multiplier: 3 },
+  { at: 50, multiplier: 4 },
+]
+
+export function multiplierFor(combo: number): number {
+  let value = 1
+  for (const step of COMBO_STEPS) if (combo >= step.at) value = step.multiplier
+  return value
+}
+
+/** Bonus skor per meter kedalaman saat musuh dikalahkan (skor = (dasar + kedalaman × ini) × kombo). */
+export const DEPTH_POINTS = 0.05

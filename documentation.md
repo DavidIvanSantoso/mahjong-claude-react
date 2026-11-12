@@ -2,7 +2,7 @@
 
 Game mahjong 2D untuk 2–4 pemain, dibuat dengan React dan TypeScript. Bisa dimainkan bergantian di satu perangkat, atau online lewat room (PeerJS) dengan tiap pemain di perangkatnya sendiri.
 
-Situs yang sama juga memuat game kartu **UNO** (online, 2–6 pemain; [bagian 11](#11-game-uno)) **Capsa** (online, 2–4 pemain; [bagian 12](#12-game-capsa)), **KA-BOOM!** (online, 2–6 pemain; [bagian 13](#13-game-ka-boom)), **Armada Royale** (online, 2–6 pemain; [bagian 14](#14-game-armada-royale)), dan **ASBUN** (online, 4–10 pemain; [bagian 15](#15-game-asbun)). Navbar di pojok kiri atas homescreen dipakai untuk berpindah game.
+Situs yang sama juga memuat game kartu **UNO** (online, 2–6 pemain; [bagian 11](#11-game-uno)) **Capsa** (online, 2–4 pemain; [bagian 12](#12-game-capsa)), **KA-BOOM!** (online, 2–6 pemain; [bagian 13](#13-game-ka-boom)), **Armada Royale** (online, 2–6 pemain; [bagian 14](#14-game-armada-royale)), **ASBUN** (online, 4–10 pemain; [bagian 15](#15-game-asbun)), dan game mengetik **PALUNG** (1 pemain; [bagian 16](#16-game-palung)). Navbar di pojok kiri atas homescreen dipakai untuk berpindah game.
 
 - Situs: https://davidivansantoso.github.io/mahjong-claude-react/
 - Repo: https://github.com/DavidIvanSantoso/mahjong-claude-react
@@ -24,6 +24,7 @@ Situs yang sama juga memuat game kartu **UNO** (online, 2–6 pemain; [bagian 11
 13. [Game KA-BOOM!](#13-game-ka-boom)
 14. [Game Armada Royale](#14-game-armada-royale)
 15. [Game ASBUN](#15-game-asbun)
+16. [Game PALUNG](#16-game-palung)
 
 ---
 
@@ -81,7 +82,7 @@ src/
     Seat.tsx               Satu kursi: tangan, set terbuka, bunga, buangan
     TileView.tsx           Gambar satu ubin (muka atau telungkup)
     OnlineGame.tsx         Lobi room dan pembungkus meja untuk mode online
-    GameNav.tsx            Navbar pemilih game (Mahjong / UNO / Capsa / KA-BOOM! / Armada / ASBUN) di homescreen
+    GameNav.tsx            Navbar pemilih game (Mahjong / UNO / Capsa / KA-BOOM! / Armada / ASBUN / PALUNG) di homescreen
   net/                     Mode online
     online.ts              Bentuk pesan, kode room, penyaringan state per pemain
     rooms.ts               Kelas HostRoom dan GuestRoom, plus hook React-nya
@@ -90,6 +91,7 @@ src/
   bomkata/                 Game KA-BOOM! (lihat bagian 13)
   armada/                  Game Armada Royale (lihat bagian 14)
   asbun/                   Game ASBUN (lihat bagian 15)
+  palung/                  Game PALUNG (lihat bagian 16)
 public/words/id/           Kamus kata KA-BOOM! (JSON)
 public/asbun/              Kamus pasangan kata ASBUN (JSON)
 .github/workflows/deploy.yml   Build dan deploy otomatis ke GitHub Pages
@@ -448,6 +450,7 @@ GitHub Pages hanya menyajikan file statis, dan itu cukup: aplikasi ini tidak pun
 - UNO adalah merek dagang Mattel. Game UNO di sini adalah projek penggemar non-komersial; kartunya digambar dengan CSS, tanpa aset gambar resmi.
 - Armada Royale memakai konsep tembak-tembakan kapal di papan berpetak, permainan kertas-pensil lama yang aturannya tidak dimiliki siapa pun. Nama "Battleship" (merek dagang Hasbro) tidak dipakai. Semua gambarnya pixel art yang digambar di kode (`src/armada/Pixel.tsx`), efek suaranya dibuat dengan Web Audio, dan fontnya (Press Start 2P, VT323; dimuat dari Google Fonts, sama dengan KA-BOOM!) berlisensi SIL Open Font License.
 - ASBUN terinspirasi dari permainan Under Cover (Yanstar Studio OU); kreditnya ditampilkan di tepi kiri layar desktop dan di beranda ASBUN pada layar sempit (`INSPIRED_BY` di `AsbunApp.tsx`). ASBUN memakai mekanik permainan pesta tebak kata dengan peran rahasia (genre *social deduction*). Nama peran, teks, dan kamus pasangan katanya ditulis sendiri untuk projek ini. Fontnya (Cormorant Garamond, DM Sans, Allura; dimuat dari Google Fonts) berlisensi SIL Open Font License. Ikon dan favicon digambar di kode (`src/asbun/Icons.tsx`, `src/assets/asbun-favicon.svg`).
+- PALUNG memakai mekanik genre game mengetik (ketik kata pada musuh yang mendekat). Nama, karakter, gambar, dan teksnya dibuat sendiri; tidak meniru game tertentu. Semua gambar digambar dengan Canvas di kode (`src/palung/render.ts`), efek suaranya dibuat dengan Web Audio, dan fontnya (Bungee, JetBrains Mono; dimuat dari Google Fonts) berlisensi SIL Open Font License.
 
 ## 11. Game UNO
 
@@ -928,4 +931,103 @@ src/asbun/
   Icons.tsx           Ikon garis SVG
   asbun.css           Semua gaya ASBUN, termasuk token warna
 public/asbun/word-pairs.json
+```
+
+## 16. Game PALUNG
+
+Game mengetik untuk 1 pemain, tanpa jaringan. Pemain adalah penyelam yang terus turun dari 0 m. Ikan berdatangan dari kanan membawa kata; ketik katanya sebelum ikan mencapai penyelam. Tujuannya bertahan sedalam mungkin dengan 3 hati.
+
+### Alur
+
+1. **Turun terus.** Kedalaman = waktu bertahan × laju turun (`DESCENT`, 2,4 m/detik, naik pelan sampai 4 m/detik). Laju berhenti selama Kraken (penjaga zona) masih hidup.
+2. **Mengunci target.** Huruf pertama yang diketik mengunci ikan **terdekat ke penyelam** yang katanya diawali huruf itu. Ikan bisa dikunci begitu labelnya terlihat, walau badannya baru separuh masuk layar (kecuali Ikan Bayangan). Huruf berikutnya melanjutkan ikan itu. Huruf yang sudah benar berwarna kuning, sisanya putih; target terkunci diberi lingkaran putus-putus.
+   - Saat ikan baru muncul, mesin memilih kata yang huruf awalnya **belum dipakai** ikan lain di layar, supaya penguncian jarang ambigu.
+   - Salah ketik tidak mengurangi hati, tapi memutus kombo dan menurunkan akurasi.
+   - **Backspace** melepas kunci (kemajuan kata itu diulang dari awal).
+3. **Terkena.** Ikan yang mencapai penyelam mengambil hati (Kraken 2 hati), lalu hancur. Setelah terkena ada jeda kebal singkat (`hurtGrace`).
+4. **Sonar** (**Enter**): menghancurkan semua ikan di layar kecuali Kraken dan bonus. Mulai dengan 1, maksimal 3.
+5. **Selesai** saat hati habis. Ringkasan menampilkan kedalaman, waktu bertahan, skor, WPM, akurasi, kombo terbaik, dan jumlah musuh per jenis. Rekor terbaik disimpan di perangkat (`localStorage`, kunci `palung-best`).
+
+### Musuh dan bonus (`ENEMIES` di `config.ts`)
+
+| Jenis | Kata | Kecepatan | Catatan |
+|---|---|---|---|
+| Teri | 1 huruf | sangat cepat | Hanya muncul dalam **Kawanan Teri** |
+| Piranha | 3–4 huruf | cepat | |
+| Hiu | 5–7 huruf | sedang | |
+| Hiu Martil | 8–12 huruf | lambat | Mulai muncul setelah 40 m |
+| Ikan Bayangan | 4–6 huruf | sedang | Mulai 150 m. Ikan dan katanya tampil samar (50%) dan **baru bisa diketik setelah kepalanya melewati garis putus-putus** 330 px dari penyelam (`reveal`). Mengetik huruf awalnya sebelum itu dihitung salah ketik |
+| Kraken | frasa 3–5 kata | sangat lambat | Penjaga zona; kata diketik berurutan |
+| Gelembung Oksigen | kata bonus | naik dari dasar | +1 hati; hanya muncul kalau hati berkurang |
+| Kerang Mutiara | kata bonus | naik dari dasar | +1 Sonar dan skor bonus |
+
+### Kedalaman dan kesulitan
+
+- **Zona** (`ZONES`): Zona Cahaya (0 m), Zona Senja (100 m), Zona Tengah Malam (300 m), Zona Abisal (600 m), Palung Hadal (1000 m). Warna laut berubah halus antarzona; makin dalam makin gelap, dan hanya sekitar lampu penyelam yang terang. Label kata selalu digambar di atas kegelapan supaya tetap terbaca.
+- **Kesulitan** (`difficultyAt`): jeda kemunculan makin pendek, ikan makin cepat, jumlah ikan maksimal di layar bertambah, dan porsi Hiu/Hiu Martil naik. Setelah 1000 m kesulitan tetap naik pelan, supaya tidak ada titik aman untuk bertahan selamanya.
+- **Kejadian berkala** (`EVENTS`):
+  - Kawanan Teri pertama di 40 m, lalu tiap 100 m; jumlah ikannya bertambah dengan kedalaman (6–18).
+  - Kraken muncul di awal tiap zona, lalu tiap 500 m setelah zona terakhir.
+  - Gelembung Oksigen tiap 140 m (kalau hati berkurang), Kerang Mutiara tiap 160 m.
+
+Hasil simulasi bot (30 permainan per baris; bot mengetik pada WPM tertentu dengan reaksi 0,3 detik saat berganti target):
+
+| Bot | Bertahan (median) | Kedalaman (median) |
+|---|---|---|
+| 20 WPM, akurasi 90% | ±1 menit | ±100 m (Kraken pertama) |
+| 30 WPM, akurasi 92% | ±1,9 menit | ±253 m |
+| 45 WPM, akurasi 94% | ±3 menit | ±437 m |
+| 60 WPM, akurasi 95% | ±3,8 menit | ±600 m |
+| 100 WPM, akurasi 97% | ±6,8 menit | ±1.254 m |
+
+### Suasana latar (`ambience.ts`)
+
+Hiasan saja, tidak memengaruhi permainan, dan ditentukan dari kedalaman + waktu (tanpa state tambahan). Benda-bendanya bergulir ke atas dengan kecepatan berbeda per lapisan (parallax), jadi penyelam terasa turun.
+
+- **Semua zona:** dinding palung dua lapis di kiri dan kanan, salju laut, dan vinyet halus supaya bagian tengah (tempat ikan dan kata) lebih menonjol.
+- **Dangkal (± 0–230 m):** permukaan laut di detik-detik awal, jaring cahaya kaustik, sinar matahari, rumput laut yang bergoyang, dan karang warna-warni di dinding. Kawanan ikan kecil melintas di kejauhan.
+- **Senja:** paus raksasa melintas pelan (± 120–340 m). Bangkai kapal terlihat di 190 m, 760 m, dan 1450 m.
+- **Gelap (mulai ± 180 m, makin kuat ke bawah):** digambar di atas lapisan kegelapan, yaitu plankton berkelip, ubur-ubur bercahaya, kristal di dinding, kawanan ikan lentera, dan kontur tipis dinding palung. Di Zona Abisal ada umpan ikan sungut ganda yang berkedip di kejauhan.
+- **Palung Hadal (± 900 m ke bawah):** celah magma menyala di dinding dan semburan gelembung dari ventilasi hidrotermal di dasar.
+
+### Skor, WPM, dan akurasi
+
+- Skor per musuh = (skor dasar + kedalaman × `DEPTH_POINTS`) × pengali kombo. Musuh yang dihancurkan Sonar tidak memakai pengali.
+- **Kombo** = kata beruntun tanpa salah ketik dan tanpa terkena: ×2 mulai 10, ×3 mulai 25, ×4 mulai 50 (`COMBO_STEPS`).
+- **WPM** = huruf benar ÷ 5 ÷ menit bermain (waktu jeda tidak dihitung).
+- **Akurasi** = huruf benar ÷ semua huruf yang diketik.
+
+### Menambah kata dan menyetel game
+
+- **Kata:** tambahkan ke `WORDS` di `src/palung/words.ts`. Mesin otomatis memakai kata itu untuk jenis ikan yang rentang panjangnya cocok. Hanya huruf a–z tanpa spasi; kata lain dan duplikat dibuang (`clean`). Frasa Kraken ada di `BOSS_PHRASES`, kata bonus di `BONUS_WORDS`, huruf Teri di `LETTERS`.
+- **Angka keseimbangan:** semuanya di `src/palung/config.ts` (kecepatan, skor, hati, Sonar, zona, kurva kesulitan, jadwal kejadian, kombo).
+- **Jenis ikan baru:** tambahkan ke `EnemyKind` dan `ENEMIES` (config.ts), beri bobot di `difficultyAt`, lalu gambarnya di `drawEnemy` (render.ts).
+
+### Teknis
+
+- **Game loop:** `requestAnimationFrame` di `PalungGame.tsx` memanggil `update(state, dt)` (dt dibatasi 0,05 detik) lalu `render`. State permainan diubah langsung (bukan disalin) karena berjalan 60× per detik; React hanya dipakai untuk layar di luar kanvas (beranda, jeda, ringkasan).
+- **Ukuran:** tinggi dunia tetap 540 satuan; lebarnya mengikuti rasio layar (560–1100), lalu kanvas diperbesar agar pas dan tajam di layar ber-DPI tinggi.
+- **Input:** ketikan ditangkap oleh `<input>` tersembunyi yang selalu difokus. Keyboard fisik diproses di `keydown`; keyboard virtual HP (yang sering mengirim tombol "Unidentified") diproses lewat `input`. Kalau fokus hilang atau tab disembunyikan, game otomatis dijeda. **Esc** menjeda/melanjutkan.
+- **Mode pengembangan:** `window.__palung` berisi state permainan untuk dibaca dari konsol atau tes browser; tidak ikut di build produksi.
+
+### Batasan
+
+- Butuh keyboard. Di HP bisa dimainkan dengan keyboard virtual, tapi layarnya sempit dan teks kanvas jadi kecil.
+- Kata hanya bahasa Indonesia, tanpa spasi atau tanda baca.
+- Belum ada musik khusus PALUNG (pemutar musik situs tetap bisa dipakai) dan belum ada papan skor online.
+
+### Struktur folder
+
+```
+src/palung/
+  config.ts        Angka keseimbangan: dunia, hati, Sonar, musuh, zona, kesulitan, kejadian, kombo
+  words.ts         Daftar kata, frasa Kraken, kata bonus, huruf Teri
+  engine.ts        State dan aturan: kemunculan, penguncian, tabrakan, skor, WPM, akurasi (tanpa DOM)
+  render.ts        Menggambar penyelam, ikan, efek, label kata, HUD, banner (Canvas)
+  ambience.ts      Suasana latar per zona (dinding palung, karang, paus, bangkai kapal, cahaya hayati)
+  sfx.ts           Efek suara Web Audio
+  PalungGame.tsx   Kanvas, game loop, input keyboard, jeda
+  PalungApp.tsx    Beranda, panduan, ringkasan, rekor, tema
+  palung.css       Semua gaya PALUNG
+src/assets/palung-favicon.svg
 ```

@@ -1,0 +1,552 @@
+/* ---------- Palet dan tipografi PALUNG (laut dalam) ---------- */
+/*
+ * Dipasang lewat `data-game='palung'` di <html> selama layar PALUNG terbuka (lihat PalungApp.tsx).
+ * Font: Bungee (judul), JetBrains Mono (teks dan kata di kanvas).
+ */
+:root[data-game='palung'] {
+  --pl-abyss: #030b17;
+  --pl-deep: #071c33;
+  --pl-sea: #0f3d63;
+  --pl-surface: #2f8fb8;
+  --pl-panel: rgb(6 22 42 / 92%);
+  --pl-panel-solid: #0a2038;
+  --pl-line: rgb(150 210 255 / 18%);
+  --pl-line-strong: rgb(150 210 255 / 34%);
+  --pl-text: #eaf6ff;
+  --pl-muted: #8fb2cc;
+  --pl-cyan: #58e1ff;
+  --pl-yellow: #ffd447;
+  --pl-yellow-dark: #c9a226;
+  --pl-coral: #ff6f61;
+  --pl-title: 'Bungee', 'JetBrains Mono', sans-serif;
+  --pl-mono: 'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace;
+
+  /* Variabel bersama (navbar, tombol musik, kredit) */
+  --pink: #0a2038;
+  --pink-deep: #ffd447;
+  --cream: #0a2038;
+  --sage: #0a2038;
+  --green: #ffd447;
+  --green-deep: #ffd447;
+  --ink: #eaf6ff;
+  --ink-soft: #8fb2cc;
+  --line: rgb(150 210 255 / 18%);
+  --tile-red: #ff6f61;
+  --tile-green: #58e1ff;
+  --tile-blue: #8fb2cc;
+  --page: #030b17;
+  --on-page: #eaf6ff;
+  --on-page-soft: #8fb2cc;
+  --on-green: #071c33;
+  --tile-bg: #0a2038;
+  --btn-bg: #ffd447;
+  --btn-hover: #ffe27a;
+  --btn-shadow: #c9a226;
+  font-family: var(--pl-mono);
+}
+
+:root[data-game='palung'] body {
+  background: var(--pl-abyss);
+}
+
+:root[data-game='palung'] :is(.game-nav, .home__tools, .home__credit) {
+  color: var(--pl-muted);
+  background: var(--pl-panel);
+  border: 1px solid var(--pl-line);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 40%);
+}
+
+:root[data-game='palung'] .home__credit strong {
+  color: var(--pl-text);
+}
+
+/* ---------- Tombol ---------- */
+
+.pl-btn {
+  min-height: 44px;
+  padding: 10px 20px;
+  font: inherit;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--pl-text);
+  background: rgb(150 210 255 / 8%);
+  border: 1px solid var(--pl-line-strong);
+  border-radius: 10px;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    transform 0.1s;
+}
+
+.pl-btn:hover {
+  background: rgb(150 210 255 / 16%);
+}
+
+.pl-btn:active {
+  transform: translateY(1px);
+}
+
+.pl-btn:focus-visible,
+.pl-icon-btn:focus-visible {
+  outline: 3px solid var(--pl-cyan);
+  outline-offset: 2px;
+}
+
+.pl-btn--primary {
+  color: var(--pl-deep);
+  background: var(--pl-yellow);
+  border-color: var(--pl-yellow);
+  box-shadow: 0 4px 0 var(--pl-yellow-dark);
+}
+
+.pl-btn--primary:hover {
+  background: #ffe27a;
+}
+
+.pl-btn--big {
+  padding: 14px 28px;
+  font-size: 1.05rem;
+}
+
+.pl-btn--small {
+  min-height: 36px;
+  padding: 6px 14px;
+  font-size: 0.85rem;
+}
+
+.pl-icon-btn {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--pl-text);
+  background: rgb(150 210 255 / 8%);
+  border: 1px solid var(--pl-line-strong);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.pl-icon-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.pl-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.pl-muted {
+  margin: 0;
+  color: var(--pl-muted);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.pl-eyebrow {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--pl-cyan);
+}
+
+:root[data-game='palung'] kbd {
+  padding: 1px 6px;
+  font-family: var(--pl-mono);
+  font-size: 0.8em;
+  color: var(--pl-text);
+  background: rgb(150 210 255 / 12%);
+  border: 1px solid var(--pl-line-strong);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+}
+
+.pl-panel {
+  display: grid;
+  gap: 14px;
+  padding: 24px;
+  color: var(--pl-text);
+  background: var(--pl-panel);
+  border: 1px solid var(--pl-line-strong);
+  border-radius: 16px;
+  box-shadow: 0 24px 60px rgb(0 0 0 / 50%);
+}
+
+.pl-panel__title {
+  margin: 0;
+  font-family: var(--pl-title);
+  font-weight: 400;
+  font-size: 1.4rem;
+  color: var(--pl-yellow);
+}
+
+/* ---------- Beranda ---------- */
+
+.pl-home {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 96px 16px 140px;
+  box-sizing: border-box;
+  overflow: hidden;
+  color: var(--pl-text);
+  background:
+    radial-gradient(ellipse at 50% -10%, rgb(88 225 255 / 25%), transparent 55%),
+    linear-gradient(180deg, var(--pl-surface) 0%, var(--pl-sea) 28%, var(--pl-deep) 62%, var(--pl-abyss) 100%);
+}
+
+.pl-home__bubbles span {
+  position: absolute;
+  bottom: -20px;
+  width: 10px;
+  height: 10px;
+  border: 1.5px solid rgb(210 245 255 / 50%);
+  border-radius: 50%;
+  animation: pl-rise linear infinite;
+}
+
+.pl-home__bubbles span:nth-child(3n) {
+  width: 6px;
+  height: 6px;
+}
+
+.pl-home__bubbles span:nth-child(4n) {
+  width: 16px;
+  height: 16px;
+}
+
+@keyframes pl-rise {
+  from {
+    transform: translate(0, 0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  to {
+    transform: translate(20px, -110vh);
+    opacity: 0;
+  }
+}
+
+.pl-home__card {
+  position: relative;
+  z-index: 1;
+  width: min(560px, 100%);
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  padding: 32px 28px;
+  box-sizing: border-box;
+  text-align: center;
+  background: rgb(4 16 32 / 72%);
+  border: 1px solid var(--pl-line-strong);
+  border-radius: 20px;
+  box-shadow: 0 30px 80px rgb(0 0 0 / 45%);
+  backdrop-filter: blur(6px);
+}
+
+.pl-logo {
+  margin: 0;
+  font-family: var(--pl-title);
+  font-weight: 400;
+  font-size: clamp(2.8rem, 12vw, 4.6rem);
+  line-height: 1;
+  letter-spacing: 0.04em;
+  color: var(--pl-yellow);
+  text-shadow:
+    0 4px 0 var(--pl-yellow-dark),
+    0 12px 30px rgb(0 0 0 / 50%);
+}
+
+.pl-tagline {
+  margin: 0;
+  font-weight: 700;
+  color: var(--pl-cyan);
+}
+
+.pl-home__lead {
+  margin: 0;
+  max-width: 44ch;
+  line-height: 1.6;
+  font-size: 0.92rem;
+  color: var(--pl-text);
+}
+
+.pl-home__fish {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+}
+
+.pl-home__fish .pl-preview {
+  width: 96px;
+  height: 56px;
+}
+
+.pl-home__hint {
+  font-size: 0.75rem;
+}
+
+.pl-stats {
+  width: 100%;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 8px;
+}
+
+.pl-stats div {
+  padding: 10px 8px;
+  background: rgb(150 210 255 / 7%);
+  border: 1px solid var(--pl-line);
+  border-radius: 10px;
+}
+
+.pl-stats dt {
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--pl-muted);
+}
+
+.pl-stats dd {
+  margin: 4px 0 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--pl-text);
+}
+
+.pl-stats--best dd {
+  color: var(--pl-yellow);
+}
+
+/* ---------- Panduan ---------- */
+
+.pl-dialog {
+  width: min(640px, calc(100% - 32px));
+  max-height: calc(100dvh - 32px);
+  padding: 0;
+  color: var(--pl-text);
+  background: transparent;
+  border: 0;
+}
+
+.pl-dialog::backdrop {
+  background: rgb(2 8 18 / 78%);
+}
+
+.pl-guide {
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+.pl-guide__steps {
+  margin: 0;
+  padding-left: 20px;
+  display: grid;
+  gap: 6px;
+}
+
+.pl-guide__kinds {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 6px;
+}
+
+.pl-guide__kinds li {
+  display: grid;
+  grid-template-columns: 96px 1fr;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 10px 4px 4px;
+  background: rgb(150 210 255 / 6%);
+  border-radius: 10px;
+}
+
+.pl-guide__kinds div {
+  display: grid;
+}
+
+.pl-guide__kinds strong {
+  color: var(--pl-yellow);
+}
+
+.pl-preview {
+  width: 96px;
+  height: 56px;
+  display: block;
+}
+
+.pl-guide .pl-btn {
+  justify-self: center;
+}
+
+/* ---------- Permainan ---------- */
+
+.pl-game {
+  height: 100vh;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  color: var(--pl-text);
+  background: var(--pl-abyss);
+}
+
+.pl-topbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--pl-line);
+}
+
+.pl-topbar__title {
+  font-family: var(--pl-title);
+  font-size: 1.1rem;
+  color: var(--pl-yellow);
+}
+
+.pl-topbar__tools {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pl-stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  padding: 8px;
+  touch-action: manipulation;
+  cursor: text;
+}
+
+.pl-canvas {
+  display: block;
+  border-radius: 12px;
+  box-shadow:
+    0 0 0 1px var(--pl-line-strong),
+    0 20px 60px rgb(0 0 0 / 50%);
+}
+
+/* Input tersembunyi penangkap ketikan; tetap di layar supaya keyboard HP bisa muncul. */
+.pl-input {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  font-size: 16px;
+  opacity: 0;
+  border: 0;
+  pointer-events: none;
+}
+
+.pl-keys {
+  margin: 0;
+  padding: 6px 16px 10px;
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--pl-muted);
+}
+
+.pl-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgb(2 8 18 / 62%);
+  cursor: default;
+}
+
+.pl-overlay--result {
+  position: fixed;
+  animation: pl-fade 0.4s ease-out;
+}
+
+@keyframes pl-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+.pl-pause {
+  width: min(340px, 100%);
+  text-align: center;
+}
+
+.pl-result {
+  width: min(460px, 100%);
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  box-sizing: border-box;
+  text-align: center;
+  justify-items: center;
+}
+
+.pl-result__depth {
+  margin: 0;
+  font-family: var(--pl-title);
+  font-weight: 400;
+  font-size: clamp(2.4rem, 10vw, 3.4rem);
+  line-height: 1;
+  color: var(--pl-yellow);
+}
+
+.pl-result .pl-stats {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.pl-result__kills {
+  font-size: 0.78rem;
+}
+
+@media (max-width: 600px) {
+  .pl-keys {
+    display: none;
+  }
+
+  .pl-topbar {
+    padding: 6px 12px;
+  }
+
+  /* Kanvas di atas, supaya tidak tertutup keyboard virtual */
+  .pl-stage {
+    align-items: start;
+    padding: 4px;
+  }
+
+  .pl-home__card {
+    padding: 24px 18px;
+  }
+
+  .pl-home__fish .pl-preview {
+    width: 72px;
+    height: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pl-home__bubbles span {
+    animation: none;
+    display: none;
+  }
+}
