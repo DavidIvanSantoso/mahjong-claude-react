@@ -81,10 +81,14 @@ const GUIDE_KINDS: { kind: EnemyKind; text: string }[] = [
   { kind: 'hiu', text: 'Kecepatan sedang, kata menengah (5–7 huruf).' },
   { kind: 'martil', text: 'Lambat, kata panjang (8–12 huruf).' },
   { kind: 'bayangan', text: 'Samar (tembus pandang) dan baru bisa diketik setelah melewati garis putus-putus dekat penyelam. Muncul mulai 150 m.' },
-  { kind: 'kraken', text: 'Penjaga zona: beberapa kata berurutan. Penyelam berhenti turun sampai ia kalah. Kalau sampai menyentuhmu, hilang 2 hati.' },
+  { kind: 'kraken', text: 'Penjaga zona pertama (100 m), lalu bergiliran dengan bos lain: beberapa kata berurutan. Penyelam berhenti turun sampai ia kalah. Kalau sampai menyentuhmu, hilang 2 hati.' },
   {
     kind: 'megalodon',
-    text: 'Penjaga zona bergiliran dengan Kraken (pertama di 300 m); ikan lain berhenti muncul. Ia menembakkan misil berkata: ketik untuk memantulkannya ke titik tembak, kena kalau bos masih di sana. Saat ia bersiap menggigit, tekan huruf yang muncul sebelum waktunya habis.',
+    text: 'Penjaga zona di 300 m; ikan lain berhenti muncul. Ia menembakkan misil berkata: ketik untuk memantulkannya ke titik tembak, kena kalau bos masih di sana. Saat ia bersiap menggigit, tekan huruf yang muncul sebelum waktunya habis.',
+  },
+  {
+    kind: 'listrik',
+    text: 'Penjaga zona di 600 m; ikan lain berhenti muncul. Ia menunjukkan urutan huruf lalu menyembunyikannya, kemudian melepas bola listrik berhuruf sama di posisi acak. Ketik hurufnya sesuai urutan dari ingatan sebelum bola mencapaimu. Sonar menampilkan ulang urutannya sebentar.',
   },
   { kind: 'oksigen', text: 'Gelembung oksigen (muncul kalau hatimu berkurang): ketik katanya untuk +1 hati.' },
   { kind: 'mutiara', text: 'Kerang mutiara: +1 Sonar dan skor bonus.' },

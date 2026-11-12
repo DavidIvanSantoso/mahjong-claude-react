@@ -1,6 +1,7 @@
 import { ENEMIES, MEGALODON, multiplierFor, PLAYER, WORLD, ZONES } from './config'
 import { drawAmbience, drawBioluminescence, seaAt } from './ambience'
 import { drawCave, drawCaveBar } from './caveRender'
+import { drawEel, drawEelBody, drawEelGlow, drawEelTop } from './eelRender'
 import { accuracy, diverAt, diverY, lockedEnemy, steering, wpm, type Enemy, type GameState, type Megalodon } from './engine'
 
 /**
@@ -226,6 +227,9 @@ function drawEnemy(ctx: CanvasRenderingContext2D, enemy: Enemy, locked: boolean)
     }
     case 'megalodon':
       drawMegalodonBody(ctx, enemy.age, 0.25, 0, 0.6)
+      break
+    case 'listrik':
+      drawEelBody(ctx, enemy.age, 0.8, 0)
       break
     case 'bayangan': {
       // Ikan pucat tembus pandang dengan tulang samar dan mata bercahaya
@@ -749,19 +753,19 @@ function drawMegaWarning(ctx: CanvasRenderingContext2D, s: GameState, m: Megalod
   ctx.fillRect(s.width - 160, 0, 160, s.height)
 }
 
-/** Bar HP bos menggantikan nama zona di HUD. */
-function drawBossBar(ctx: CanvasRenderingContext2D, s: GameState, m: Megalodon) {
+/** Bar HP bos menggantikan nama zona di HUD; `marks` = pecahan HP yang diberi tanda (misalnya batas QTE). */
+function drawBossBar(ctx: CanvasRenderingContext2D, s: GameState, name: string, hp: number, maxHp: number, marks: number[]) {
   const w = Math.min(240, s.width * 0.34)
   const x = s.width / 2 - w / 2
   const y = 58
   ctx.textAlign = 'center'
   ctx.font = `700 11px ${FONT}`
   ctx.fillStyle = '#ff8a7a'
-  ctx.fillText(ENEMIES.megalodon.name.toUpperCase(), s.width / 2, 48)
+  ctx.fillText(name.toUpperCase(), s.width / 2, 48)
   ctx.fillStyle = 'rgba(255, 255, 255, 0.15)'
   roundRect(ctx, x, y, w, 8, 4)
   ctx.fill()
-  const ratio = m.hp / m.maxHp
+  const ratio = hp / maxHp
   if (ratio > 0) {
     const fill = ctx.createLinearGradient(x, 0, x + w, 0)
     fill.addColorStop(0, '#ff3b4e')
@@ -772,7 +776,7 @@ function drawBossBar(ctx: CanvasRenderingContext2D, s: GameState, m: Megalodon) 
   }
   // Tanda batas QTE
   ctx.fillStyle = 'rgba(255, 255, 255, 0.7)'
-  for (const fraction of MEGALODON.qteAt) ctx.fillRect(x + w * fraction - 1, y - 2, 2, 12)
+  for (const fraction of marks) ctx.fillRect(x + w * fraction - 1, y - 2, 2, 12)
 }
 
 /** Layar QTE: huruf besar yang harus ditekan, cincin waktu, dan urutan huruf. */
@@ -907,6 +911,9 @@ function drawEffects(ctx: CanvasRenderingContext2D, s: GameState) {
       ctx.beginPath()
       ctx.arc(p.x, p.y, p.r * (1.6 - alpha * 0.6), 0, Math.PI * 2)
       ctx.fill()
+    } else if (p.kind === 'volt') {
+      ctx.fillStyle = `rgba(170, 250, 255, ${alpha})`
+      ctx.fillRect(p.x - 1.5, p.y - 1.5, 3, 3)
     } else {
       ctx.fillStyle = `rgba(255, 170, 80, ${alpha})`
       ctx.fillRect(p.x - 1.5, p.y - 1.5, 3, 3)
@@ -978,7 +985,8 @@ function drawHud(ctx: CanvasRenderingContext2D, s: GameState) {
   ctx.fillStyle = '#ffffff'
   ctx.font = `400 30px ${TITLE_FONT}`
   ctx.fillText(`${Math.floor(s.depth)} m`, w / 2, 26)
-  if (s.mega && s.mega.phase !== 'warning') drawBossBar(ctx, s, s.mega)
+  if (s.mega && s.mega.phase !== 'warning') drawBossBar(ctx, s, ENEMIES.megalodon.name, s.mega.hp, s.mega.maxHp, MEGALODON.qteAt)
+  else if (s.eel && s.eel.phase !== 'warning') drawBossBar(ctx, s, ENEMIES.listrik.name, s.eel.hp, s.eel.maxHp, [])
   else if (s.cave && steering(s)) drawCaveBar(ctx, s, s.cave)
   else {
     ctx.font = `600 12px ${FONT}`
@@ -1062,6 +1070,13 @@ export function drawPreview(canvas: HTMLCanvasElement, kind: Enemy['kind']) {
   ctx.clearRect(0, 0, w, h)
   const k = ENEMIES[kind].size
   const enemy: Enemy = { id: 0, kind, words: [''], segment: 0, progress: 0, x: 0, y: 0, base: 0, speed: 0, phase: 0, age: 0.4, flash: 0, revealed: false }
+  if (kind === 'listrik') {
+    const fit = Math.min(w / 330, h / 110)
+    ctx.translate(w / 2 - 125 * fit, h / 2 - 4 * fit)
+    ctx.scale(fit, fit)
+    drawEnemy(ctx, enemy, false)
+    return
+  }
   if (kind === 'megalodon') {
     const fit = Math.min(w / 300, h / 170)
     ctx.translate(w / 2 - 14 * fit, h / 2 + 8 * fit)
@@ -1110,6 +1125,7 @@ export function render(ctx: CanvasRenderingContext2D, s: GameState, scale: numbe
   drawRevealLine(ctx, s, clock)
   if (locked?.origin) drawReturnPath(ctx, locked, clock)
   if (s.mega) drawMegalodon(ctx, s.mega)
+  if (s.eel) drawEel(ctx, s.eel)
   for (const enemy of s.enemies) drawEnemy(ctx, enemy, enemy === locked)
   if (s.mega) drawRebounds(ctx, s.mega, clock)
   drawDiver(ctx, s, clock)
@@ -1121,10 +1137,12 @@ export function render(ctx: CanvasRenderingContext2D, s: GameState, scale: numbe
     drawMegaGlow(ctx, s.mega, clock)
     drawMegaWarning(ctx, s, s.mega, clock)
   }
+  if (s.eel) drawEelGlow(ctx, s.eel, clock)
   drawEffects(ctx, s)
   // Label digambar terakhir (di atas kegelapan) supaya selalu terbaca; yang terkunci paling atas.
   for (const enemy of s.enemies) if (enemy !== locked) drawLabel(ctx, s, enemy, false)
   if (locked) drawLabel(ctx, s, locked, true)
+  if (s.eel) drawEelTop(ctx, s, s.eel, clock)
   ctx.restore()
   drawHurt(ctx, s)
   drawHud(ctx, s)

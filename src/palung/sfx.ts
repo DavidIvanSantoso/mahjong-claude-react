@@ -142,6 +142,20 @@ const SOUNDS: Record<GameEvent, () => void> = {
     noise(1.2, { volume: 0.35, from: 1200, to: 40 })
     ;[392, 494, 587, 784].forEach((freq, i) => tone(freq, 0.25, { type: 'triangle', volume: 0.05, delay: 0.4 + i * 0.1 }))
   },
+  // Belut Listrik
+  memory: () => tone(880 + Math.random() * 240, 0.18, { type: 'square', volume: 0.035, slide: 120 }),
+  'release-orbs': () => {
+    noise(0.5, { filter: 'highpass', from: 1800, to: 5000, volume: 0.1 })
+    tone(200, 0.4, { type: 'sawtooth', volume: 0.03, slide: 400 })
+  },
+  zap: () => {
+    noise(0.12, { filter: 'highpass', from: 3000, to: 6000, volume: 0.08 })
+    tone(1400, 0.06, { type: 'square', volume: 0.025, slide: -500 })
+  },
+  shock: () => {
+    noise(0.7, { filter: 'bandpass', from: 4000, to: 300, volume: 0.3 })
+    tone(70, 0.6, { type: 'sawtooth', volume: 0.06, slide: 30 })
+  },
   // Arus Gua
   cave: () => {
     noise(1.2, { from: 400, to: 60, volume: 0.25 })

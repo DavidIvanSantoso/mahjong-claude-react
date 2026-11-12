@@ -2,6 +2,7 @@ import { createCave, DIVER_PROBES, hazardCircles, wallsAt, CAVE_TOP, type Cave }
 import {
   CAVE,
   DEPTH_POINTS,
+  EEL,
   DESCENT,
   difficultyAt,
   ENEMIES,
@@ -102,7 +103,7 @@ export interface Particle {
   r: number
   life: number
   max: number
-  kind: 'bubble' | 'ink' | 'spark'
+  kind: 'bubble' | 'ink' | 'spark' | 'volt'
 }
 
 /** Tombak kecil dari penyelam ke target tiap huruf benar (hanya hiasan). */
@@ -147,6 +148,10 @@ export type GameEvent =
   | 'qte-win'
   | 'qte-fail'
   | 'boss-down'
+  | 'memory'
+  | 'release-orbs'
+  | 'zap'
+  | 'shock'
   | 'cave'
   | 'cave-start'
   | 'eel'
@@ -156,6 +161,47 @@ export type GameEvent =
   | 'over'
 
 export type Direction = 'up' | 'down' | 'left' | 'right'
+
+/** Bola listrik Belut Listrik. */
+export interface Orb {
+  letter: string
+  x: number
+  y: number
+  /** Posisi tujuan saat dilepas (y = jalur ayunannya). */
+  tx: number
+  ty: number
+  done: boolean
+  flash: number
+  phase: number
+}
+
+export type EelPhase = 'warning' | 'enter' | 'show' | 'memorize' | 'release' | 'orbs' | 'zap' | 'shock' | 'dying'
+
+/** Pertarungan Belut Listrik (lihat EEL di config.ts). */
+export interface EelBoss {
+  phase: EelPhase
+  timer: number
+  x: number
+  y: number
+  hp: number
+  maxHp: number
+  round: number
+  /** Urutan yang sudah berhasil diketik di pertarungan ini (urutan berikutnya makin panjang). */
+  wins: number
+  sequence: string[]
+  /** Berapa huruf yang sudah ditunjukkan (fase show). */
+  shown: number
+  /** Huruf ke berapa yang harus diketik berikutnya. */
+  index: number
+  orbs: Orb[]
+  speed: number
+  /** Sisa waktu urutan ditampilkan ulang oleh Sonar. */
+  peek: number
+  /** Kilatan panel saat salah ketik / bos saat terkena. */
+  wrong: number
+  hitFlash: number
+  age: number
+}
 
 export interface Banner {
   title: string
@@ -188,6 +234,7 @@ export interface GameState {
   next: { swarm: number; oxygen: number; mutiara: number; boss: number; cave: number }
   bossCount: number
   mega: Megalodon | null
+  eel: EelBoss | null
   /** Arus Gua yang sedang berlangsung (lihat cave.ts). */
   cave: Cave | null
   caveCount: number
@@ -260,6 +307,7 @@ export function createGame(width: number, rand: () => number = Math.random): Gam
     next: { swarm: EVENTS.swarm.firstAt, oxygen: EVENTS.oxygen.firstAt, mutiara: EVENTS.mutiara.firstAt, boss: nextBossDepth(0), cave: CAVE.firstAt },
     bossCount: 0,
     mega: null,
+    eel: null,
     cave: null,
     caveCount: 0,
     steer: { up: false, down: false, left: false, right: false },
@@ -385,7 +433,7 @@ function pickKind(s: GameState): EnemyKind {
 }
 
 const isRegular = (enemy: Enemy) => ENEMIES[enemy.kind].damage > 0 && enemy.kind !== 'kraken' && enemy.kind !== 'teri'
-const bossAlive = (s: GameState) => s.mega !== null || s.enemies.some((enemy) => enemy.kind === 'kraken')
+const bossAlive = (s: GameState) => s.mega !== null || s.eel !== null || s.enemies.some((enemy) => enemy.kind === 'kraken')
 
 function banner(s: GameState, title: string, subtitle: string, time = 2.6) {
   s.banner = { title, subtitle, time }
@@ -393,7 +441,7 @@ function banner(s: GameState, title: string, subtitle: string, time = 2.6) {
 
 function schedule(s: GameState, dt: number) {
   // Selama Megalodon atau Arus Gua: tidak ada yang muncul sama sekali.
-  if (s.mega || s.cave) return
+  if (s.mega || s.eel || s.cave) return
   const boss = bossAlive(s)
 
   if (!boss && s.depth >= s.next.boss) {
@@ -403,6 +451,10 @@ function schedule(s: GameState, dt: number) {
     s.next.boss = nextBossDepth(s.next.boss)
     if (kind === 'megalodon') {
       startMegalodon(s)
+      return
+    }
+    if (kind === 'listrik') {
+      startEel(s)
       return
     }
     spawn(s, 'kraken', [...BOSS_PHRASES[(s.kills.kraken ?? 0) % BOSS_PHRASES.length]])
@@ -535,6 +587,10 @@ export function typeKey(s: GameState, key: string) {
     qteKey(s, s.mega, c)
     return
   }
+  if (s.eel && s.eel.phase !== 'warning') {
+    memoryKey(s, s.eel, c)
+    return
+  }
   let target = lockedEnemy(s)
   if (!target) {
     const visible = s.enemies.filter((enemy) => isTypeable(enemy) && enemy.words[enemy.segment][enemy.progress] === c)
@@ -581,7 +637,7 @@ function mistake(s: GameState, target: Enemy | null) {
 /** Backspace: melepas kunci; kemajuan kata itu diulang dari awal. */
 export function release(s: GameState) {
   const target = lockedEnemy(s)
-  if (!target || s.over || s.mega?.qte || steering(s)) return
+  if (!target || s.over || s.mega?.qte || steering(s) || (s.eel && s.eel.phase !== 'warning')) return
   target.progress = 0
   s.lockId = null
   s.events.push('release')
@@ -590,6 +646,19 @@ export function release(s: GameState) {
 /** Enter: Sonar menghancurkan semua musuh biasa dan teri di layar (tanpa kombo). */
 export function fireSonar(s: GameState) {
   if (s.over || s.mega?.qte || steering(s)) return
+  if (s.eel && s.eel.phase !== 'warning') {
+    // Melawan Belut Listrik: Sonar menampilkan ulang urutan sebentar (hanya saat bola sudah dilepas).
+    if (s.eel.phase !== 'orbs' || s.eel.peek > 0) return
+    if (s.sonar <= 0) {
+      s.events.push('sonar-empty')
+      return
+    }
+    s.sonar--
+    s.sonarWave = 0
+    s.eel.peek = EEL.peek
+    s.events.push('sonar')
+    return
+  }
   if (s.sonar <= 0) {
     s.events.push('sonar-empty')
     return
@@ -641,6 +710,7 @@ export function update(s: GameState, rawDt: number) {
   s.grace = Math.max(0, s.grace - dt)
   schedule(s, dt)
   updateMegalodon(s, dt)
+  updateEel(s, dt)
   updateCave(s, dt)
   if (s.over) return
 
@@ -963,6 +1033,233 @@ function updateMegalodon(s: GameState, dt: number) {
       if (m.timer <= 0) finishMegalodon(s, m)
       break
   }
+}
+
+// ---------- Belut Listrik ----------
+
+const ENTER_PAUSE = 1.2
+const RELEASE_TIME = 0.9
+const ZAP_TIME = 1.2
+const SHOCK_TIME = 1.3
+const EEL_DYING = 2.2
+
+const eelHome = (s: GameState) => s.width - EEL.homeOffset
+const eelLength = (e: EelBoss) => Math.min(EEL.maxLength, EEL.length + e.wins + e.round)
+
+function startEel(s: GameState) {
+  const round = s.kills.listrik ?? 0
+  const maxHp = EEL.hp + EEL.hpPerRound * round
+  s.swarm = null
+  s.eel = {
+    phase: 'warning',
+    timer: EEL.warning,
+    x: s.width + 220,
+    y: s.height / 2,
+    hp: maxHp,
+    maxHp,
+    round,
+    wins: 0,
+    sequence: [],
+    shown: 0,
+    index: 0,
+    orbs: [],
+    speed: 0,
+    peek: 0,
+    wrong: 0,
+    hitFlash: 0,
+    age: 0,
+  }
+  s.events.push('alarm')
+  banner(s, 'ARUS LISTRIK TERDETEKSI', 'Sesuatu bermuatan mendekat · ikan-ikan menyingkir', 3)
+}
+
+/** Urutan baru (huruf tidak berulang), lalu mulai ditunjukkan satu per satu. */
+function newSequence(s: GameState, e: EelBoss) {
+  const pool = EEL.letters.split('')
+  const sequence: string[] = []
+  while (sequence.length < eelLength(e)) sequence.push(pool.splice(Math.floor(s.rand() * pool.length), 1)[0])
+  e.sequence = sequence
+  e.shown = 1
+  e.index = 0
+  e.orbs = []
+  e.peek = 0
+  e.phase = 'show'
+  e.timer = EEL.reveal
+  s.events.push('memory')
+}
+
+/** Bola dilepas ke posisi acak (berjauhan satu sama lain), di antara penyelam dan bos. */
+function releaseOrbs(s: GameState, e: EelBoss) {
+  const minX = s.width * 0.4
+  const maxX = Math.max(minX + 80, e.x - 120)
+  const top = WORLD.laneTop + 60
+  const bottom = WORLD.laneBottom - 10
+  const placed: { x: number; y: number }[] = []
+  for (const letter of e.sequence) {
+    let best = { x: minX, y: top }
+    let bestGap = -1
+    for (let i = 0; i < 24; i++) {
+      const candidate = { x: minX + s.rand() * (maxX - minX), y: top + s.rand() * (bottom - top) }
+      const gap = Math.min(999, ...placed.map((p) => Math.hypot(p.x - candidate.x, p.y - candidate.y)))
+      if (gap > bestGap) {
+        best = candidate
+        bestGap = gap
+      }
+      if (gap > 110) break
+    }
+    placed.push(best)
+    e.orbs.push({ letter, x: e.x - 40, y: e.y, tx: best.x, ty: best.y, done: false, flash: 0, phase: s.rand() * Math.PI * 2 })
+  }
+  e.phase = 'release'
+  e.timer = RELEASE_TIME
+  s.events.push('release-orbs')
+}
+
+function memoryKey(s: GameState, e: EelBoss, c: string) {
+  if (e.phase !== 'orbs') return
+  if (c === e.sequence[e.index]) {
+    const orb = e.orbs.find((o) => o.letter === c)!
+    orb.done = true
+    e.index++
+    s.correct++
+    s.events.push('zap')
+    s.bolts.push({ x: WORLD.diverX + 18, y: diverY(s) - 4, tx: orb.x, ty: orb.y, t: 0 })
+    burst(s, orb.x, orb.y, 12, 'volt', 0.8)
+    if (e.index < e.sequence.length) return
+    // Urutan lengkap: petir balik menyambar bos.
+    e.phase = 'zap'
+    e.timer = ZAP_TIME
+    e.wins++
+    e.hp = Math.max(0, e.hp - 1)
+    e.hitFlash = 0.4
+    s.combo++
+    s.bestCombo = Math.max(s.bestCombo, s.combo)
+    const points = Math.round(EEL.pointsPerLetter * e.sequence.length * multiplierFor(s.combo))
+    s.score += points
+    s.shake = Math.max(s.shake, 0.3)
+    popup(s, e.x - 30, e.y - 70, `URUTAN BENAR! +${points}`, 'bonus')
+    burst(s, e.x - 30, e.y, 20, 'volt', 1.4)
+    s.events.push('boss-hit')
+    return
+  }
+  // Salah: kombo putus dan semua bola melompat mendekat.
+  s.errors++
+  s.combo = 0
+  e.wrong = 0.35
+  for (const orb of e.orbs) {
+    if (orb.done) continue
+    orb.x -= EEL.wrongPush
+    orb.flash = 0.3
+  }
+  s.events.push('error')
+}
+
+function updateEel(s: GameState, dt: number) {
+  const e = s.eel
+  if (!e) return
+  e.age += dt
+  e.timer -= dt
+  e.peek = Math.max(0, e.peek - dt)
+  e.wrong = Math.max(0, e.wrong - dt)
+  e.hitFlash = Math.max(0, e.hitFlash - dt)
+  if (e.phase !== 'warning' && e.phase !== 'enter' && e.phase !== 'dying') {
+    e.x += (eelHome(s) - e.x) * Math.min(1, dt * 3)
+    e.y = s.height / 2 + 20 + Math.sin(e.age * 0.7) * 50
+  }
+
+  switch (e.phase) {
+    case 'warning':
+      if (e.timer <= 0 && !s.enemies.some((enemy) => ENEMIES[enemy.kind].damage > 0)) {
+        e.phase = 'enter'
+        e.timer = 99
+        s.events.push('boss')
+        banner(s, 'BELUT LISTRIK!', 'Ingat urutan hurufnya, lalu ketik dari ingatan', 2.4)
+      }
+      break
+    case 'enter':
+      e.x = Math.max(eelHome(s), e.x - 260 * dt)
+      e.y = s.height / 2 + 20
+      if (e.x <= eelHome(s) && e.timer > ENTER_PAUSE) e.timer = ENTER_PAUSE
+      if (e.timer <= 0) newSequence(s, e)
+      break
+    case 'show':
+      if (e.timer > 0) break
+      if (e.shown < e.sequence.length) {
+        e.shown++
+        e.timer = EEL.reveal
+        s.events.push('memory')
+      } else {
+        e.phase = 'memorize'
+        e.timer = Math.max(EEL.minHold, EEL.hold + EEL.holdPerWin * e.wins)
+      }
+      break
+    case 'memorize':
+      if (e.timer <= 0) releaseOrbs(s, e)
+      break
+    case 'release': {
+      const t = 1 - Math.max(0, e.timer) / RELEASE_TIME
+      const ease = 1 - (1 - t) ** 3
+      for (const orb of e.orbs) {
+        orb.x = e.x - 40 + (orb.tx - (e.x - 40)) * ease
+        orb.y = e.y + (orb.ty - e.y) * ease
+      }
+      if (e.timer <= 0) {
+        e.phase = 'orbs'
+        const front = Math.min(...e.orbs.map((orb) => orb.tx))
+        const time = (EEL.time + EEL.timePerLetter * e.sequence.length) * Math.max(0.5, 1 - EEL.roundSpeedup * e.round)
+        e.speed = Math.max(10, (front - (WORLD.diverX + WORLD.reach + 14)) / time)
+      }
+      break
+    }
+    case 'orbs':
+      for (const orb of e.orbs) {
+        orb.flash = Math.max(0, orb.flash - dt)
+        if (orb.done) continue
+        orb.x -= e.speed * dt
+        orb.y = orb.ty + Math.sin(e.age * 2 + orb.phase) * 6
+        if (orb.x <= WORLD.diverX + WORLD.reach + 14) {
+          // Bola sampai: semua bola tersisa meledak menyetrum penyelam.
+          for (const other of e.orbs) if (!other.done) burst(s, other.x, other.y, 10, 'volt')
+          e.orbs = []
+          e.phase = 'shock'
+          e.timer = SHOCK_TIME
+          s.combo = 0
+          s.grace = 0
+          damagePlayer(s, 1)
+          s.events.push('shock')
+          return
+        }
+      }
+      break
+    case 'zap':
+      if (e.timer <= 0) {
+        if (e.hp <= 0) {
+          e.phase = 'dying'
+          e.timer = EEL_DYING
+        } else newSequence(s, e)
+      }
+      break
+    case 'shock':
+      if (e.timer <= 0) newSequence(s, e)
+      break
+    case 'dying':
+      e.y += 28 * dt
+      if (s.rand() < dt * 10) burst(s, e.x + s.rand() * 200 - 40, e.y + (s.rand() - 0.5) * 60, 8, 'volt', 1.1)
+      if (e.timer <= 0) finishEel(s, e)
+      break
+  }
+}
+
+function finishEel(s: GameState, e: EelBoss) {
+  s.eel = null
+  s.kills.listrik = (s.kills.listrik ?? 0) + 1
+  const points = Math.round((ENEMIES.listrik.points + s.depth * DEPTH_POINTS) * multiplierFor(s.combo))
+  s.score += points
+  popup(s, e.x, e.y - 30, `+${points}`)
+  burst(s, e.x, e.y, 36, 'bubble', 2)
+  s.spawnTimer = 1.6
+  banner(s, 'BELUT LISTRIK KALAH!', 'Lanjut menyelam', 2.4)
+  s.events.push('boss-down')
 }
 
 // ---------- Arus Gua ----------

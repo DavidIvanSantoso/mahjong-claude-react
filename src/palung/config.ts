@@ -35,7 +35,7 @@ export const DESCENT = {
   max: 4,
 }
 
-export type EnemyKind = 'teri' | 'piranha' | 'hiu' | 'martil' | 'bayangan' | 'kraken' | 'megalodon' | 'misil' | 'oksigen' | 'mutiara'
+export type EnemyKind = 'teri' | 'piranha' | 'hiu' | 'martil' | 'bayangan' | 'kraken' | 'megalodon' | 'misil' | 'listrik' | 'oksigen' | 'mutiara'
 
 export interface EnemyType {
   kind: EnemyKind
@@ -80,6 +80,8 @@ export const ENEMIES: Record<EnemyKind, EnemyType> = {
   megalodon: { kind: 'megalodon', name: 'Megalodon Robot', length: [0, 0], speed: 0, points: 400, damage: 1, motion: 'swim', size: 2.2, wobble: 0, sonarable: false },
   /** Misil dari Megalodon: meluncur ke penyelam; diketik = dipantulkan ke bos. */
   misil: { kind: 'misil', name: 'Misil', length: [4, 7], speed: 95, points: 8, damage: 1, motion: 'swim', size: 0.75, wobble: 0, sonarable: true },
+  /** Bos memori (lihat EEL). Seperti Megalodon, entri ini hanya untuk nama, skor, dan gambar panduan. */
+  listrik: { kind: 'listrik', name: 'Belut Listrik', length: [0, 0], speed: 0, points: 450, damage: 1, motion: 'swim', size: 2, wobble: 0, sonarable: false },
   /** Gelembung oksigen: +1 hati. */
   oksigen: { kind: 'oksigen', name: 'Gelembung Oksigen', length: [4, 8], speed: 34, points: 15, damage: 0, motion: 'rise', size: 1, wobble: 18, sonarable: false },
   /** Kerang mutiara: +1 Sonar dan skor bonus. */
@@ -156,9 +158,9 @@ export const EVENTS = {
   mutiara: { firstAt: 120, every: 160 },
   /**
    * Penjaga zona muncul di awal tiap zona, lalu tiap `every` meter setelah zona terakhir. Jenisnya
-   * bergiliran menurut `order` (100 m Kraken, 300 m Megalodon, 600 m Kraken, ...).
+   * bergiliran menurut `order` (100 m Kraken, 300 m Megalodon, 600 m Belut Listrik, 1000 m Kraken, ...).
    */
-  boss: { every: 500, order: ['kraken', 'megalodon'] as EnemyKind[] },
+  boss: { every: 500, order: ['kraken', 'megalodon', 'listrik'] as EnemyKind[] },
 }
 
 /**
@@ -206,6 +208,40 @@ export const MEGALODON = {
     /** HP bos yang hilang kalau QTE berhasil. */
     damage: 2,
   },
+}
+
+/**
+ * Belut Listrik: bos memori. Ia menunjukkan urutan huruf, menyembunyikannya, lalu melepas bola listrik
+ * berhuruf sama di posisi acak. Pemain mengetik urutannya dari ingatan; benar semua = HP bos −1.
+ * Selama pertarungan tidak ada ikan lain. `round` = Belut Listrik ke berapa (0 = pertama).
+ */
+export const EEL = {
+  warning: 2.2,
+  hp: 4,
+  hpPerRound: 1,
+  /** Jarak kepala dari tepi kanan. */
+  homeOffset: 150,
+  /** Panjang urutan = length + serangan yang sudah berhasil + round, maks. maxLength. */
+  length: 4,
+  maxLength: 8,
+  /** Detik per huruf saat ditunjukkan satu per satu. */
+  reveal: 0.6,
+  /** Lama seluruh urutan terlihat setelah lengkap (makin singkat tiap serangan berhasil). */
+  hold: 2.2,
+  holdPerWin: -0.25,
+  minHold: 1.2,
+  /** Waktu sampai bola terdepan mencapai penyelam: time + timePerLetter × panjang (dikurangi per round). */
+  time: 4,
+  timePerLetter: 1.1,
+  roundSpeedup: 0.08,
+  /** Salah ketik: semua bola melompat sejauh ini ke arah penyelam. */
+  wrongPush: 26,
+  /** Sonar saat bola sudah dilepas: urutan tampil lagi selama ini (detik). */
+  peek: 1.5,
+  /** Huruf yang dipakai (tanpa huruf yang mirip satu sama lain seperti i/l/q). */
+  letters: 'abcdefghjkmnoprstuvwxyz',
+  /** Skor per huruf saat satu urutan berhasil (dikali kombo). */
+  pointsPerLetter: 15,
 }
 
 /**

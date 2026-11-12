@@ -939,13 +939,13 @@ Game mengetik untuk 1 pemain, tanpa jaringan. Pemain adalah penyelam yang terus 
 
 ### Alur
 
-1. **Turun terus.** Kedalaman = waktu bertahan × laju turun (`DESCENT`, 2,4 m/detik, naik pelan sampai 4 m/detik). Laju berhenti selama penjaga zona (Kraken atau Megalodon Robot) masih hidup dan selama Arus Gua.
+1. **Turun terus.** Kedalaman = waktu bertahan × laju turun (`DESCENT`, 2,4 m/detik, naik pelan sampai 4 m/detik). Laju berhenti selama penjaga zona (Kraken, Megalodon Robot, atau Belut Listrik) masih hidup dan selama Arus Gua.
 2. **Mengunci target.** Huruf pertama yang diketik mengunci ikan **terdekat ke penyelam** yang katanya diawali huruf itu. Ikan bisa dikunci begitu labelnya terlihat, walau badannya baru separuh masuk layar (kecuali Ikan Bayangan). Huruf berikutnya melanjutkan ikan itu. Huruf yang sudah benar berwarna kuning, sisanya putih; target terkunci diberi lingkaran putus-putus.
    - Saat ikan baru muncul, mesin memilih kata yang huruf awalnya **belum dipakai** ikan lain di layar, supaya penguncian jarang ambigu.
    - Salah ketik tidak mengurangi hati, tapi memutus kombo dan menurunkan akurasi.
    - **Backspace** melepas kunci (kemajuan kata itu diulang dari awal).
 3. **Terkena.** Ikan atau misil yang mencapai penyelam mengambil hati (Kraken 2 hati), lalu hancur. Setelah terkena ada jeda kebal singkat (`hurtGrace`).
-4. **Sonar** (**Enter**): menghancurkan semua ikan dan misil di layar kecuali bos dan bonus. Misil yang dihancurkan Sonar tidak memantul ke bos. Mulai dengan 1, maksimal 3.
+4. **Sonar** (**Enter**): menghancurkan semua ikan dan misil di layar kecuali bos dan bonus. Misil yang dihancurkan Sonar tidak memantul ke bos. Saat melawan Belut Listrik, Sonar justru menampilkan ulang urutan huruf sebentar. Mulai dengan 1, maksimal 3.
 5. **Selesai** saat hati habis. Ringkasan menampilkan kedalaman, waktu bertahan, skor, WPM, akurasi, kombo terbaik, dan jumlah musuh per jenis. Rekor terbaik disimpan di perangkat (`localStorage`, kunci `palung-best`).
 
 ### Musuh dan bonus (`ENEMIES` di `config.ts`)
@@ -960,6 +960,7 @@ Game mengetik untuk 1 pemain, tanpa jaringan. Pemain adalah penyelam yang terus 
 | Kraken | frasa 3–5 kata | sangat lambat | Penjaga zona; kata diketik berurutan |
 | Megalodon Robot | – | – | Penjaga zona; lihat [Megalodon Robot](#megalodon-robot-megalodon-di-configts) |
 | Misil | 4–7 huruf | sedang | Hanya ditembakkan Megalodon; meluncur lurus ke penyelam |
+| Belut Listrik | urutan 4–8 huruf | – | Penjaga zona (bos memori); lihat [Belut Listrik](#belut-listrik-eel-di-configts) |
 | Gelembung Oksigen | kata bonus | naik dari dasar | +1 hati; hanya muncul kalau hati berkurang |
 | Kerang Mutiara | kata bonus | naik dari dasar | +1 Sonar dan skor bonus |
 
@@ -969,25 +970,25 @@ Game mengetik untuk 1 pemain, tanpa jaringan. Pemain adalah penyelam yang terus 
 - **Kesulitan** (`difficultyAt`): jeda kemunculan makin pendek, ikan makin cepat, jumlah ikan maksimal di layar bertambah, dan porsi Hiu/Hiu Martil naik. Setelah 1000 m kesulitan tetap naik pelan, supaya tidak ada titik aman untuk bertahan selamanya.
 - **Kejadian berkala** (`EVENTS`):
   - Kawanan Teri pertama di 40 m, lalu tiap 100 m; jumlah ikannya bertambah dengan kedalaman (6–18).
-  - Penjaga zona muncul di awal tiap zona, lalu tiap 500 m setelah zona terakhir. Jenisnya bergiliran (`EVENTS.boss.order`): Kraken di 100 m, Megalodon Robot di 300 m, Kraken di 600 m, Megalodon di 1000 m, dan seterusnya.
+  - Penjaga zona muncul di awal tiap zona, lalu tiap 500 m setelah zona terakhir. Jenisnya bergiliran (`EVENTS.boss.order`): Kraken di 100 m, Megalodon Robot di 300 m, Belut Listrik di 600 m, lalu berulang (Kraken di 1000 m, Megalodon di 1500 m, Belut Listrik di 2000 m, ...).
   - Gelembung Oksigen tiap 140 m (kalau hati berkurang), Kerang Mutiara tiap 160 m.
   - **Arus Gua** pertama di 200 m, lalu tiap 250 m (lihat [Arus Gua](#arus-gua-cave-di-configts-dan-cavets)). Tidak dimulai saat ada bos atau Kawanan Teri; ditunda sampai keduanya selesai.
 
-Hasil simulasi bot (30 permainan per baris; bot mengetik pada WPM tertentu dengan reaksi 0,3 detik saat berganti target, 0,4 detik per huruf QTE, dan menghindar di gua dengan memilih ketinggian paling aman di depannya):
+Hasil simulasi bot (30 permainan per baris; bot mengetik pada WPM tertentu dengan reaksi 0,3 detik saat berganti target, 0,4 detik per huruf QTE, menghindar di gua dengan memilih ketinggian paling aman di depannya, dan melawan Belut Listrik dengan peluang lupa 1,5% per huruf urutan):
 
 | Bot | Bertahan (median) | Kedalaman (median) | Catatan |
 |---|---|---|---|
 | 20 WPM, akurasi 90% | ±1 menit | ±100 m (Kraken pertama) | |
-| 30 WPM, akurasi 92% | ±2,4 menit | ±252 m | Megalodon jarang tercapai |
+| 30 WPM, akurasi 92% | ±2,4 menit | ±254 m | Megalodon jarang tercapai |
 | 45 WPM, akurasi 94% | ±4,4 menit | ±454 m | Megalodon dikalahkan ±85%, ±40 detik |
-| 60 WPM, akurasi 95% | ±5,2 menit | ±600 m | |
-| 100 WPM, akurasi 97% | ±7,4 menit | ±960 m | |
+| 60 WPM, akurasi 95% | ±5,4 menit | ±600 m | |
+| 100 WPM, akurasi 97% | ±9,7 menit | ±1.200 m | |
 
-Di gua, bot rata-rata tergores ±0,4 kali di 200 m dan ±1 kali di 950 m; sekitar 60% gua dilewati tanpa tergores. Kematian di gua umumnya terjadi pada pemain yang masuk dengan 1 hati.
+Bot tidak bisa meniru kesulitan mengingat, jadi angka Belut Listrik di sini lebih mudah daripada untuk manusia. Di gua, bot rata-rata tergores ±0,3–0,4 kali; sekitar 2 dari 3 gua dilewati tanpa tergores. Kematian di gua umumnya terjadi pada pemain yang masuk dengan 1 hati.
 
 ### Megalodon Robot (`MEGALODON` di `config.ts`)
 
-Bos kedua, bergiliran dengan Kraken. Selama pertarungan **tidak ada ikan atau bonus yang muncul** dan penyelam berhenti turun.
+Bos kedua (300 m), bergiliran dengan Kraken dan Belut Listrik. Selama pertarungan **tidak ada ikan atau bonus yang muncul** dan penyelam berhenti turun.
 
 1. **Peringatan.** Banner "SINYAL LOGAM TERDETEKSI" dan denyut merah di tepi kanan. Kemunculan berhenti; bos baru masuk setelah semua ikan berbahaya yang tersisa habis (minimal `warning` detik).
 2. **Bertarung.** Bos berpindah naik-turun, lalu diam beberapa detik (`hold`, makin singkat saat HP-nya turun) sambil menembakkan **misil berkata** dari mulutnya, lurus ke penyelam. Paling banyak 2 misil sekaligus (3 mulai Megalodon kedua). Bos tidak menembak kalau sisa waktu diamnya kurang dari `fireCutoff`, supaya setiap misil masih sempat dipantulkan dan kena.
@@ -998,6 +999,24 @@ Bos kedua, bergiliran dengan Kraken. Selama pertarungan **tidak ada ikan atau bo
 5. **Kalah.** HP habis: misil yang tersisa meledak, bos tenggelam sambil meledak, lalu banner "MEGALODON HANCUR!" dan penyelaman berlanjut.
 
 HP awal 10, +3 untuk tiap Megalodon berikutnya; kecepatan pindah dan kecepatan misil juga naik. Skor: +20 per HP yang hilang dan 400 saat kalah (keduanya dikali kombo). Selama QTE, Backspace dan Sonar tidak berlaku. Bar HP bos menggantikan nama zona di HUD.
+
+### Belut Listrik (`EEL` di `config.ts`)
+
+Bos ketiga (600 m), bos **memori**. Seperti Megalodon, selama pertarungan tidak ada ikan atau bonus yang muncul dan penyelam berhenti turun. Bos ini tidak bisa diketik langsung; HP-nya hanya berkurang lewat urutan yang benar.
+
+1. **Peringatan.** Banner "ARUS LISTRIK TERDETEKSI". Bos masuk setelah ikan berbahaya yang tersisa habis.
+2. **Tunjukkan.** Panel di bawah HUD menampilkan urutan huruf satu per satu (`reveal` detik per huruf, huruf tidak berulang). Setelah lengkap, seluruh urutan terlihat selama `hold` detik (dengan garis hitung mundur), lalu **disembunyikan**. Ketikan selama fase ini diabaikan (tidak dihitung salah).
+3. **Bola listrik.** Bos melepas bola listrik berhuruf sama, ditempatkan di **posisi acak** (berjauhan) di antara penyelam dan bos. Bola bergerak pelan ke penyelam; waktunya `time + timePerLetter × panjang` detik sampai bola terdepan tiba.
+4. **Ketik urutannya dari ingatan.** Panel kini berisi `?` dan menandai huruf ke berapa yang harus diketik.
+   - Huruf benar: bola itu tersetrum hilang dan hurufnya muncul kuning di panel.
+   - Huruf salah: salah ketik, kombo putus, dan semua bola melompat `wrongPush` px lebih dekat. Kemajuan urutan tidak diulang.
+   - **Sonar** (Enter): urutan tampil lagi selama `peek` detik.
+5. **Hasil serangan.**
+   - Urutan lengkap: petir balik menyambar bos, HP −1, skor `pointsPerLetter` × panjang (dikali kombo). Urutan berikutnya **lebih panjang 1 huruf** dan waktu hafalannya lebih singkat.
+   - Ada bola yang sampai ke penyelam: semua bola meledak, −1 hati (menembus jeda kebal), panel menunjukkan urutan yang benar, lalu bos mengulang dengan urutan baru yang sama panjang.
+6. **Kalah.** HP habis: bos tenggelam, banner "BELUT LISTRIK KALAH!", skor 450 + bonus kedalaman.
+
+HP awal 4 (+1 per Belut Listrik berikutnya). Panjang urutan 4 + jumlah urutan yang sudah berhasil + round (maks. 8); Belut Listrik berikutnya juga lebih cepat (`roundSpeedup`). Huruf yang mirip satu sama lain (i, l, q) tidak dipakai. Gambarnya ada di `eelRender.ts`.
 
 ### Arus Gua (`CAVE` di `config.ts` dan `cave.ts`)
 
@@ -1044,7 +1063,7 @@ Hiasan saja, tidak memengaruhi permainan, dan ditentukan dari kedalaman + waktu 
 ### Menambah kata dan menyetel game
 
 - **Kata:** tambahkan ke `WORDS` di `src/palung/words.ts`. Mesin otomatis memakai kata itu untuk jenis ikan yang rentang panjangnya cocok. Hanya huruf a–z tanpa spasi; kata lain dan duplikat dibuang (`clean`). Frasa Kraken ada di `BOSS_PHRASES` (kata misil diambil dari `WORDS` sesuai panjangnya), kata bonus di `BONUS_WORDS`, huruf Teri di `LETTERS`.
-- **Angka keseimbangan:** semuanya di `src/palung/config.ts` (kecepatan, skor, hati, Sonar, zona, kurva kesulitan, jadwal kejadian, urutan bos, Megalodon, Arus Gua, kombo).
+- **Angka keseimbangan:** semuanya di `src/palung/config.ts` (kecepatan, skor, hati, Sonar, zona, kurva kesulitan, jadwal kejadian, urutan bos, Megalodon, Belut Listrik, Arus Gua, kombo).
 - **Jenis ikan baru:** tambahkan ke `EnemyKind` dan `ENEMIES` (config.ts), beri bobot di `difficultyAt`, lalu gambarnya di `drawEnemy` (render.ts).
 
 ### Teknis
@@ -1064,11 +1083,12 @@ Hiasan saja, tidak memengaruhi permainan, dan ditentukan dari kedalaman + waktu 
 
 ```
 src/palung/
-  config.ts        Angka keseimbangan: dunia, hati, Sonar, musuh, zona, kesulitan, kejadian, Megalodon, Arus Gua, kombo
+  config.ts        Angka keseimbangan: dunia, hati, Sonar, musuh, zona, kesulitan, kejadian, Megalodon, Belut Listrik, Arus Gua, kombo
   words.ts         Daftar kata, frasa Kraken, kata bonus, huruf Teri
-  engine.ts        State dan aturan: kemunculan, penguncian, tabrakan, Megalodon (misil, pantulan, QTE), skor, WPM, akurasi (tanpa DOM)
+  engine.ts        State dan aturan: kemunculan, penguncian, tabrakan, Megalodon (misil, pantulan, QTE), Belut Listrik (urutan, bola listrik), Arus Gua, skor, WPM, akurasi (tanpa DOM)
   render.ts        Menggambar penyelam, ikan, Megalodon dan misil, efek, label kata, HUD, banner, layar QTE (Canvas)
   cave.ts          Arus Gua: pembuatan terowongan acak, rintangan, tabrakan (data murni)
+  eelRender.ts     Menggambar Belut Listrik: badan belut, bola listrik berhuruf, petir, panel urutan
   caveRender.ts    Menggambar Arus Gua: dinding batu, belut, bulu babi, ubur-ubur, mutiara, cahaya gua
   ambience.ts      Suasana latar per zona (dinding palung, karang, paus, bangkai kapal, cahaya hayati)
   sfx.ts           Efek suara Web Audio
