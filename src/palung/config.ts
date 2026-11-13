@@ -35,7 +35,20 @@ export const DESCENT = {
   max: 4,
 }
 
-export type EnemyKind = 'teri' | 'piranha' | 'hiu' | 'martil' | 'bayangan' | 'kraken' | 'megalodon' | 'misil' | 'listrik' | 'oksigen' | 'mutiara'
+export type EnemyKind =
+  | 'teri'
+  | 'piranha'
+  | 'hiu'
+  | 'martil'
+  | 'bayangan'
+  | 'kraken'
+  | 'megalodon'
+  | 'misil'
+  | 'listrik'
+  | 'siren'
+  | 'nada'
+  | 'oksigen'
+  | 'mutiara'
 
 export interface EnemyType {
   kind: EnemyKind
@@ -62,6 +75,8 @@ export interface EnemyType {
    * sekian piksel dari penyelam.
    */
   reveal?: number
+  /** Kata ditampilkan biasa tapi harus diketik dari belakang (Nada Siren). */
+  reversed?: boolean
 }
 
 export const ENEMIES: Record<EnemyKind, EnemyType> = {
@@ -82,6 +97,10 @@ export const ENEMIES: Record<EnemyKind, EnemyType> = {
   misil: { kind: 'misil', name: 'Misil', length: [4, 7], speed: 95, points: 8, damage: 1, motion: 'swim', size: 0.75, wobble: 0, sonarable: true },
   /** Bos memori (lihat EEL). Seperti Megalodon, entri ini hanya untuk nama, skor, dan gambar panduan. */
   listrik: { kind: 'listrik', name: 'Belut Listrik', length: [0, 0], speed: 0, points: 450, damage: 1, motion: 'swim', size: 2, wobble: 0, sonarable: false },
+  /** Bos kata terbalik + menghindar (lihat SIREN). Entri ini untuk nama, skor, dan gambar panduan. */
+  siren: { kind: 'siren', name: 'Siren', length: [0, 0], speed: 0, points: 500, damage: 1, motion: 'swim', size: 2, wobble: 0, sonarable: false },
+  /** Not nyanyian Siren: kata diketik dari belakang (`reversed`). */
+  nada: { kind: 'nada', name: 'Nada Siren', length: [4, 6], speed: 50, points: 20, damage: 1, motion: 'swim', size: 0.8, wobble: 12, sonarable: true, reversed: true },
   /** Gelembung oksigen: +1 hati. */
   oksigen: { kind: 'oksigen', name: 'Gelembung Oksigen', length: [4, 8], speed: 34, points: 15, damage: 0, motion: 'rise', size: 1, wobble: 18, sonarable: false },
   /** Kerang mutiara: +1 Sonar dan skor bonus. */
@@ -157,10 +176,11 @@ export const EVENTS = {
   oxygen: { firstAt: 70, every: 140 },
   mutiara: { firstAt: 120, every: 160 },
   /**
-   * Penjaga zona muncul di awal tiap zona, lalu tiap `every` meter setelah zona terakhir. Jenisnya
-   * bergiliran menurut `order` (100 m Kraken, 300 m Megalodon, 600 m Belut Listrik, 1000 m Kraken, ...).
+   * Penjaga zona muncul di kedalaman `at`, lalu tiap `every` meter setelah yang terakhir. Jenisnya
+   * bergiliran menurut `order` (100 m Kraken, 300 m Megalodon, 600 m Belut Listrik, 800 m Siren,
+   * 1300 m Kraken, 1800 m Megalodon, ...).
    */
-  boss: { every: 500, order: ['kraken', 'megalodon', 'listrik'] as EnemyKind[] },
+  boss: { at: [100, 300, 600, 800], every: 500, order: ['kraken', 'megalodon', 'listrik', 'siren'] as EnemyKind[] },
 }
 
 /**
@@ -249,6 +269,46 @@ export const EEL = {
  * panah/WASD (atau sentuh di HP). Selama event tidak ada ikan yang muncul dan tidak ada yang diketik.
  * Jarak dalam piksel dunia; `round` = gua ke berapa (0 = pertama).
  */
+/**
+ * Siren: dua fase bergantian.
+ * 1. Bernyanyi: melepas Nada berisi kata yang harus diketik **dari belakang**; tiap Nada habis = HP −1.
+ * 2. Menghindar (saat HP turun melewati `dodgeAt`): penyelam bergerak bebas dengan **kontrol terbalik**
+ *    menghindari gelombang suara dan not. Tanpa terkena = muncul trisula; diambil = HP −`powerDamage`.
+ * Selama pertarungan tidak ada ikan lain. `round` = Siren ke berapa (0 = pertama).
+ */
+export const SIREN = {
+  warning: 2.2,
+  hp: 12,
+  hpPerRound: 3,
+  homeOffset: 150,
+  /** Nada: jeda antarkemunculan, maks. di layar, kecepatan, dan panjang kata (+1 per round, maks. 8). */
+  noteEvery: 2.4,
+  maxNotes: 2,
+  noteSpeed: 50,
+  noteSpeedPerRound: 6,
+  /** Fase menghindar dimulai saat HP turun melewati pecahan ini (ditandai di bar HP). */
+  dodgeAt: [0.67, 0.34],
+  /** Jeda peringatan sebelum serangan (Siren menjerit), lalu lama fase menghindar. */
+  charge: 1.6,
+  dodge: 9,
+  dodgePerRound: 1,
+  /** Pola serangan bergantian tiap `patternEvery` detik: dinding gelombang (dengan celah) dan semburan not. */
+  patternEvery: 1.45,
+  waveSpeed: 230,
+  waveSpeedPerRound: 20,
+  waveGap: 130,
+  minWaveGap: 104,
+  noteBurst: 3,
+  burstSpeed: 210,
+  /** Kecepatan berenang saat kontrol terbalik. */
+  diverSpeed: 290,
+  /** Kebal setelah terkena saat menghindar. */
+  grace: 1.2,
+  /** Trisula: waktu untuk mengambilnya, dan HP Siren yang hilang. */
+  powerTime: 6,
+  powerDamage: 3,
+}
+
 export const CAVE = {
   firstAt: 200,
   every: 250,

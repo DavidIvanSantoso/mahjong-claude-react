@@ -90,6 +90,10 @@ const GUIDE_KINDS: { kind: EnemyKind; text: string }[] = [
     kind: 'listrik',
     text: 'Penjaga zona di 600 m; ikan lain berhenti muncul. Ia menunjukkan urutan huruf lalu menyembunyikannya, kemudian melepas bola listrik berhuruf sama di posisi acak. Ketik hurufnya sesuai urutan dari ingatan sebelum bola mencapaimu. Sonar menampilkan ulang urutannya sebentar.',
   },
+  {
+    kind: 'siren',
+    text: 'Penjaga zona di 800 m; ikan lain berhenti muncul. Kata di not nyanyiannya diketik dari BELAKANG (laut → tual). Di 2/3 dan 1/3 HP ia menjerit: hindari gelombang dan not dengan KONTROL TERBALIK (↑ jadi ↓, ← jadi →). Lolos tanpa terkena = muncul trisula; ambil untuk serangan besar.',
+  },
   { kind: 'oksigen', text: 'Gelembung oksigen (muncul kalau hatimu berkurang): ketik katanya untuk +1 hati.' },
   { kind: 'mutiara', text: 'Kerang mutiara: +1 Sonar dan skor bonus.' },
 ]

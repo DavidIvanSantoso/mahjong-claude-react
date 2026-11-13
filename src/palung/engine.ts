@@ -3,6 +3,7 @@ import {
   CAVE,
   DEPTH_POINTS,
   EEL,
+  SIREN,
   DESCENT,
   difficultyAt,
   ENEMIES,
@@ -148,6 +149,8 @@ export type GameEvent =
   | 'qte-win'
   | 'qte-fail'
   | 'boss-down'
+  | 'scream'
+  | 'trident'
   | 'memory'
   | 'release-orbs'
   | 'zap'
@@ -173,6 +176,57 @@ export interface Orb {
   done: boolean
   flash: number
   phase: number
+}
+
+/** Penyelam yang berenang bebas (Arus Gua, fase menghindar Siren). */
+export interface Swimmer {
+  x: number
+  y: number
+  vx: number
+  vy: number
+}
+
+/** Serangan Siren saat fase menghindar: dinding gelombang (dengan celah di `y`) atau not. */
+export interface SirenShot {
+  kind: 'wave' | 'note'
+  x: number
+  y: number
+  vx: number
+  vy: number
+  /** Lebar celah dinding gelombang. */
+  gap: number
+}
+
+export type SirenPhase = 'warning' | 'enter' | 'sing' | 'charge' | 'dodge' | 'powerup' | 'strike' | 'return' | 'dying'
+
+/** Pertarungan Siren (lihat SIREN di config.ts). */
+export interface SirenBoss {
+  phase: SirenPhase
+  timer: number
+  x: number
+  y: number
+  hp: number
+  maxHp: number
+  round: number
+  thresholds: number[]
+  /** Fase menghindar menunggu dimulai (HP baru melewati batas). */
+  pendingDodge: boolean
+  noteTimer: number
+  /** Posisi penyelam saat berenang bebas (null = di tempat biasa). */
+  swim: Swimmer | null
+  shots: SirenShot[]
+  patternTimer: number
+  pattern: number
+  lastGap: number
+  /** Penyelam terkena selama fase menghindar ini (tidak dapat trisula). */
+  struck: boolean
+  /** Trisula yang harus diambil; `from` = posisi lemparan saat fase strike. */
+  power: { x: number; y: number } | null
+  from: { x: number; y: number } | null
+  /** Lama fase menghindar ini (untuk bar waktu). */
+  dodgeTime: number
+  hitFlash: number
+  age: number
 }
 
 export type EelPhase = 'warning' | 'enter' | 'show' | 'memorize' | 'release' | 'orbs' | 'zap' | 'shock' | 'dying'
@@ -235,6 +289,7 @@ export interface GameState {
   bossCount: number
   mega: Megalodon | null
   eel: EelBoss | null
+  siren: SirenBoss | null
   /** Arus Gua yang sedang berlangsung (lihat cave.ts). */
   cave: Cave | null
   caveCount: number
@@ -276,10 +331,11 @@ function pool(kind: EnemyKind): string[] {
 
 /** Kedalaman penjaga zona berikutnya setelah `after` meter. */
 function nextBossDepth(after: number): number {
-  const zone = ZONES.find((candidate) => candidate.from > after)
-  if (zone) return zone.from
-  const last = ZONES[ZONES.length - 1].from
-  return last + Math.ceil((after - last + 1) / EVENTS.boss.every) * EVENTS.boss.every
+  const { at, every } = EVENTS.boss
+  const listed = at.find((depth) => depth > after)
+  if (listed !== undefined) return listed
+  const last = at[at.length - 1]
+  return last + Math.ceil((after - last + 1) / every) * every
 }
 
 export function createGame(width: number, rand: () => number = Math.random): GameState {
@@ -308,6 +364,7 @@ export function createGame(width: number, rand: () => number = Math.random): Gam
     bossCount: 0,
     mega: null,
     eel: null,
+    siren: null,
     cave: null,
     caveCount: 0,
     steer: { up: false, down: false, left: false, right: false },
@@ -347,13 +404,19 @@ export function lockedEnemy(s: GameState): Enemy | null {
 
 export const diverY = (s: GameState) => s.height / 2
 
-/** Posisi penyelam di layar: tetap, kecuali saat berenang bebas di Arus Gua. */
+/** Posisi penyelam di layar: tetap, kecuali saat berenang bebas (Arus Gua, menghindari Siren). */
 export function diverAt(s: GameState): { x: number; y: number } {
-  return s.cave && s.cave.phase !== 'warning' ? { x: s.cave.x, y: s.cave.y } : { x: WORLD.diverX, y: diverY(s) }
+  if (s.cave && s.cave.phase !== 'warning') return { x: s.cave.x, y: s.cave.y }
+  if (s.siren?.swim) return { x: s.siren.swim.x, y: s.siren.swim.y }
+  return { x: WORLD.diverX, y: diverY(s) }
 }
 
-/** Arus Gua sedang berjalan: penyelam digerakkan, mengetik tidak berlaku. */
-export const steering = (s: GameState) => s.cave !== null && s.cave.phase !== 'warning'
+/** Penyelam digerakkan pemain (Arus Gua, atau menghindar/mengambil trisula dari Siren); mengetik tidak berlaku. */
+export const steering = (s: GameState) =>
+  (s.cave !== null && s.cave.phase !== 'warning') || s.siren?.phase === 'dodge' || s.siren?.phase === 'powerup'
+
+/** Kontrol arah sedang dibalik (Siren). */
+export const invertedControls = (s: GameState) => s.siren?.phase === 'dodge' || s.siren?.phase === 'powerup'
 
 /** Jari-jari tabrakan musuh (dari titik tengahnya). */
 export function reachOf(enemy: Enemy): number {
@@ -433,7 +496,7 @@ function pickKind(s: GameState): EnemyKind {
 }
 
 const isRegular = (enemy: Enemy) => ENEMIES[enemy.kind].damage > 0 && enemy.kind !== 'kraken' && enemy.kind !== 'teri'
-const bossAlive = (s: GameState) => s.mega !== null || s.eel !== null || s.enemies.some((enemy) => enemy.kind === 'kraken')
+const bossAlive = (s: GameState) => s.mega !== null || s.eel !== null || s.siren !== null || s.enemies.some((enemy) => enemy.kind === 'kraken')
 
 function banner(s: GameState, title: string, subtitle: string, time = 2.6) {
   s.banner = { title, subtitle, time }
@@ -441,7 +504,7 @@ function banner(s: GameState, title: string, subtitle: string, time = 2.6) {
 
 function schedule(s: GameState, dt: number) {
   // Selama Megalodon atau Arus Gua: tidak ada yang muncul sama sekali.
-  if (s.mega || s.eel || s.cave) return
+  if (s.mega || s.eel || s.siren || s.cave) return
   const boss = bossAlive(s)
 
   if (!boss && s.depth >= s.next.boss) {
@@ -455,6 +518,10 @@ function schedule(s: GameState, dt: number) {
     }
     if (kind === 'listrik') {
       startEel(s)
+      return
+    }
+    if (kind === 'siren') {
+      startSiren(s)
       return
     }
     spawn(s, 'kraken', [...BOSS_PHRASES[(s.kills.kraken ?? 0) % BOSS_PHRASES.length]])
@@ -558,6 +625,14 @@ function destroy(s: GameState, enemy: Enemy, bySonar = false) {
     s.sonar = Math.min(PLAYER.maxSonar, s.sonar + 1)
     popup(s, enemy.x, enemy.y - 46, '+1 SONAR', 'bonus')
     s.events.push('bonus')
+  } else if (enemy.kind === 'nada') {
+    burst(s, enemy.x, enemy.y, 10, 'volt', 0.7)
+    s.events.push('kill')
+    if (s.siren && !bySonar && s.siren.phase === 'sing') {
+      // Nyanyian dipantulkan kembali ke Siren.
+      s.bolts.push({ x: enemy.x, y: enemy.y, tx: s.siren.x - 30, ty: s.siren.y - 40, t: 0 })
+      damageSiren(s, s.siren, 1, '-1')
+    }
   } else if (enemy.kind === 'misil') {
     burst(s, enemy.x, enemy.y, 10, 'spark', 0.8)
     if (s.mega && enemy.origin && !bySonar) rebound(s, s.mega, enemy)
@@ -591,6 +666,7 @@ export function typeKey(s: GameState, key: string) {
     memoryKey(s, s.eel, c)
     return
   }
+  if (s.siren && s.siren.phase !== 'warning' && s.siren.phase !== 'sing') return
   let target = lockedEnemy(s)
   if (!target) {
     const visible = s.enemies.filter((enemy) => isTypeable(enemy) && enemy.words[enemy.segment][enemy.progress] === c)
@@ -638,6 +714,7 @@ function mistake(s: GameState, target: Enemy | null) {
 export function release(s: GameState) {
   const target = lockedEnemy(s)
   if (!target || s.over || s.mega?.qte || steering(s) || (s.eel && s.eel.phase !== 'warning')) return
+  if (s.siren && s.siren.phase !== 'warning' && s.siren.phase !== 'sing') return
   target.progress = 0
   s.lockId = null
   s.events.push('release')
@@ -646,6 +723,7 @@ export function release(s: GameState) {
 /** Enter: Sonar menghancurkan semua musuh biasa dan teri di layar (tanpa kombo). */
 export function fireSonar(s: GameState) {
   if (s.over || s.mega?.qte || steering(s)) return
+  if (s.siren && s.siren.phase !== 'warning' && s.siren.phase !== 'sing') return
   if (s.eel && s.eel.phase !== 'warning') {
     // Melawan Belut Listrik: Sonar menampilkan ulang urutan sebentar (hanya saat bola sudah dilepas).
     if (s.eel.phase !== 'orbs' || s.eel.peek > 0) return
@@ -711,6 +789,7 @@ export function update(s: GameState, rawDt: number) {
   schedule(s, dt)
   updateMegalodon(s, dt)
   updateEel(s, dt)
+  updateSiren(s, dt)
   updateCave(s, dt)
   if (s.over) return
 
@@ -1262,6 +1341,299 @@ function finishEel(s: GameState, e: EelBoss) {
   s.events.push('boss-down')
 }
 
+// ---------- Siren ----------
+
+const STRIKE_TIME = 0.8
+const RETURN_TIME = 1
+const SIREN_DYING = 2.4
+const NOTE_POOLS = new Map<number, string[]>()
+
+const sirenHome = (s: GameState) => s.width - SIREN.homeOffset
+
+function startSiren(s: GameState) {
+  const round = s.kills.siren ?? 0
+  const maxHp = SIREN.hp + SIREN.hpPerRound * round
+  s.swarm = null
+  s.siren = {
+    phase: 'warning',
+    timer: SIREN.warning,
+    x: s.width + 220,
+    y: s.height / 2,
+    hp: maxHp,
+    maxHp,
+    round,
+    thresholds: SIREN.dodgeAt.map((fraction) => Math.round(maxHp * fraction)),
+    pendingDodge: false,
+    noteTimer: 0,
+    swim: null,
+    shots: [],
+    patternTimer: 0,
+    pattern: 0,
+    lastGap: s.height / 2,
+    struck: false,
+    power: null,
+    from: null,
+    dodgeTime: 0,
+    hitFlash: 0,
+    age: 0,
+  }
+  s.events.push('alarm')
+  banner(s, 'NYANYIAN DARI KEDALAMAN', 'Sesuatu bernyanyi mendekat · ikan-ikan menyingkir', 3)
+}
+
+/** Kata untuk Nada: huruf terakhirnya (yang diketik pertama) belum dipakai Nada lain; disimpan terbalik. */
+function sirenWord(s: GameState, round: number): string {
+  const max = Math.min(8, ENEMIES.nada.length[1] + round)
+  if (!NOTE_POOLS.has(max)) NOTE_POOLS.set(max, clean(WORDS).filter((word) => word.length >= ENEMIES.nada.length[0] && word.length <= max))
+  const words = NOTE_POOLS.get(max)!
+  const used = usedInitials(s)
+  const fresh = words.filter((word) => !used.has(word[word.length - 1]) && !s.recent.includes(word))
+  const word = pick(fresh.length ? fresh : words, s.rand)
+  s.recent = [...s.recent, word].slice(-30)
+  return [...word].reverse().join('')
+}
+
+function spawnNote(s: GameState, sn: SirenBoss) {
+  const note = spawn(s, 'nada', [sirenWord(s, sn.round)])
+  note.x = sn.x - 60
+  note.speed = SIREN.noteSpeed + SIREN.noteSpeedPerRound * sn.round
+}
+
+function damageSiren(s: GameState, sn: SirenBoss, amount: number, label: string) {
+  sn.hp = Math.max(0, sn.hp - amount)
+  sn.hitFlash = 0.35
+  s.shake = Math.max(s.shake, 0.2)
+  s.score += Math.round(20 * amount * multiplierFor(s.combo))
+  burst(s, sn.x - 20, sn.y - 30, 12 + amount * 4, 'volt', 1.2)
+  popup(s, sn.x - 20, sn.y - 100, label, 'bonus')
+  s.events.push('boss-hit')
+  if (sn.hp <= 0) {
+    sn.phase = 'dying'
+    sn.timer = SIREN_DYING
+    sn.shots = []
+    sn.power = null
+    for (const note of s.enemies.filter((enemy) => enemy.kind === 'nada')) burst(s, note.x, note.y, 8, 'volt')
+    s.enemies = s.enemies.filter((enemy) => enemy.kind !== 'nada')
+    s.lockId = null
+    return
+  }
+  if (sn.thresholds.length && sn.hp <= sn.thresholds[0]) {
+    while (sn.thresholds.length && sn.hp <= sn.thresholds[0]) sn.thresholds.shift()
+    sn.pendingDodge = true
+  }
+}
+
+/** Pola serangan saat menghindar: dinding gelombang dengan satu celah, lalu semburan not ke arah penyelam. */
+function sirenPattern(s: GameState, sn: SirenBoss) {
+  const diver = sn.swim!
+  if (sn.pattern % 2 === 0) {
+    const gap = Math.max(SIREN.minWaveGap, SIREN.waveGap - 10 * sn.round)
+    const top = CAVE_TOP + gap / 2 + 12
+    const bottom = s.height - gap / 2 - 12
+    const y = Math.max(top, Math.min(bottom, sn.lastGap + (s.rand() - 0.5) * 2 * 220))
+    sn.lastGap = y
+    sn.shots.push({ kind: 'wave', x: sn.x - 70, y, vx: -(SIREN.waveSpeed + SIREN.waveSpeedPerRound * sn.round), vy: 0, gap })
+  } else {
+    const count = SIREN.noteBurst + Math.min(2, sn.round)
+    const ox = sn.x - 50
+    const oy = sn.y - 40
+    const aim = Math.atan2(diver.y - oy, diver.x - ox)
+    for (let i = 0; i < count; i++) {
+      const angle = aim + (i - (count - 1) / 2) * 0.24
+      sn.shots.push({ kind: 'note', x: ox, y: oy, vx: Math.cos(angle) * SIREN.burstSpeed, vy: Math.sin(angle) * SIREN.burstSpeed, gap: 0 })
+    }
+  }
+  sn.pattern++
+  s.events.push('scream')
+}
+
+function sirenShotHits(sn: SirenBoss, shot: SirenShot): boolean {
+  const diver = sn.swim!
+  return DIVER_PROBES.some((probe) => {
+    const px = diver.x + probe.dx
+    const py = diver.y + probe.dy
+    const r = probe.r * 0.8
+    if (shot.kind === 'note') return Math.hypot(px - shot.x, py - shot.y) < 11 + r
+    return Math.abs(px - shot.x) < 10 + r && Math.abs(py - shot.y) > shot.gap / 2 - r
+  })
+}
+
+function updateSiren(s: GameState, dt: number) {
+  const sn = s.siren
+  if (!sn) return
+  sn.age += dt
+  sn.timer -= dt
+  sn.hitFlash = Math.max(0, sn.hitFlash - dt)
+  if (sn.phase !== 'warning' && sn.phase !== 'enter' && sn.phase !== 'dying') {
+    sn.x += (sirenHome(s) - sn.x) * Math.min(1, dt * 3)
+    sn.y = s.height / 2 + 30 + Math.sin(sn.age * 0.6) * 60
+  }
+
+  switch (sn.phase) {
+    case 'warning':
+      if (sn.timer <= 0 && !s.enemies.some((enemy) => ENEMIES[enemy.kind].damage > 0)) {
+        sn.phase = 'enter'
+        sn.timer = 99
+        s.events.push('boss')
+        banner(s, 'SIREN!', 'Ketik kata nyanyiannya dari BELAKANG (laut → tual)', 3.2)
+      }
+      break
+    case 'enter':
+      sn.x = Math.max(sirenHome(s), sn.x - 240 * dt)
+      sn.y = s.height / 2 + 30
+      if (sn.x <= sirenHome(s)) {
+        sn.phase = 'sing'
+        sn.noteTimer = 1.2
+      }
+      break
+    case 'sing': {
+      if (sn.pendingDodge) {
+        // Siren menjerit: Nada yang tersisa lenyap, lalu serangan dengan kontrol terbalik.
+        for (const note of s.enemies.filter((enemy) => enemy.kind === 'nada')) burst(s, note.x, note.y, 8, 'volt')
+        s.enemies = s.enemies.filter((enemy) => enemy.kind !== 'nada')
+        s.lockId = null
+        sn.pendingDodge = false
+        sn.phase = 'charge'
+        sn.timer = SIREN.charge
+        s.events.push('scream')
+        banner(s, 'JERITAN SIREN!', 'Hindari serangannya · KONTROL TERBALIK: ↑ jadi ↓, ← jadi →', SIREN.charge + 1.2)
+        break
+      }
+      sn.noteTimer -= dt
+      const notes = s.enemies.filter((enemy) => enemy.kind === 'nada').length
+      if (sn.noteTimer <= 0 && notes < SIREN.maxNotes) {
+        spawnNote(s, sn)
+        sn.noteTimer = SIREN.noteEvery * (0.85 + s.rand() * 0.3)
+      }
+      break
+    }
+    case 'charge':
+      if (sn.timer <= 0) {
+        releaseSteer(s)
+        sn.phase = 'dodge'
+        sn.dodgeTime = SIREN.dodge + SIREN.dodgePerRound * sn.round
+        sn.timer = sn.dodgeTime
+        sn.swim = { x: WORLD.diverX, y: diverY(s), vx: 0, vy: 0 }
+        sn.shots = []
+        sn.struck = false
+        sn.pattern = 0
+        sn.patternTimer = 0.5
+        sn.lastGap = s.height / 2
+      }
+      break
+    case 'dodge': {
+      swim(s, sn.swim!, dt, SIREN.diverSpeed, true)
+      sn.patternTimer -= dt
+      if (sn.patternTimer <= 0 && sn.timer > 1.6) {
+        sirenPattern(s, sn)
+        sn.patternTimer = SIREN.patternEvery
+      }
+      for (const shot of sn.shots) {
+        shot.x += shot.vx * dt
+        shot.y += shot.vy * dt
+        if (s.grace <= 0 && sirenShotHits(sn, shot)) {
+          sn.struck = true
+          burst(s, sn.swim!.x, sn.swim!.y, 14, 'volt', 1.1)
+          damagePlayer(s, 1)
+          s.grace = SIREN.grace
+          if (s.over) return
+        }
+      }
+      sn.shots = sn.shots.filter((shot) => shot.x > -40 && shot.x < s.width + 40 && shot.y > -40 && shot.y < s.height + 40)
+      if (sn.timer <= 0) {
+        for (const shot of sn.shots) burst(s, shot.x, shot.y, 4, 'volt')
+        sn.shots = []
+        if (sn.struck) {
+          sn.phase = 'return'
+          sn.timer = RETURN_TIME
+          banner(s, 'TERKENA!', 'Tidak ada kesempatan menyerang · kembali ke nyanyian', 2.2)
+        } else {
+          // Lolos tanpa terkena: trisula muncul jauh dari penyelam.
+          const diver = sn.swim!
+          let spot = { x: 0, y: 0 }
+          for (let i = 0; i < 16; i++) {
+            spot = { x: 120 + s.rand() * (s.width * 0.55 - 120), y: CAVE_TOP + 40 + s.rand() * (s.height - CAVE_TOP - 80) }
+            if (Math.hypot(spot.x - diver.x, spot.y - diver.y) > 160) break
+          }
+          sn.power = spot
+          sn.phase = 'powerup'
+          sn.timer = SIREN.powerTime
+          s.events.push('bonus')
+          banner(s, 'AMBIL TRISULA!', 'Kontrol masih terbalik · sentuh trisulanya untuk menyerang', 2.4)
+        }
+      }
+      break
+    }
+    case 'powerup': {
+      const diver = sn.swim!
+      swim(s, diver, dt, SIREN.diverSpeed, true)
+      const power = sn.power!
+      if (Math.hypot(diver.x + 10 - power.x, diver.y - power.y) < 34) {
+        sn.power = null
+        sn.from = { x: diver.x + 30, y: diver.y }
+        sn.phase = 'strike'
+        sn.timer = STRIKE_TIME
+        releaseSteer(s)
+        s.events.push('trident')
+        burst(s, power.x, power.y, 14, 'bubble', 0.8)
+      } else if (sn.timer <= 0) {
+        sn.power = null
+        sn.phase = 'return'
+        sn.timer = RETURN_TIME
+        banner(s, 'TRISULA HILANG', 'Terlambat · kembali ke nyanyian', 2)
+      }
+      break
+    }
+    case 'strike':
+      if (sn.timer <= 0) {
+        sn.from = null
+        sn.phase = 'return'
+        sn.timer = RETURN_TIME
+        damageSiren(s, sn, SIREN.powerDamage, `TRISULA! -${SIREN.powerDamage}`)
+        s.shake = 0.5
+      }
+      break
+    case 'return': {
+      const diver = sn.swim
+      if (diver) {
+        const pull = Math.min(1, dt * 5)
+        diver.x += (WORLD.diverX - diver.x) * pull
+        diver.y += (diverY(s) - diver.y) * pull
+      }
+      if (sn.timer <= 0) {
+        sn.swim = null
+        sn.phase = 'sing'
+        sn.noteTimer = 1
+      }
+      break
+    }
+    case 'dying': {
+      const diver = sn.swim
+      if (diver) {
+        diver.x += (WORLD.diverX - diver.x) * Math.min(1, dt * 5)
+        diver.y += (diverY(s) - diver.y) * Math.min(1, dt * 5)
+      }
+      sn.y += 26 * dt
+      if (s.rand() < dt * 9) burst(s, sn.x + (s.rand() - 0.5) * 120, sn.y + (s.rand() - 0.5) * 120, 8, 'volt', 1.1)
+      if (sn.timer <= 0) finishSiren(s, sn)
+      break
+    }
+  }
+}
+
+function finishSiren(s: GameState, sn: SirenBoss) {
+  s.siren = null
+  releaseSteer(s)
+  s.kills.siren = (s.kills.siren ?? 0) + 1
+  const points = Math.round((ENEMIES.siren.points + s.depth * DEPTH_POINTS) * multiplierFor(s.combo))
+  s.score += points
+  popup(s, sn.x, sn.y - 40, `+${points}`)
+  burst(s, sn.x, sn.y, 36, 'bubble', 2)
+  s.spawnTimer = 1.6
+  banner(s, 'SIREN TERDIAM!', 'Lanjut menyelam', 2.4)
+  s.events.push('boss-down')
+}
+
 // ---------- Arus Gua ----------
 
 /** Tombol arah ditekan / dilepas. */
@@ -1288,13 +1660,17 @@ function caveHit(s: GameState, cave: Cave, x: number, y: number) {
   s.grace = CAVE.grace
 }
 
-function moveDiver(s: GameState, cave: Cave, dt: number) {
+/**
+ * Berenang bebas dengan tombol arah atau sentuhan. `invert` membalik kontrol (atas jadi bawah, kiri jadi
+ * kanan; sentuhan dicerminkan terhadap penyelam).
+ */
+function swim(s: GameState, body: Swimmer, dt: number, speed: number, invert = false) {
   let dx = (s.steer.right ? 1 : 0) - (s.steer.left ? 1 : 0)
   let dy = (s.steer.down ? 1 : 0) - (s.steer.up ? 1 : 0)
   if (s.pointer) {
     // Layar sentuh: berenang menuju jari (pelan saat sudah dekat).
-    const px = s.pointer.x - cave.x
-    const py = s.pointer.y - cave.y
+    const px = s.pointer.x - body.x
+    const py = s.pointer.y - body.y
     const length = Math.hypot(px, py)
     const pull = Math.min(1, length / 60)
     dx = length > 4 ? (px / length) * pull : 0
@@ -1303,11 +1679,19 @@ function moveDiver(s: GameState, cave: Cave, dt: number) {
     dx *= Math.SQRT1_2
     dy *= Math.SQRT1_2
   }
+  if (invert) {
+    dx = -dx
+    dy = -dy
+  }
   const response = Math.min(1, dt * 10)
-  cave.vx += (dx * CAVE.diverSpeed - cave.vx) * response
-  cave.vy += (dy * CAVE.diverSpeed - cave.vy) * response
-  cave.x = Math.max(50, Math.min(s.width * 0.62, cave.x + cave.vx * dt))
-  cave.y = Math.max(CAVE_TOP + 10, Math.min(s.height - 10, cave.y + cave.vy * dt))
+  body.vx += (dx * speed - body.vx) * response
+  body.vy += (dy * speed - body.vy) * response
+  body.x = Math.max(66, Math.min(s.width * 0.62, body.x + body.vx * dt))
+  body.y = Math.max(CAVE_TOP + 10, Math.min(s.height - 10, body.y + body.vy * dt))
+}
+
+function moveDiver(s: GameState, cave: Cave, dt: number) {
+  swim(s, cave, dt, CAVE.diverSpeed)
 
   // Dinding padat: penyelam didorong keluar dari batu, dan tergores kalau menyentuhnya.
   for (const probe of DIVER_PROBES) {

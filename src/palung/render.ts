@@ -1,7 +1,8 @@
-import { ENEMIES, MEGALODON, multiplierFor, PLAYER, WORLD, ZONES } from './config'
+import { ENEMIES, MEGALODON, multiplierFor, PLAYER, SIREN, WORLD, ZONES } from './config'
 import { drawAmbience, drawBioluminescence, seaAt } from './ambience'
 import { drawCave, drawCaveBar } from './caveRender'
 import { drawEel, drawEelBody, drawEelGlow, drawEelTop } from './eelRender'
+import { drawNote, drawSiren, drawSirenBody, drawSirenGlow, drawSirenTop, REVERSED_HINT } from './sirenRender'
 import { accuracy, diverAt, diverY, lockedEnemy, steering, wpm, type Enemy, type GameState, type Megalodon } from './engine'
 
 /**
@@ -231,6 +232,12 @@ function drawEnemy(ctx: CanvasRenderingContext2D, enemy: Enemy, locked: boolean)
     case 'listrik':
       drawEelBody(ctx, enemy.age, 0.8, 0)
       break
+    case 'siren':
+      drawSirenBody(ctx, enemy.age, 0.5, 0)
+      break
+    case 'nada':
+      drawNote(ctx, 22 * k, enemy.age)
+      break
     case 'bayangan': {
       // Ikan pucat tembus pandang dengan tulang samar dan mata bercahaya
       fishBody(ctx, 74 * k, 30 * k, '#a9cfe3', '#e8f7ff', tail)
@@ -422,7 +429,7 @@ function drawEnemy(ctx: CanvasRenderingContext2D, enemy: Enemy, locked: boolean)
 
 /** Umpan bercahaya ikan di zona gelap (digambar di atas kegelapan). */
 function drawGlow(ctx: CanvasRenderingContext2D, enemy: Enemy, darkness: number) {
-  if (darkness < 0.3 || !enemy.revealed || enemy.kind === 'oksigen' || enemy.kind === 'mutiara' || enemy.kind === 'misil') return
+  if (darkness < 0.3 || !enemy.revealed || enemy.kind === 'oksigen' || enemy.kind === 'mutiara' || enemy.kind === 'misil' || enemy.kind === 'nada') return
   const k = ENEMIES[enemy.kind].size
   const x = enemy.x - 26 * k
   const y = enemy.y - 8 * k
@@ -880,9 +887,22 @@ function drawLabel(ctx: CanvasRenderingContext2D, s: GameState, enemy: Enemy, lo
   ctx.strokeStyle = enemy.flash > 0 ? COLORS.error : locked ? COLORS.typed : COLORS.pillLine
   ctx.stroke()
   ctx.textBaseline = 'middle'
-  for (let i = 0; i < word.length; i++) {
-    ctx.fillStyle = i < enemy.progress ? COLORS.typed : COLORS.text
-    ctx.fillText(word[i], x + 8 + i * charW, y + h / 2 + 1)
+  if (ENEMIES[enemy.kind].reversed) {
+    // Kata disimpan terbalik (urutan ketik); ditampilkan biasa, huruf yang sudah diketik menyala dari kanan.
+    for (let i = 0; i < word.length; i++) {
+      const stored = word.length - 1 - i
+      ctx.fillStyle = stored < enemy.progress ? COLORS.typed : COLORS.text
+      ctx.fillText(word[stored], x + 8 + i * charW, y + h / 2 + 1)
+    }
+    ctx.font = `600 10px ${FONT}`
+    ctx.fillStyle = 'rgba(255, 170, 225, 0.9)'
+    ctx.textAlign = 'center'
+    ctx.fillText(REVERSED_HINT, x + w / 2, y - 7)
+  } else {
+    for (let i = 0; i < word.length; i++) {
+      ctx.fillStyle = i < enemy.progress ? COLORS.typed : COLORS.text
+      ctx.fillText(word[i], x + 8 + i * charW, y + h / 2 + 1)
+    }
   }
   if (enemy.words.length > 1) {
     ctx.font = `600 11px ${FONT}`
@@ -987,6 +1007,7 @@ function drawHud(ctx: CanvasRenderingContext2D, s: GameState) {
   ctx.fillText(`${Math.floor(s.depth)} m`, w / 2, 26)
   if (s.mega && s.mega.phase !== 'warning') drawBossBar(ctx, s, ENEMIES.megalodon.name, s.mega.hp, s.mega.maxHp, MEGALODON.qteAt)
   else if (s.eel && s.eel.phase !== 'warning') drawBossBar(ctx, s, ENEMIES.listrik.name, s.eel.hp, s.eel.maxHp, [])
+  else if (s.siren && s.siren.phase !== 'warning') drawBossBar(ctx, s, ENEMIES.siren.name, s.siren.hp, s.siren.maxHp, SIREN.dodgeAt)
   else if (s.cave && steering(s)) drawCaveBar(ctx, s, s.cave)
   else {
     ctx.font = `600 12px ${FONT}`
@@ -1070,6 +1091,13 @@ export function drawPreview(canvas: HTMLCanvasElement, kind: Enemy['kind']) {
   ctx.clearRect(0, 0, w, h)
   const k = ENEMIES[kind].size
   const enemy: Enemy = { id: 0, kind, words: [''], segment: 0, progress: 0, x: 0, y: 0, base: 0, speed: 0, phase: 0, age: 0.4, flash: 0, revealed: false }
+  if (kind === 'siren') {
+    const fit = Math.min(w / 220, h / 170)
+    ctx.translate(w / 2 - 20 * fit, h / 2 + 8 * fit)
+    ctx.scale(fit, fit)
+    drawEnemy(ctx, enemy, false)
+    return
+  }
   if (kind === 'listrik') {
     const fit = Math.min(w / 330, h / 110)
     ctx.translate(w / 2 - 125 * fit, h / 2 - 4 * fit)
@@ -1126,11 +1154,13 @@ export function render(ctx: CanvasRenderingContext2D, s: GameState, scale: numbe
   if (locked?.origin) drawReturnPath(ctx, locked, clock)
   if (s.mega) drawMegalodon(ctx, s.mega)
   if (s.eel) drawEel(ctx, s.eel)
+  if (s.siren) drawSiren(ctx, s.siren)
   for (const enemy of s.enemies) drawEnemy(ctx, enemy, enemy === locked)
   if (s.mega) drawRebounds(ctx, s.mega, clock)
   drawDiver(ctx, s, clock)
   drawDarkness(ctx, s)
-  drawBioluminescence(ctx, s, clock)
+  // Selama Siren, cahaya hayati latar (ubur-ubur hiasan) disembunyikan supaya tidak dikira serangan.
+  if (!s.siren || s.siren.phase === 'warning') drawBioluminescence(ctx, s, clock)
   const { darkness } = seaAt(s.depth)
   for (const enemy of s.enemies) drawGlow(ctx, enemy, darkness)
   if (s.mega) {
@@ -1138,11 +1168,15 @@ export function render(ctx: CanvasRenderingContext2D, s: GameState, scale: numbe
     drawMegaWarning(ctx, s, s.mega, clock)
   }
   if (s.eel) drawEelGlow(ctx, s.eel, clock)
+  if (s.siren) drawSirenGlow(ctx, s.siren, clock)
+  // Nada Siren bercahaya sendiri: digambar ulang di atas kegelapan supaya tetap terlihat di laut dalam.
+  for (const enemy of s.enemies) if (enemy.kind === 'nada') drawEnemy(ctx, enemy, enemy === locked)
   drawEffects(ctx, s)
   // Label digambar terakhir (di atas kegelapan) supaya selalu terbaca; yang terkunci paling atas.
   for (const enemy of s.enemies) if (enemy !== locked) drawLabel(ctx, s, enemy, false)
   if (locked) drawLabel(ctx, s, locked, true)
   if (s.eel) drawEelTop(ctx, s, s.eel, clock)
+  if (s.siren) drawSirenTop(ctx, s, s.siren, clock)
   ctx.restore()
   drawHurt(ctx, s)
   drawHud(ctx, s)

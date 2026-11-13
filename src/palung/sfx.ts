@@ -142,6 +142,15 @@ const SOUNDS: Record<GameEvent, () => void> = {
     noise(1.2, { volume: 0.35, from: 1200, to: 40 })
     ;[392, 494, 587, 784].forEach((freq, i) => tone(freq, 0.25, { type: 'triangle', volume: 0.05, delay: 0.4 + i * 0.1 }))
   },
+  // Siren
+  scream: () => {
+    tone(880, 0.5, { type: 'sine', volume: 0.04, slide: 440 })
+    tone(1320, 0.5, { type: 'triangle', volume: 0.025, slide: -300, delay: 0.05 })
+  },
+  trident: () => {
+    noise(0.4, { filter: 'bandpass', from: 600, to: 3000, volume: 0.15 })
+    ;[523, 784, 1047].forEach((freq, i) => tone(freq, 0.14, { type: 'square', volume: 0.035, delay: i * 0.05 }))
+  },
   // Belut Listrik
   memory: () => tone(880 + Math.random() * 240, 0.18, { type: 'square', volume: 0.035, slide: 120 }),
   'release-orbs': () => {
