@@ -28,8 +28,9 @@ const BomKataApp = lazy(() => import('./bomkata/BomKataApp').then((module) => ({
 const ArmadaApp = lazy(() => import('./armada/ArmadaApp').then((module) => ({ default: module.ArmadaApp })))
 const AsbunApp = lazy(() => import('./asbun/AsbunApp').then((module) => ({ default: module.AsbunApp })))
 const PalungApp = lazy(() => import('./palung/PalungApp').then((module) => ({ default: module.PalungApp })))
+const LabirinApp = lazy(() => import('./labirin/LabirinApp').then((module) => ({ default: module.LabirinApp })))
 
-const GAMES: GameId[] = ['mahjong', 'uno', 'capsa', 'bomkata', 'armada', 'asbun', 'palung']
+const GAMES: GameId[] = ['mahjong', 'uno', 'capsa', 'bomkata', 'armada', 'asbun', 'palung', 'labirin']
 
 function isGame(value: string | null): value is GameId {
   return GAMES.includes(value as GameId)
@@ -223,8 +224,10 @@ export function App() {
             <ArmadaApp nav={nav} />
           ) : game === 'asbun' ? (
             <AsbunApp nav={nav} />
-          ) : (
+          ) : game === 'palung' ? (
             <PalungApp nav={nav} />
+          ) : (
+            <LabirinApp nav={nav} />
           )}
         </Suspense>
       )}

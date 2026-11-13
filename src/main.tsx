@@ -9,6 +9,7 @@ import './bomkata/bomkata.css'
 import './armada/armada.css'
 import './asbun/asbun.css'
 import './palung/palung.css'
+import './labirin/labirin.css'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

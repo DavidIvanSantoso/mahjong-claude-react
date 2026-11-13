@@ -529,10 +529,10 @@ p {
 }
 
 /*
- * Layar sempit (≤1000px): navbar hanya menampilkan ikon supaya ketujuh game tidak bertabrakan dengan
+ * Layar sempit (≤1150px): navbar hanya menampilkan ikon supaya kedelapan game tidak bertabrakan dengan
  * tombol di kanan; nama game tetap terbaca pembaca layar dan muncul sebagai tooltip.
  */
-@media (max-width: 1000px) {
+@media (max-width: 1150px) {
   .game-nav {
     left: 12px;
   }

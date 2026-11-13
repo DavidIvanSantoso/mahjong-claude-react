@@ -1,0 +1,798 @@
+/* ---------- Palet dan tipografi LABIRIN (arcade gelap, aksen hijau portal) ---------- */
+/*
+ * Dipasang lewat `data-game='labirin'` di <html> selama layar LABIRIN terbuka (lihat LabirinApp.tsx).
+ * Font: Rubik Mono One (judul), Rubik (teks).
+ */
+:root[data-game='labirin'] {
+  --lb-bg: #07080f;
+  --lb-bg-2: #0e1124;
+  --lb-panel: rgb(14 17 36 / 94%);
+  --lb-panel-solid: #121632;
+  --lb-line: rgb(140 160 255 / 16%);
+  --lb-line-strong: rgb(140 160 255 / 32%);
+  --lb-text: #eef1ff;
+  --lb-muted: #9aa3cc;
+  --lb-portal: #78ffc8;
+  --lb-portal-dark: #2fb985;
+  --lb-wall: #2b3561;
+  --lb-danger: #ff6b7d;
+  --lb-title: 'Rubik Mono One', 'Rubik', sans-serif;
+  --lb-font: 'Rubik', system-ui, sans-serif;
+
+  /* Variabel bersama (navbar, tombol musik, kredit) */
+  --pink: #121632;
+  --pink-deep: #78ffc8;
+  --cream: #121632;
+  --sage: #121632;
+  --green: #78ffc8;
+  --green-deep: #78ffc8;
+  --ink: #eef1ff;
+  --ink-soft: #9aa3cc;
+  --line: rgb(140 160 255 / 16%);
+  --tile-red: #ff6b7d;
+  --tile-green: #78ffc8;
+  --tile-blue: #9aa3cc;
+  --page: #07080f;
+  --on-page: #eef1ff;
+  --on-page-soft: #9aa3cc;
+  --on-green: #07080f;
+  --tile-bg: #121632;
+  --btn-bg: #78ffc8;
+  --btn-hover: #a4ffdc;
+  --btn-shadow: #2fb985;
+  font-family: var(--lb-font);
+}
+
+:root[data-game='labirin'] body {
+  background: var(--lb-bg);
+  color: var(--lb-text);
+}
+
+:root[data-game='labirin'] :is(.game-nav, .home__tools, .home__credit) {
+  color: var(--lb-muted);
+  background: var(--lb-panel);
+  border: 1px solid var(--lb-line);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 40%);
+}
+
+:root[data-game='labirin'] .home__credit strong {
+  color: var(--lb-text);
+}
+
+:root[data-game='labirin'] kbd {
+  display: inline-block;
+  min-width: 1.5em;
+  padding: 1px 6px;
+  font: 600 0.8em var(--lb-font);
+  text-align: center;
+  color: var(--lb-text);
+  background: var(--lb-bg-2);
+  border: 1px solid var(--lb-line-strong);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+}
+
+/* ---------- Dasar ---------- */
+
+.lb-page {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 32px 16px;
+  box-sizing: border-box;
+  background:
+    radial-gradient(circle at 50% 40%, rgb(120 255 200 / 7%), transparent 55%),
+    var(--lb-bg);
+}
+
+.lb-card {
+  background: var(--lb-panel);
+  border: 1px solid var(--lb-line);
+  border-radius: 18px;
+  box-shadow: 0 24px 60px rgb(0 0 0 / 50%);
+  color: var(--lb-text);
+}
+
+.lb-eyebrow {
+  margin: 0 0 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--lb-portal);
+}
+
+.lb-title {
+  margin: 0 0 8px;
+  font: 400 clamp(1.4rem, 3vw, 1.9rem) var(--lb-title);
+  letter-spacing: 0.02em;
+}
+
+.lb-muted {
+  margin: 0;
+  color: var(--lb-muted);
+}
+
+.lb-hint {
+  margin: 8px 0 0;
+  font-size: 0.85rem;
+  color: var(--lb-muted);
+}
+
+.lb-dot {
+  display: inline-block;
+  flex: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--lb-line-strong);
+  box-shadow: 0 0 0 2px rgb(0 0 0 / 35%);
+}
+
+.lb-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+/* ---------- Tombol dan isian ---------- */
+
+.lb-btn {
+  min-height: 44px;
+  padding: 10px 20px;
+  font: 600 0.95rem var(--lb-font);
+  color: var(--lb-text);
+  background: rgb(140 160 255 / 8%);
+  border: 1px solid var(--lb-line-strong);
+  border-radius: 12px;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    transform 0.1s;
+}
+
+.lb-btn:hover:not(:disabled) {
+  background: rgb(140 160 255 / 16%);
+}
+
+.lb-btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.lb-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.lb-btn--primary {
+  color: #062118;
+  background: var(--lb-portal);
+  border-color: var(--lb-portal);
+  box-shadow: 0 4px 0 var(--lb-portal-dark);
+}
+
+.lb-btn--primary:hover:not(:disabled) {
+  background: #a4ffdc;
+}
+
+.lb-btn--big {
+  padding: 14px 28px;
+  font-size: 1.05rem;
+}
+
+.lb-btn--small {
+  min-height: 34px;
+  padding: 6px 14px;
+  font-size: 0.85rem;
+}
+
+.lb-icon-btn {
+  width: 36px;
+  height: 36px;
+  font: 700 1rem var(--lb-font);
+  color: var(--lb-text);
+  background: rgb(140 160 255 / 8%);
+  border: 1px solid var(--lb-line-strong);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.lb-link {
+  padding: 6px;
+  font: 500 0.9rem var(--lb-font);
+  color: var(--lb-muted);
+  background: none;
+  border: 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.lb-link:hover {
+  color: var(--lb-text);
+}
+
+:is(.lb-btn, .lb-icon-btn, .lb-link, .lb-segment button):focus-visible {
+  outline: 3px solid var(--lb-portal);
+  outline-offset: 2px;
+}
+
+.lb-segment {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--lb-bg-2);
+  border: 1px solid var(--lb-line);
+  border-radius: 12px;
+}
+
+.lb-segment button {
+  display: grid;
+  gap: 1px;
+  min-width: 74px;
+  padding: 6px 12px;
+  font: 600 0.88rem var(--lb-font);
+  color: var(--lb-muted);
+  background: none;
+  border: 0;
+  border-radius: 9px;
+  cursor: pointer;
+}
+
+.lb-segment button small {
+  font-size: 0.7rem;
+  font-weight: 500;
+  opacity: 0.8;
+}
+
+.lb-segment button.is-active {
+  color: #062118;
+  background: var(--lb-portal);
+}
+
+.lb-segment button:disabled:not(.is-active) {
+  cursor: default;
+}
+
+.lb-field {
+  display: grid;
+  gap: 6px;
+  text-align: left;
+  font-size: 0.9rem;
+  color: var(--lb-muted);
+}
+
+.lb-field input {
+  min-height: 44px;
+  padding: 10px 14px;
+  font: 500 1rem var(--lb-font);
+  color: var(--lb-text);
+  background: var(--lb-bg-2);
+  border: 1px solid var(--lb-line-strong);
+  border-radius: 12px;
+}
+
+.lb-field input:focus {
+  outline: 3px solid rgb(120 255 200 / 40%);
+  border-color: var(--lb-portal);
+}
+
+.lb-code-input {
+  font-family: var(--lb-title) !important;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+}
+
+/* ---------- Beranda ---------- */
+
+.lb-home {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 96px 16px 140px;
+  box-sizing: border-box;
+  overflow: hidden;
+  background:
+    /* Kisi labirin samar di latar */
+    linear-gradient(rgb(140 160 255 / 5%) 2px, transparent 2px) 0 0 / 44px 44px,
+    linear-gradient(90deg, rgb(140 160 255 / 5%) 2px, transparent 2px) 0 0 / 44px 44px,
+    radial-gradient(circle at 50% 45%, rgb(120 255 200 / 12%), transparent 50%),
+    var(--lb-bg);
+}
+
+.lb-home__card {
+  position: relative;
+  z-index: 1;
+  width: min(560px, 100%);
+  padding: 36px 32px;
+  text-align: center;
+}
+
+.lb-logo {
+  margin: 4px 0 6px;
+  font: 400 clamp(2.4rem, 8vw, 3.8rem) var(--lb-title);
+  letter-spacing: 0.06em;
+  color: var(--lb-text);
+  text-shadow:
+    0 0 24px rgb(120 255 200 / 35%),
+    0 4px 0 var(--lb-wall);
+}
+
+.lb-tagline {
+  margin: 0 0 14px;
+  font-weight: 600;
+  color: var(--lb-portal);
+}
+
+.lb-home__lead {
+  margin: 0 auto;
+  max-width: 44ch;
+  line-height: 1.55;
+  color: var(--lb-muted);
+}
+
+.lb-practice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 20px 0 8px;
+  padding-top: 18px;
+  border-top: 1px solid var(--lb-line);
+}
+
+.lb-home__hint {
+  margin-top: 6px;
+  font-size: 0.82rem;
+}
+
+.lb-setup {
+  position: relative;
+  display: grid;
+  gap: 14px;
+  width: min(420px, 100%);
+  padding: 32px 28px;
+  text-align: center;
+}
+
+.lb-setup__back {
+  justify-self: start;
+  margin: -12px 0 0 -8px;
+}
+
+/* ---------- Lobi ---------- */
+
+.lb-lobby {
+  display: grid;
+  gap: 18px;
+  width: min(640px, 100%);
+  padding: 28px;
+}
+
+.lb-lobby__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.lb-lobby__head .lb-title {
+  margin: 0;
+}
+
+.lb-code {
+  color: var(--lb-portal);
+  letter-spacing: 0.12em;
+}
+
+.lb-lobby__share {
+  display: flex;
+  gap: 8px;
+}
+
+.lb-slots {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lb-slot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 8px 12px;
+  background: var(--lb-bg-2);
+  border: 1px solid var(--lb-line);
+  border-radius: 12px;
+}
+
+.lb-slot.is-me {
+  border-color: var(--lb-line-strong);
+  box-shadow: inset 0 0 0 1px rgb(120 255 200 / 20%);
+}
+
+.lb-slot.is-empty {
+  color: var(--lb-muted);
+  border-style: dashed;
+  opacity: 0.6;
+}
+
+.lb-slot.is-offline {
+  opacity: 0.55;
+}
+
+.lb-slot__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lb-slot__name small {
+  font-weight: 400;
+  color: var(--lb-muted);
+}
+
+.lb-slot__wins {
+  font-size: 0.8rem;
+  color: var(--lb-muted);
+}
+
+.lb-badge {
+  flex: none;
+  padding: 3px 9px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--lb-muted);
+  border: 1px solid var(--lb-line-strong);
+  border-radius: 999px;
+}
+
+.lb-badge.is-ready {
+  color: #062118;
+  background: var(--lb-portal);
+  border-color: var(--lb-portal);
+}
+
+.lb-badge.is-host {
+  color: #241a00;
+  background: #ffd23f;
+  border-color: #ffd23f;
+}
+
+.lb-lobby__settings {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.lb-lobby__foot {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+/* ---------- Balapan ---------- */
+
+.lb-race {
+  height: 100vh;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--lb-bg);
+}
+
+.lb-race__bar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 14px;
+  background: var(--lb-panel-solid);
+  border-bottom: 1px solid var(--lb-line);
+}
+
+.lb-race__title {
+  font: 400 0.95rem var(--lb-title);
+  letter-spacing: 0.06em;
+  color: var(--lb-portal);
+}
+
+.lb-race__timer {
+  min-width: 6.5ch;
+  font: 700 1.15rem var(--lb-font);
+  font-variant-numeric: tabular-nums;
+}
+
+.lb-race__players {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.85rem;
+}
+
+.lb-race__players li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.lb-race__players .lb-dot {
+  width: 10px;
+  height: 10px;
+}
+
+.lb-race__players li.is-offline {
+  opacity: 0.45;
+  text-decoration: line-through;
+}
+
+.lb-race__name {
+  max-width: 12ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lb-race__tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.lb-net {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--lb-muted);
+  white-space: nowrap;
+}
+
+.lb-net__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--lb-portal);
+  box-shadow: 0 0 8px var(--lb-portal);
+}
+
+.lb-race__stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.lb-race__canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+
+.lb-race__keys {
+  margin: 0;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  text-align: center;
+  color: var(--lb-muted);
+  background: var(--lb-panel-solid);
+  border-top: 1px solid var(--lb-line);
+}
+
+.lb-countdown {
+  position: absolute;
+  top: 38%;
+  left: 50%;
+  font: 400 clamp(4rem, 14vw, 8rem) var(--lb-title);
+  color: var(--lb-text);
+  text-shadow:
+    0 0 30px rgb(120 255 200 / 50%),
+    0 6px 0 var(--lb-wall);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  animation: lb-pop 0.9s ease-out both;
+}
+
+.lb-countdown.is-go {
+  color: var(--lb-portal);
+}
+
+@keyframes lb-pop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.6);
+  }
+  25% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0.15;
+    transform: translate(-50%, -50%) scale(0.92);
+  }
+}
+
+/* ---------- Hasil ---------- */
+
+.lb-result {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 2;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  width: min(440px, calc(100% - 32px));
+  max-height: calc(100% - 32px);
+  overflow: auto;
+  padding: 26px 24px 18px;
+  box-sizing: border-box;
+  text-align: center;
+  transform: translate(-50%, -50%);
+  animation: lb-rise 0.35s ease-out both;
+}
+
+@keyframes lb-rise {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -44%);
+  }
+}
+
+.lb-result__time {
+  margin: 0;
+  font: 400 2.4rem var(--lb-title);
+  color: var(--lb-portal);
+}
+
+.lb-winner {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+}
+
+.lb-winner .lb-title {
+  color: var(--winner);
+}
+
+.lb-winner__orb {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--winner);
+  box-shadow:
+    0 0 0 4px #fff,
+    0 0 40px var(--winner);
+  animation: lb-orb 1.4s ease-in-out infinite alternate;
+}
+
+@keyframes lb-orb {
+  to {
+    transform: scale(1.12);
+    box-shadow:
+      0 0 0 4px #fff,
+      0 0 70px var(--winner);
+  }
+}
+
+.lb-standings {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lb-standings li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  text-align: left;
+  background: var(--lb-bg-2);
+  border-radius: 10px;
+}
+
+.lb-standings li.is-me {
+  box-shadow: inset 0 0 0 1px var(--lb-line-strong);
+}
+
+.lb-standings__rank {
+  width: 1.6em;
+  font-weight: 700;
+  color: var(--lb-muted);
+}
+
+.lb-standings__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lb-standings__name small {
+  font-weight: 400;
+  color: var(--lb-muted);
+}
+
+.lb-standings__value {
+  font-variant-numeric: tabular-nums;
+  color: var(--lb-muted);
+}
+
+/* ---------- Panduan ---------- */
+
+.lb-dialog {
+  width: min(560px, calc(100% - 32px));
+  padding: 0;
+  color: var(--lb-text);
+  background: none;
+  border: 0;
+}
+
+.lb-dialog::backdrop {
+  background: rgb(0 0 0 / 60%);
+}
+
+.lb-dialog .lb-card {
+  padding: 26px 26px 20px;
+}
+
+.lb-guide {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 18px;
+  padding-left: 1.2em;
+  line-height: 1.5;
+  color: var(--lb-muted);
+}
+
+.lb-guide strong {
+  color: var(--lb-text);
+}
+
+/* ---------- Layar sempit ---------- */
+
+@media (max-width: 640px) {
+  .lb-slots {
+    grid-template-columns: 1fr;
+  }
+
+  .lb-lobby,
+  .lb-home__card {
+    padding: 22px 18px;
+  }
+
+  .lb-race__bar {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .lb-race__players {
+    order: 3;
+    flex-basis: 100%;
+  }
+}

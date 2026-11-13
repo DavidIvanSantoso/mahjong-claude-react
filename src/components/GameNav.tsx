@@ -1,6 +1,6 @@
 import { t } from '../i18n'
 
-export type GameId = 'mahjong' | 'uno' | 'capsa' | 'bomkata' | 'armada' | 'asbun' | 'palung'
+export type GameId = 'mahjong' | 'uno' | 'capsa' | 'bomkata' | 'armada' | 'asbun' | 'palung' | 'labirin'
 
 const GAMES: { id: GameId; label: string; icon: string }[] = [
   // Ubin tegak dengan lingkaran (ubin bulat)
@@ -44,6 +44,12 @@ const GAMES: { id: GameId; label: string; icon: string }[] = [
     id: 'palung',
     label: 'PALUNG',
     icon: 'M1 8.5C3 5 7 4 10 6l4-3v10l-4-3c-3 2-7 1-9-1.5ZM4.6 7.1a.9.9 0 1 0 0 1.8.9.9 0 0 0 0-1.8Z',
+  },
+  // Labirin kotak dengan jalan masuk
+  {
+    id: 'labirin',
+    label: 'LABIRIN',
+    icon: 'M1 1h14v14H9v-2h4V3H3v10h4v2H1ZM5 5h6v2H7v2h2v2H5Z',
   },
 ]
 
