@@ -298,11 +298,28 @@
   box-sizing: border-box;
   overflow: hidden;
   background:
-    /* Kisi labirin samar di latar */
-    linear-gradient(rgb(140 160 255 / 5%) 2px, transparent 2px) 0 0 / 44px 44px,
-    linear-gradient(90deg, rgb(140 160 255 / 5%) 2px, transparent 2px) 0 0 / 44px 44px,
-    radial-gradient(circle at 50% 45%, rgb(120 255 200 / 12%), transparent 50%),
+    radial-gradient(circle at 50% 45%, rgb(120 255 200 / 10%), transparent 50%),
     var(--lb-bg);
+}
+
+/* Latar animasi: labirin + penjelajah mencari portal (HomeMaze.tsx) */
+.lb-home__maze {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* Tepi layar sedikit digelapkan supaya perhatian tetap ke kartu menu */
+.lb-home::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 50%, transparent 55%, rgb(7 8 15 / 55%) 100%);
 }
 
 .lb-home__card {
@@ -772,6 +789,97 @@
 
 .lb-guide strong {
   color: var(--lb-text);
+}
+
+/* ---------- Joystick sentuh (TouchPad.tsx) ---------- */
+
+.lb-pad {
+  --pad: clamp(124px, 34vmin, 168px);
+  --knob-x: 0px;
+  --knob-y: 0px;
+  position: absolute;
+  left: max(14px, env(safe-area-inset-left));
+  bottom: max(14px, env(safe-area-inset-bottom));
+  z-index: 3;
+  width: var(--pad);
+  height: var(--pad);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(20 24 50 / 55%) 0 58%, rgb(20 24 50 / 75%) 59%);
+  border: 2px solid var(--lb-line-strong);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 45%);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  opacity: 0.8;
+  transition: opacity 0.15s;
+}
+
+.lb-pad.is-active {
+  opacity: 1;
+}
+
+.lb-pad__arrow {
+  position: absolute;
+  width: 0;
+  height: 0;
+  /* Segitiga menunjuk ke atas; arah lain diputar. */
+  border: 9px solid transparent;
+  border-top-width: 0;
+  border-bottom: 12px solid var(--lb-muted);
+  pointer-events: none;
+  transition: border-bottom-color 0.08s;
+}
+
+.lb-pad__arrow--up {
+  top: 10px;
+  left: calc(50% - 9px);
+}
+
+.lb-pad__arrow--down {
+  bottom: 10px;
+  left: calc(50% - 9px);
+  transform: rotate(180deg);
+}
+
+.lb-pad__arrow--left {
+  top: calc(50% - 6px);
+  left: 7px;
+  transform: rotate(-90deg);
+}
+
+.lb-pad__arrow--right {
+  top: calc(50% - 6px);
+  right: 7px;
+  transform: rotate(90deg);
+}
+
+.lb-pad[data-up='true'] .lb-pad__arrow--up,
+.lb-pad[data-right='true'] .lb-pad__arrow--right,
+.lb-pad[data-down='true'] .lb-pad__arrow--down,
+.lb-pad[data-left='true'] .lb-pad__arrow--left {
+  border-bottom-color: var(--lb-portal);
+  filter: drop-shadow(0 0 6px var(--lb-portal));
+}
+
+.lb-pad__knob {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 42%;
+  height: 42%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #a4ffdc, var(--lb-portal) 45%, var(--lb-portal-dark));
+  box-shadow:
+    0 0 18px rgb(120 255 200 / 45%),
+    0 4px 10px rgb(0 0 0 / 50%);
+  transform: translate(calc(-50% + var(--knob-x)), calc(-50% + var(--knob-y)));
+  pointer-events: none;
+}
+
+.lb-pad:not(.is-active) .lb-pad__knob {
+  transition: transform 0.12s ease-out;
 }
 
 /* ---------- Layar sempit ---------- */

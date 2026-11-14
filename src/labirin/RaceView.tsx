@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { MusicSlot } from '../components/MusicPlayer'
 import type { Maze } from './maze'
 import { colorOf, MazeRenderer, type RenderPlayer } from './render'
 import { DOWN, LEFT, RIGHT, UP, type Body } from './sim'
 import { sfx, toggleSfx, useSfxEnabled } from './sfx'
+import { TouchPad, useTouchDevice } from './TouchPad'
 
 /**
- * Layar balapan, dipakai mode Latihan dan mode online. Komponen ini hanya membaca keyboard dan
- * menggambar; siapa yang menghitung posisi (simulasi lokal, prediksi tamu, atau host) ditentukan
+ * Layar balapan, dipakai mode Latihan dan mode online. Komponen ini hanya membaca keyboard/joystick
+ * sentuh dan menggambar; siapa yang menghitung posisi (simulasi lokal, prediksi tamu, atau host) ditentukan
  * pemanggil lewat `sample`.
  */
 
@@ -61,6 +63,9 @@ export function RaceView({ maze, roster, localSeat, sample, goAt, finalMs, revea
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const timerRef = useRef<HTMLSpanElement>(null)
   const dirsRef = useRef(0)
+  /** Arah dari joystick sentuh; digabung dengan keyboard. */
+  const touchRef = useRef(0)
+  const touch = useTouchDevice()
   const props = useRef({ roster, localSeat, sample, goAt, finalMs, reveal, finished })
   props.current = { roster, localSeat, sample, goAt, finalMs, reveal, finished }
   const [countdown, setCountdown] = useState<string | null>(null)
@@ -126,7 +131,7 @@ export function RaceView({ maze, roster, localSeat, sample, goAt, finalMs, revea
     const loop = (now: number) => {
       const p = props.current
       const before = p.goAt !== null && now < p.goAt
-      const positions = p.sample(now, before ? 0 : dirsRef.current)
+      const positions = p.sample(now, before ? 0 : dirsRef.current | touchRef.current)
       const players: RenderPlayer[] = p.roster.flatMap((entry) => {
         const at = positions.get(entry.seat)
         if (!at) return []
@@ -181,6 +186,7 @@ export function RaceView({ maze, roster, localSeat, sample, goAt, finalMs, revea
         </ul>
         <div className="lb-race__tools">
           {status}
+          <MusicSlot />
           <button type="button" className="lb-icon-btn" onClick={toggleSfx} aria-pressed={sfxOn} title={sfxOn ? 'Efek suara: nyala' : 'Efek suara: mati'}>
             {sfxOn ? '♪' : '×'}
           </button>
@@ -190,7 +196,8 @@ export function RaceView({ maze, roster, localSeat, sample, goAt, finalMs, revea
         </div>
       </header>
       <div className="lb-race__stage" ref={wrapRef}>
-        <canvas ref={canvasRef} className="lb-race__canvas" aria-label="Labirin: gerak dengan WASD atau tombol panah" />
+        <canvas ref={canvasRef} className="lb-race__canvas" aria-label="Labirin: gerak dengan WASD, tombol panah, atau joystick sentuh" />
+        {touch && localSeat !== null && finalMs === null && !finished.includes(localSeat) && <TouchPad dirsRef={touchRef} />}
         {countdown && (
           <div key={countdown} className={`lb-countdown ${countdown === 'GO!' ? 'is-go' : ''}`} aria-live="assertive">
             {countdown}
@@ -199,10 +206,16 @@ export function RaceView({ maze, roster, localSeat, sample, goAt, finalMs, revea
         {children}
       </div>
       <p className="lb-race__keys" aria-hidden="true">
-        <kbd>W</kbd>
-        <kbd>A</kbd>
-        <kbd>S</kbd>
-        <kbd>D</kbd> / <kbd>←↑→↓</kbd> bergerak · cari portal hijau di tengah labirin
+        {touch ? (
+          <>Geser joystick di kiri bawah untuk bergerak · cari portal hijau di tengah labirin</>
+        ) : (
+          <>
+            <kbd>W</kbd>
+            <kbd>A</kbd>
+            <kbd>S</kbd>
+            <kbd>D</kbd> / <kbd>←↑→↓</kbd> bergerak · cari portal hijau di tengah labirin
+          </>
+        )}
       </p>
     </div>
   )

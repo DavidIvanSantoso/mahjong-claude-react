@@ -5,6 +5,7 @@ import { MusicSlot } from '../components/MusicPlayer'
 import { CODE_LENGTH, normalizeCode } from '../net/online'
 import { generateMaze, randomSeed, SIZES, sizeFor, type MazeSize } from './maze'
 import { MAX_PLAYERS, MIN_PLAYERS, useLabirinGuestRoom, useLabirinHostRoom, type LabirinError, type LabirinRoom } from './net'
+import { HomeMaze } from './HomeMaze'
 import { formatTime, RaceView, type RosterEntry } from './RaceView'
 import { colorOf } from './render'
 import { sfx } from './sfx'
@@ -100,13 +101,15 @@ function saveBest(size: MazeSize, ms: number): Partial<Record<MazeSize, number>>
 function Home({ nav, onCreate, onJoin, onPractice, onGuide }: { nav: ReactNode; onCreate: () => void; onJoin: () => void; onPractice: (size: MazeSize) => void; onGuide: () => void }) {
   const [size, setSize] = useState<MazeSize>('sedang')
   const best = useMemo(loadBest, [])
+  const cardRef = useRef<HTMLElement>(null)
   return (
     <main className="lb-home">
+      <HomeMaze avoidRef={cardRef} />
       {nav}
       <div className="home__tools">
         <MusicSlot />
       </div>
-      <section className="lb-card lb-home__card" aria-labelledby="lb-title">
+      <section ref={cardRef} className="lb-card lb-home__card" aria-labelledby="lb-title">
         <p className="lb-eyebrow">Balapan labirin · online 2–{MAX_PLAYERS} pemain</p>
         <h1 id="lb-title" className="lb-logo">
           LABIRIN
@@ -141,7 +144,7 @@ function Home({ nav, onCreate, onJoin, onPractice, onGuide }: { nav: ReactNode; 
         <button type="button" className="lb-link" onClick={onGuide}>
           Cara main
         </button>
-        <p className="lb-muted lb-home__hint">Butuh keyboard: WASD atau tombol panah.</p>
+        <p className="lb-muted lb-home__hint">Keyboard: WASD atau tombol panah · HP/tablet: joystick di layar.</p>
       </section>
       <CreatorCredit />
     </main>
@@ -165,7 +168,7 @@ function GuideDialog({ open, onClose }: { open: boolean; onClose: () => void }) 
           <li>Semua tamu menekan <strong>Siap</strong>, lalu host menekan <strong>Mulai</strong>. Host memilih ukuran labirin; untuk 5–6 pemain labirin minimal Sedang, untuk 7–8 pemain selalu Besar.</li>
           <li>Semua pemain mendapat labirin yang sama. Titik awal tersebar di tepi, dengan jarak ke pintu keluar yang hampir sama.</li>
           <li>
-            Gerak dengan <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> atau tombol panah. Labirin gelap: hanya sekitar kamu yang terang, lorong yang sudah dilewati
+            Gerak dengan <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> atau tombol panah; di HP/tablet pakai joystick di kiri bawah layar (geser serong untuk belok di persimpangan berikutnya). Labirin gelap: hanya sekitar kamu yang terang, lorong yang sudah dilewati
             tetap terlihat redup. Minimap di kanan bawah menunjukkan semua pemain dan pintu keluar.
           </li>
           <li>Pintu keluar adalah <strong>portal hijau di tengah labirin</strong>; cahayanya menembus kegelapan, dan panah di tepi layar menunjuk ke arahnya.</li>

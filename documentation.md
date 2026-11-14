@@ -1141,7 +1141,7 @@ Dibuat dari brief `MAZE_MULTIPLAYER_RACE_CLAUDE_PROMPT.md`, disesuaikan dengan t
 
 1. **Room.** Host membuat room (kode 5 karakter, juga bisa dibagikan sebagai link `?game=labirin&room=KODE`). Lobi menampilkan 8 slot dengan warna tiap pemain, tanda host, status Siap, dan status koneksi.
 2. **Mulai.** Host bisa mulai kalau ada minimal 2 pemain tersambung dan semua tamu sudah menekan **Siap**. Host memilih ukuran labirin: Kecil 13×13, Sedang 17×17, Besar 21×21 sel. Ukuran dinaikkan otomatis kalau pemainnya banyak (`sizeFor`): 5–6 pemain minimal Sedang, 7–8 pemain selalu Besar, supaya rute tiap pemain bisa dibuat sama panjang.
-3. **Hitung mundur** 3, 2, 1, GO! (3,5 detik), lalu semua bergerak bersamaan dengan **WASD** atau **tombol panah**.
+3. **Hitung mundur** 3, 2, 1, GO! (3,5 detik), lalu semua bergerak bersamaan dengan **WASD** atau **tombol panah**; di HP/tablet dengan **joystick sentuh** di kiri bawah layar.
 4. **Balapan.** Labirin gelap: hanya sekitar pemain yang terang, lorong yang sudah dilewati tetap terlihat redup. Pemain lain selalu terlihat (dengan nama), juga di minimap kanan bawah. Portal pintu keluar bercahaya menembus kegelapan, dan panah di tepi layar menunjuk ke arahnya. Pemain tidak saling menghalangi.
 5. **Selesai.** Host menentukan pemenang lalu semua layar menampilkan hasil: pemenang (warna dan nama), urutan akhir dengan waktu finis atau sisa jarak (ubin), dan labirin lengkap tanpa kabut. Host memilih **Main lagi** (labirin baru dengan pemain yang masih tersambung) atau **Kembali ke lobi**.
 
@@ -1206,7 +1206,25 @@ Labirin tidak pernah dikirim. Satu `state` untuk 8 pemain ±200 byte, jadi host 
 - Kabut: lapisan per ubin (belum dijelajahi = gelap total, sudah = redup) dengan lubang cahaya bertepi lembut di sekitar pemain. Status jelajah hanya di perangkat itu sendiri.
 - Warna 8 pemain (`COLORS`) sama di lobi, HUD, kanvas, minimap, dan hasil.
 - Hitung mundur dan pewaktu ditulis langsung ke DOM dari loop gambar (tanpa render ulang React tiap frame).
-- Mode pengembangan: `window.__labirin` (labirin dan posisi terakhir) dan `window.__labirinGuest` (room tamu) untuk tes browser; tidak ikut build produksi.
+- Mode pengembangan: `window.__labirin` (labirin dan posisi terakhir), `window.__labirinGuest` (room tamu), dan `window.__labirinHome` (latar beranda) untuk tes browser; tidak ikut build produksi.
+
+### Kontrol sentuh (`TouchPad.tsx`)
+
+- Joystick bundar di kiri bawah area balapan (minimap tetap di kanan bawah). Muncul kalau perangkat punya layar sentuh (`any-pointer: coarse`) atau begitu layar disentuh; di desktop tanpa layar sentuh tidak tampil. Hilang setelah pemain sampai/balapan selesai.
+- Arah ditulis sebagai bit yang sama dengan keyboard (`UP/DOWN/LEFT/RIGHT`) dan digabung dengannya, jadi simulasi, prediksi, dan protokol jaringan tidak berubah.
+- 8 arah: lurus kalau jari dekat sumbu (sudut < ±27°), diagonal di antaranya. Diagonal berarti "terus lurus, belok di persimpangan berikutnya"; bantuan sudut di `sim.ts` yang mengurus beloknya. Ada zona mati di tengah (22% radius).
+- Pointer capture: jari boleh keluar lingkaran tanpa kehilangan kendali; dilepas = berhenti. `touch-action: none` mencegah halaman bergulir atau diperbesar.
+- Di layar balapan tombol musik situs ditaruh di bar atas (`<MusicSlot />`, seperti topbar meja game lain) supaya tidak menutupi joystick.
+
+### Latar beranda (`HomeMaze.tsx`)
+
+Animasi kanvas di belakang kartu menu supaya langsung terlihat bahwa ini game labirin:
+
+- Labirin selebar layar (ubin 26 px, dibuat sendiri karena persegi panjang; bukan `generateMaze`). Area kartu menu dijadikan blok dinding sehingga lorong melingkari kartu.
+- 4 penjelajah berwarna mulai dari sudut layar dan mencari portal dengan DFS: 70% memilih cabang yang mendekat ke portal, sisanya acak. Salah belok ditelusuri 3–9 ubin lalu berbalik; ubin buntu ditandai titik redup. Dinding hanya terang di sekitar penjelajah dan portal, seperti kabut di arena.
+- Yang pertama sampai: rutenya menyala, portal memancarkan gelombang, lalu labirin memudar dan diganti yang baru (satu putaran ±5–8 detik, maksimal 45 detik).
+- Portal selalu di tempat yang terlihat (tidak di bawah kartu, navbar, tombol musik, atau kredit); di layar sempit syaratnya dilonggarkan, dan penjelajah yang terlalu dekat portal dipindah supaya pencarian tidak langsung selesai.
+- `prefers-reduced-motion`: tidak beranimasi, hanya satu gambar diam labirin dengan rute yang sudah ditemukan. Ukuran layar berubah → labirin baru.
 
 ### Pengujian
 
@@ -1225,8 +1243,10 @@ Labirin tidak pernah dikirim. Satu `state` untuk 8 pemain ±200 byte, jadi host 
 | 16–17 | Main lagi: labirin baru, pemain terputus dilepas | Lolos |
 | 18 | Tamu tidak bisa menyatakan diri menang / mempercepat gerak | Lolos |
 | – | Mode Latihan, 60 FPS, rekor tersimpan | Lolos |
+| – | Joystick sentuh (emulasi HP potret 390×844 dan lanskap 844×390): 4 arah benar, diam saat dilepas, halaman tidak bergulir, tidak muncul di desktop | Lolos |
+| – | Latar beranda 60 FPS; portal tidak tertutup elemen apa pun di 390, 1024, 1440 px | Lolos |
 
-Diuji dengan beberapa jendela browser terpisah (Playwright) di satu komputer. Uji antarperangkat fisik dan jaringan seluler belum dilakukan.
+Diuji dengan beberapa jendela browser terpisah (Playwright) di satu komputer. Uji antarperangkat fisik, jaringan seluler, dan joystick di HP sungguhan belum dilakukan.
 
 ### Batasan
 
@@ -1234,7 +1254,8 @@ Diuji dengan beberapa jendela browser terpisah (Playwright) di satu komputer. Uj
 - **Tab host harus tetap terbuka di depan:** browser memperlambat timer di tab yang tersembunyi, jadi posisi pemain lain tersendat kalau host pindah tab.
 - **Jaringan:** sama dengan game online lain: butuh internet untuk server PeerJS, dan jaringan yang memblokir koneksi langsung (data seluler/CGNAT, WiFi kantor) butuh server TURN (`VITE_TURN_*`). Semua pesan lewat kanal *reliable*; di jaringan dengan banyak paket hilang, posisi bisa tersendat sesaat.
 - **Pesan rusak dari tamu nakal** (mis. `null`) memunculkan galat di dalam PeerJS di konsol host; permainan tetap berjalan.
-- Desktop saja (keyboard); belum ada kontrol sentuh. Belum ada migrasi host.
+- Kontrol sentuh baru diuji lewat emulasi browser. Di HP potret area pandang lebih sempit (±8 ubin lebar) dan joystick menutup sebagian sudut kiri bawah.
+- Belum ada migrasi host.
 
 ### Struktur folder
 
@@ -1245,6 +1266,8 @@ src/labirin/
   net.ts           Room PeerJS host/tamu, protokol, prediksi, interpolasi, heartbeat
   render.ts        Kanvas: labirin, kabut, portal, pemain, minimap
   RaceView.tsx     Layar balapan: keyboard, loop gambar, hitung mundur, HUD
+  TouchPad.tsx     Joystick sentuh 8 arah untuk HP/tablet
+  HomeMaze.tsx     Animasi latar beranda: penjelajah mencari portal
   LabirinApp.tsx   Beranda, Latihan, lobi, hasil, tema
   sfx.ts           Efek suara Web Audio
   labirin.css      Semua gaya LABIRIN
