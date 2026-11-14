@@ -248,7 +248,7 @@ function drawReef(ctx: CanvasRenderingContext2D, s: GameState, clock: number, sh
 
 // ---------- Kehidupan di kejauhan ----------
 
-function fishSilhouette(ctx: CanvasRenderingContext2D, x: number, y: number, size: number, dir: number) {
+export function fishSilhouette(ctx: CanvasRenderingContext2D, x: number, y: number, size: number, dir: number) {
   ctx.beginPath()
   ctx.ellipse(x, y, size, size * 0.42, 0, 0, Math.PI * 2)
   ctx.moveTo(x - dir * size * 0.8, y)
@@ -298,6 +298,12 @@ function drawWhale(ctx: CanvasRenderingContext2D, s: GameState, clock: number, s
   ctx.globalAlpha = 0.28 * presence
   ctx.fillStyle = mix(sea.bottomHex, '#000000', 0.35)
   ctx.translate(x, y)
+  whaleShape(ctx, clock)
+  ctx.restore()
+}
+
+/** Siluet paus di titik (0, 0), menghadap kiri, ±380 × 130 piksel; warna dari `fillStyle`. Dipakai juga di beranda. */
+export function whaleShape(ctx: CanvasRenderingContext2D, clock: number) {
   ctx.beginPath()
   ctx.ellipse(0, 0, 150, 38, 0.02, 0, Math.PI * 2)
   ctx.fill()
@@ -316,7 +322,6 @@ function drawWhale(ctx: CanvasRenderingContext2D, s: GameState, clock: number, s
   ctx.quadraticCurveTo(0, 40, -10, 24)
   ctx.closePath()
   ctx.fill()
-  ctx.restore()
 }
 
 /** Bangkai kapal di kejauhan pada kedalaman tertentu. */
@@ -420,7 +425,7 @@ export function drawAmbience(ctx: CanvasRenderingContext2D, s: GameState, clock:
 
 // ---------- Cahaya hayati (di atas kegelapan) ----------
 
-function glowDot(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, color: string, alpha: number) {
+export function glowDot(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, color: string, alpha: number) {
   const g = ctx.createRadialGradient(x, y, 0, x, y, r)
   g.addColorStop(0, `rgba(${color}, ${alpha})`)
   g.addColorStop(1, `rgba(${color}, 0)`)

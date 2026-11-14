@@ -1,3 +1,4 @@
+import { drawEye, tentacle } from './art'
 import { SIREN } from './config'
 import type { GameState, SirenBoss } from './engine'
 
@@ -19,107 +20,205 @@ export function drawSirenBody(ctx: CanvasRenderingContext2D, age: number, sing: 
   ctx.lineJoin = 'round'
   const sway = Math.sin(age * 1.6)
 
-  // Rambut panjang seperti rumput laut, melambai ke belakang (kanan)
-  const hair = ['#5b2e8c', '#7140a8', '#8a55c4', '#6a3a9e']
-  hair.forEach((color, i) => {
-    ctx.strokeStyle = color
-    ctx.lineWidth = 9 - i
-    ctx.beginPath()
-    ctx.moveTo(4, -52 + i * 5)
-    for (let t = 1; t <= 6; t++) {
-      ctx.lineTo(4 + t * 15, -50 + i * 6 + t * 9 + Math.sin(age * 2.2 + t * 0.8 + i) * (3 + t * 1.6))
-    }
-    ctx.stroke()
+  // Rambut panjang seperti rumput laut, melambai ke belakang (kanan), dengan kilau dan mutiara kecil
+  const hair = ['#4a2378', '#6236a0', '#7d4cbd', '#5a2f92', '#8f5fd0']
+  const strands = hair.map((color, i) => {
+    const pts: [number, number][] = [[2 - i, -54 + i * 4.5]]
+    for (let t = 1; t <= 7; t++) pts.push([2 + t * 14, -52 + i * 5.5 + t * 8.5 + Math.sin(age * 2.2 + t * 0.8 + i) * (3 + t * 1.7)])
+    return { color, pts, width: 13 - i * 1.4 }
   })
-
-  // Ekor ikan: melengkung ke kanan bawah, bersisik
-  const tail = [
-    { x: 6, y: 18 },
-    { x: 26, y: 46 + sway * 3 },
-    { x: 56, y: 64 + sway * 6 },
-    { x: 90, y: 66 + sway * 10 },
-  ]
-  ctx.strokeStyle = '#2c8f8c'
-  for (let i = 0; i < tail.length - 1; i++) {
-    ctx.lineWidth = 30 - i * 7
+  for (const strand of strands) tentacle(ctx, strand.pts, strand.width, strand.color, null, 'rgba(30, 8, 50, 0.4)', 0.8)
+  ctx.strokeStyle = 'rgba(230, 200, 255, 0.35)'
+  ctx.lineWidth = 1.2
+  for (const strand of strands.slice(1, 4)) {
     ctx.beginPath()
-    ctx.moveTo(tail[i].x, tail[i].y)
-    ctx.lineTo(tail[i + 1].x, tail[i + 1].y)
+    strand.pts.slice(0, 5).forEach(([x, y], k) => (k ? ctx.lineTo(x, y - 2) : ctx.moveTo(x, y - 2)))
     ctx.stroke()
   }
-  ctx.fillStyle = 'rgba(160, 255, 230, 0.35)'
-  for (let i = 0; i < 9; i++) {
-    const t = i / 9
-    const x = 10 + t * 70
-    const y = 26 + Math.sin(t * 2.4) * 36 + sway * t * 6
+  for (const [i, t] of [
+    [1, 3],
+    [3, 5],
+  ]) {
+    const [x, y] = strands[i].pts[t]
+    ctx.fillStyle = '#fdf6ff'
     ctx.beginPath()
-    ctx.arc(x, y, 3.5 - t * 1.5, Math.PI * 0.1, Math.PI * 0.9)
+    ctx.arc(x, y, 2.2, 0, Math.PI * 2)
     ctx.fill()
   }
-  // Sirip ekor
+
+  // Ekor ikan: satu bentuk meruncing bergradasi, bersisik
+  const tail: [number, number][] = [
+    [5, 6],
+    [10, 26],
+    [26, 46 + sway * 3],
+    [44, 58 + sway * 5],
+    [64, 64 + sway * 7],
+    [90, 66 + sway * 10],
+  ]
+  const tailSkin = ctx.createLinearGradient(0, 0, 90, 70)
+  tailSkin.addColorStop(0, '#2a9c96')
+  tailSkin.addColorStop(0.6, '#1f7a7c')
+  tailSkin.addColorStop(1, '#3fc4b4')
+  tentacle(ctx, tail, 34, tailSkin, null, 'rgba(8, 40, 44, 0.6)', 0.55)
+  ctx.lineWidth = 1.1
+  for (let i = 0; i < 14; i++) {
+    const t = i / 14
+    const seg = Math.min(tail.length - 2, Math.floor(t * (tail.length - 1)))
+    const f = t * (tail.length - 1) - seg
+    const x = tail[seg][0] + (tail[seg + 1][0] - tail[seg][0]) * f
+    const y = tail[seg][1] + (tail[seg + 1][1] - tail[seg][1]) * f
+    const r = 4.2 - t * 2.4
+    ctx.strokeStyle = `rgba(170, 255, 235, ${0.45 - t * 0.2})`
+    for (const off of [-0.45, 0.1]) {
+      ctx.beginPath()
+      ctx.arc(x + off * 6, y + off * 8, r, Math.PI * 0.1, Math.PI * 0.9)
+      ctx.stroke()
+    }
+  }
+  // Sirip ekor tembus pandang dengan jari-jari
   ctx.save()
-  ctx.translate(tail[3].x, tail[3].y)
+  ctx.translate(tail[5][0], tail[5][1])
   ctx.rotate(0.2 + sway * 0.25)
-  ctx.fillStyle = '#3fb7ae'
+  const fin = ctx.createLinearGradient(0, 0, 42, 0)
+  fin.addColorStop(0, 'rgba(63, 196, 180, 0.95)')
+  fin.addColorStop(1, 'rgba(160, 255, 235, 0.55)')
+  ctx.fillStyle = fin
   ctx.beginPath()
   ctx.moveTo(0, 0)
-  ctx.quadraticCurveTo(26, -26, 40, -22)
-  ctx.quadraticCurveTo(26, -4, 22, 2)
-  ctx.quadraticCurveTo(30, 14, 38, 26)
-  ctx.quadraticCurveTo(18, 22, 0, 0)
+  ctx.quadraticCurveTo(26, -28, 44, -24)
+  ctx.quadraticCurveTo(30, -6, 26, 2)
+  ctx.quadraticCurveTo(34, 14, 42, 30)
+  ctx.quadraticCurveTo(18, 24, 0, 0)
   ctx.fill()
+  ctx.strokeStyle = 'rgba(220, 255, 245, 0.5)'
+  ctx.lineWidth = 1
+  ctx.beginPath()
+  for (const [ex, ey] of [
+    [40, -22],
+    [30, -12],
+    [28, 2],
+    [32, 14],
+    [38, 26],
+  ]) {
+    ctx.moveTo(2, 0)
+    ctx.lineTo(ex, ey)
+  }
+  ctx.stroke()
   ctx.restore()
 
-  // Badan atas dengan pelindung sisik
-  ctx.fillStyle = '#9cc8d8'
+  // Badan atas: kulit bergradasi dan pelindung sisik
+  const skin = ctx.createRadialGradient(-2, -18, 2, 4, -6, 30)
+  skin.addColorStop(0, '#d6f0f8')
+  skin.addColorStop(1, '#7fb0c4')
+  ctx.fillStyle = skin
   ctx.beginPath()
   ctx.ellipse(4, -6, 17, 28, 0.1, 0, Math.PI * 2)
   ctx.fill()
-  ctx.fillStyle = '#2c8f8c'
+  const armor = ctx.createLinearGradient(0, -14, 0, 20)
+  armor.addColorStop(0, '#3fc4b4')
+  armor.addColorStop(1, '#1d6f72')
+  ctx.fillStyle = armor
   ctx.beginPath()
   ctx.ellipse(5, 2, 17, 18, 0.1, 0, Math.PI * 2)
   ctx.fill()
-  ctx.fillStyle = 'rgba(160, 255, 230, 0.35)'
-  for (let i = 0; i < 4; i++) {
+  ctx.strokeStyle = 'rgba(190, 255, 240, 0.55)'
+  ctx.lineWidth = 1.2
+  for (let i = 0; i < 6; i++) {
     ctx.beginPath()
-    ctx.arc(-4 + (i % 2) * 9, -2 + Math.floor(i / 2) * 9, 3, Math.PI * 0.1, Math.PI * 0.9)
+    ctx.arc(-6 + (i % 3) * 8 + (Math.floor(i / 3) % 2) * 4, -4 + Math.floor(i / 3) * 8, 3.5, Math.PI * 0.1, Math.PI * 0.9)
+    ctx.stroke()
+  }
+  // Kalung mutiara
+  ctx.fillStyle = '#fff7fd'
+  for (let i = 0; i < 5; i++) {
+    ctx.beginPath()
+    ctx.arc(-8 + i * 4.5, -22 - Math.abs(i - 2) * 1.2, 1.6, 0, Math.PI * 2)
     ctx.fill()
   }
-  // Lengan terulur ke depan (bernyanyi)
-  ctx.strokeStyle = '#9cc8d8'
+  // Lengan terulur ke depan (bernyanyi), dengan tangan
+  const arm = ctx.createLinearGradient(-34, -22, -6, -18)
+  arm.addColorStop(0, '#c6e6f2')
+  arm.addColorStop(1, '#8fbfd2')
+  ctx.strokeStyle = arm
   ctx.lineWidth = 7
   ctx.beginPath()
   ctx.moveTo(-6, -18)
   ctx.quadraticCurveTo(-22, -12 + sway * 4, -34, -22 + sway * 6)
   ctx.stroke()
+  ctx.fillStyle = '#c6e6f2'
+  ctx.beginPath()
+  ctx.ellipse(-37, -24 + sway * 6, 4.5, 3.4, -0.5, 0, Math.PI * 2)
+  ctx.fill()
 
-  // Kepala, sirip telinga, mahkota kerang
-  ctx.fillStyle = '#3fb7ae'
+  // Sirip telinga tembus pandang
+  ctx.fillStyle = 'rgba(63, 196, 180, 0.85)'
   ctx.beginPath()
   ctx.moveTo(6, -46)
-  ctx.lineTo(18, -58)
-  ctx.lineTo(14, -40)
+  ctx.quadraticCurveTo(16, -62, 22, -60)
+  ctx.quadraticCurveTo(16, -50, 14, -40)
   ctx.closePath()
   ctx.fill()
-  ctx.fillStyle = '#a9d3e2'
+  // Kepala
+  const face = ctx.createRadialGradient(-6, -50, 2, -2, -44, 16)
+  face.addColorStop(0, '#e6f6fb')
+  face.addColorStop(1, '#8dbfd2')
+  ctx.fillStyle = face
   ctx.beginPath()
   ctx.arc(-2, -44, 15, 0, Math.PI * 2)
   ctx.fill()
-  ctx.fillStyle = '#f2b8d0'
+  ctx.strokeStyle = 'rgba(30, 60, 80, 0.35)'
+  ctx.lineWidth = 1
+  ctx.stroke()
+  // Poni rambut di dahi
+  ctx.fillStyle = '#5a2f92'
+  ctx.beginPath()
+  ctx.moveTo(-16, -50)
+  ctx.quadraticCurveTo(-8, -64, 10, -56)
+  ctx.quadraticCurveTo(4, -54, -2, -52)
+  ctx.quadraticCurveTo(-10, -52, -16, -50)
+  ctx.fill()
+  // Mahkota kerang mengilap
+  const shell = ctx.createLinearGradient(0, -75, 0, -56)
+  shell.addColorStop(0, '#fff0f8')
+  shell.addColorStop(1, '#e48fb8')
+  ctx.fillStyle = shell
   for (let i = 0; i < 3; i++) {
+    const tall = i === 1 ? 5 : 0
     ctx.beginPath()
-    ctx.moveTo(-10 + i * 7, -57)
-    ctx.lineTo(-7 + i * 7, -68 - (i === 1 ? 4 : 0))
-    ctx.lineTo(-4 + i * 7, -57)
+    ctx.moveTo(-11 + i * 7, -57)
+    ctx.quadraticCurveTo(-9 + i * 7, -66 - tall, -7 + i * 7, -70 - tall)
+    ctx.quadraticCurveTo(-5 + i * 7, -66 - tall, -3 + i * 7, -57)
     ctx.closePath()
     ctx.fill()
   }
-  // Mata bercahaya dan mulut bernyanyi
-  ctx.fillStyle = sing > 0.5 ? '#ffe1f4' : '#c7f6ff'
+  ctx.fillStyle = '#ffffff'
   ctx.beginPath()
-  ctx.ellipse(-10, -46, 3.4, 2.4, 0, 0, Math.PI * 2)
+  ctx.arc(-3, -58, 2, 0, Math.PI * 2)
   ctx.fill()
-  ctx.fillStyle = '#3a0f2c'
+  // Pipi merona, mata, alis, dan mulut bernyanyi
+  ctx.fillStyle = 'rgba(255, 150, 190, 0.35)'
+  ctx.beginPath()
+  ctx.ellipse(-9, -40, 3.5, 2, 0, 0, Math.PI * 2)
+  ctx.fill()
+  if (sing > 0.5) {
+    drawEye(ctx, -10, -46, 2.8, 'glow', '#ff9be0')
+  } else {
+    ctx.fillStyle = '#c7f6ff'
+    ctx.beginPath()
+    ctx.ellipse(-10, -46, 3.4, 2.4, 0, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.fillStyle = '#3b1d5c'
+    ctx.beginPath()
+    ctx.arc(-11, -46, 1.5, 0, Math.PI * 2)
+    ctx.fill()
+  }
+  ctx.strokeStyle = '#2a1640'
+  ctx.lineWidth = 1.2
+  ctx.beginPath()
+  ctx.moveTo(-14, -50)
+  ctx.quadraticCurveTo(-10, -52, -6, -50)
+  ctx.stroke()
+  ctx.fillStyle = '#7a1f4f'
   ctx.beginPath()
   ctx.ellipse(-13, -37, 2.5, 1.5 + sing * 3, 0, 0, Math.PI * 2)
   ctx.fill()
@@ -131,6 +230,7 @@ export function drawSirenBody(ctx: CanvasRenderingContext2D, age: number, sing: 
     ctx.arc(-2, -44, 15, 0, Math.PI * 2)
     ctx.ellipse(4, -6, 17, 28, 0.1, 0, Math.PI * 2)
     ctx.fill()
+    tentacle(ctx, tail, 34, '#ffffff', null, '#ffffff', 0.55)
   }
   ctx.restore()
 }

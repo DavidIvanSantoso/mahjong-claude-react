@@ -4,6 +4,7 @@ import { MusicSlot } from '../components/MusicPlayer'
 import { CreatorCredit } from '../components/HomeScreen'
 import { CAVE, COMBO_STEPS, ENEMIES, PLAYER, ZONES, type EnemyKind } from './config'
 import type { Summary } from './engine'
+import { HomeSea } from './HomeSea'
 import { PalungGame } from './PalungGame'
 import { drawPreview } from './render'
 
@@ -219,6 +220,7 @@ function ResultCard({ result, previous, onRetry, onMenu }: { result: Summary; pr
 function Home({ nav, best, onStart, onGuide }: { nav: ReactNode; best: Best | null; onStart: () => void; onGuide: () => void }) {
   return (
     <main className="pl-home">
+      <HomeSea />
       {nav}
       <div className="home__tools">
         <MusicSlot />

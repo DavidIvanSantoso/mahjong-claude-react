@@ -916,6 +916,16 @@ Teks tebakan Si Asbun yang salah juga disembunyikan dari pemain lain sampai perm
   - Voting tidak menunggu suaranya.
 - **Kursi pemain terputus dihapus** saat host menekan "Main lagi" atau "Kembali ke lobi".
 
+### Latar beranda (`AsbunBoard.tsx`)
+
+Papan penyelidikan ala film detektif di belakang kartu berkas (SVG, `aria-hidden`):
+
+- **Peta kota** bergaris emas tipis: kisi jalan miring dengan jalan buntu, jalan besar melengkung, sungai, blok, nama distrik, dan kompas. Garisnya tergambar pelan saat beranda dibuka.
+- **Barang bukti** ditempel di kiri/kanan kartu: foto tersangka, catatan tangan ("Siapa yang tidak tahu katanya?"), kliping koran, sidik jari, dan foto saksi kalau masih ada tempat. Posisinya menghindari navbar, tombol musik, dan kredit; di layar sempit sebagian tertutup kartu.
+- **Benang merah:** tiap 1,5 detik satu benang baru ditarik ke titik berikutnya. Titik di peta ditandai paku merah, riak, dan catatan ("Alibi?", "Saksi terakhir", …). Rutenya selalu berakhir di foto tersangka, yang lalu dilingkari merah. Setelah itu benang dan paku memudar, dan putaran baru memakai titik peta yang berbeda.
+- **Kaca pembesar** meluncur ke titik peta terbaru; isinya peta yang diperbesar 1,7× dan lebih terang.
+- `prefers-reduced-motion`: tanpa animasi, langsung menampilkan papan yang sudah lengkap.
+
 ### Struktur folder
 
 ```
@@ -926,6 +936,7 @@ src/asbun/
   net.ts              HostRoom/GuestRoom PeerJS, lobi (siap, pengaturan), pewaktu, hook React
   AsbunApp.tsx        Layar-layar, buat/gabung room, tema (font, ikon tab)
   AsbunHome.tsx       Homescreen bergaya berkas kasus
+  AsbunBoard.tsx      Latar beranda: peta, barang bukti, benang merah, kaca pembesar
   AsbunLobby.tsx      Ruang tunggu: tersangka, status siap/koneksi, pengaturan host
   AsbunTable.tsx      Halaman permainan: fase, countdown, panel sesuai fase
   AsbunPanels.tsx     Berkas pribadi, daftar tersangka, catatan petunjuk, voting, tebakan
@@ -1088,14 +1099,26 @@ Hiasan saja, tidak memengaruhi permainan, dan ditentukan dari kedalaman + waktu 
 
 - **Kata:** tambahkan ke `WORDS` di `src/palung/words.ts`. Mesin otomatis memakai kata itu untuk jenis ikan yang rentang panjangnya cocok. Hanya huruf a–z tanpa spasi; kata lain dan duplikat dibuang (`clean`). Frasa Kraken ada di `BOSS_PHRASES` (kata misil diambil dari `WORDS` sesuai panjangnya), kata bonus di `BONUS_WORDS`, huruf Teri di `LETTERS`.
 - **Angka keseimbangan:** semuanya di `src/palung/config.ts` (kecepatan, skor, hati, Sonar, zona, kurva kesulitan, jadwal kejadian, urutan bos, Megalodon, Belut Listrik, Siren, Arus Gua, kombo).
-- **Jenis ikan baru:** tambahkan ke `EnemyKind` dan `ENEMIES` (config.ts), beri bobot di `difficultyAt`, lalu gambarnya di `drawEnemy` (render.ts).
+- **Jenis ikan baru:** tambahkan ke `EnemyKind` dan `ENEMIES` (config.ts), beri bobot di `difficultyAt`, lalu gambarnya di creatures.ts (biasanya cukup satu `FishSpec` untuk `drawFish` di art.ts plus mata/mulut) dan panggil dari `drawEnemy` (render.ts).
+- **Gaya gambar:** semua makhluk digambar dari bentuk kanvas (tanpa file gambar) dengan gradasi punggung gelap/perut terang, cahaya dari atas, garis tepi tipis, dan gerak renang (badan ikan melengkung mengikuti gelombang, bukan hanya ekor yang berayun). Ukuran tiap makhluk sama dengan versi lama, jadi label kata dan tabrakan tidak berubah.
 
 ### Teknis
 
 - **Game loop:** `requestAnimationFrame` di `PalungGame.tsx` memanggil `update(state, dt)` (dt dibatasi 0,05 detik) lalu `render`. State permainan diubah langsung (bukan disalin) karena berjalan 60× per detik; React hanya dipakai untuk layar di luar kanvas (beranda, jeda, ringkasan).
 - **Ukuran:** tinggi dunia tetap 540 satuan; lebarnya mengikuti rasio layar (560–1100), lalu kanvas diperbesar agar pas dan tajam di layar ber-DPI tinggi.
 - **Input:** ketikan ditangkap oleh `<input>` tersembunyi yang selalu difokus. Tombol panah/WASD untuk Arus Gua dibaca dari `keydown`/`keyup` input yang sama (`steer`), sentuhan dari pointer event area permainan (`setPointer`); semuanya dilepas saat dijeda. Keyboard fisik diproses di `keydown`; keyboard virtual HP (yang sering mengirim tombol "Unidentified") diproses lewat `input`. Kalau fokus hilang atau tab disembunyikan, game otomatis dijeda. **Esc** menjeda/melanjutkan.
-- **Mode pengembangan:** `window.__palung` berisi state permainan untuk dibaca dari konsol atau tes browser; tidak ikut di build produksi.
+- **Mode pengembangan:** `window.__palung` berisi state permainan, dan `window.__palungHome` latar beranda, untuk dibaca dari konsol atau tes browser; tidak ikut di build produksi.
+
+### Latar beranda (`HomeSea.tsx`)
+
+Kanvas di belakang kartu beranda (gradasi lautnya tetap dari CSS `.pl-home`, gelembung tetap animasi CSS):
+
+- Sinar matahari dan jaring kaustik bergoyang di bagian atas.
+- Ikan dari game (`drawFishArt` di render.ts, gambar yang sama dengan musuh) berenang di kedalaman yang sesuai: kawanan teri dan piranha di atas, hiu dan hiu martil di tengah, ikan bayangan tembus pandang di bawah. Jumlahnya mengikuti lebar layar.
+- Kawanan siluet dan paus (`whaleShape` dari ambience.ts) melintas pelan di kejauhan.
+- Ubur-ubur dan plankton bercahaya di dasar, rumput laut bergoyang dengan ujung bercahaya, dan salju laut yang turun pelan.
+- Ikan menghindar (berbelok dan mempercepat) dari kursor atau jari.
+- `prefers-reduced-motion`: satu gambar diam tanpa animasi.
 
 ### Batasan
 
@@ -1110,7 +1133,9 @@ src/palung/
   config.ts        Angka keseimbangan: dunia, hati, Sonar, musuh, zona, kesulitan, kejadian, Megalodon, Belut Listrik, Siren, Arus Gua, kombo
   words.ts         Daftar kata, frasa Kraken, kata bonus, huruf Teri
   engine.ts        State dan aturan: kemunculan, penguncian, tabrakan, Megalodon (misil, pantulan, QTE), Belut Listrik (urutan, bola listrik), Siren (kata terbalik, menghindar, trisula), Arus Gua, skor, WPM, akurasi (tanpa DOM)
-  render.ts        Menggambar penyelam, ikan, Megalodon dan misil, efek, label kata, HUD, banner, layar QTE (Canvas)
+  render.ts        Urutan gambar per frame: musuh, Megalodon, efek, label kata, HUD, banner, layar QTE (Canvas)
+  art.ts           Alat gambar bersama: badan ikan yang melengkung saat berenang, gradasi, sirip, mata, tentakel, gelembung
+  creatures.ts     Gambar penyelam, teri, piranha, hiu, hiu martil, ikan bayangan, Kraken, misil, gelembung oksigen, kerang mutiara
   cave.ts          Arus Gua: pembuatan terowongan acak, rintangan, tabrakan (data murni)
   eelRender.ts     Menggambar Belut Listrik: badan belut, bola listrik berhuruf, petir, panel urutan
   sirenRender.ts   Menggambar Siren: badan, Nada, gelombang dan not serangan, trisula, tanda kontrol terbalik
@@ -1119,6 +1144,7 @@ src/palung/
   sfx.ts           Efek suara Web Audio
   PalungGame.tsx   Kanvas, game loop, input keyboard, jeda
   PalungApp.tsx    Beranda, panduan, ringkasan, rekor, tema
+  HomeSea.tsx      Latar beranda: ikan berenang, sinar, paus, ubur-ubur, rumput laut
   palung.css       Semua gaya PALUNG
 src/assets/palung-favicon.svg
 ```

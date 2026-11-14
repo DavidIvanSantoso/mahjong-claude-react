@@ -373,6 +373,7 @@
 
 .as-home__file {
   position: relative;
+  z-index: 1;
   width: min(100%, 560px);
   display: grid;
   justify-items: center;
@@ -493,6 +494,299 @@
   }
 
   .as-home__inspired {
+    display: none;
+  }
+}
+
+/* ---------- Papan penyelidikan di latar beranda (AsbunBoard.tsx) ---------- */
+
+.as-board {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* Peta kota: garis emas tipis yang tergambar saat beranda dibuka */
+.as-board__street,
+.as-board__road,
+.as-board__river,
+.as-board__string,
+.as-board__circle {
+  fill: none;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: as-draw 1.6s ease-out forwards;
+}
+
+.as-board__street {
+  stroke: rgb(182 154 98 / 13%);
+  stroke-width: 1;
+}
+
+.as-board__road {
+  stroke: rgb(182 154 98 / 20%);
+  stroke-width: 3;
+  animation-duration: 2.4s;
+}
+
+.as-board__river {
+  stroke: rgb(119 134 117 / 22%);
+  stroke-width: 22;
+  stroke-linecap: round;
+  animation-duration: 3s;
+}
+
+.as-board__block {
+  fill: rgb(182 154 98 / 5%);
+  stroke: rgb(182 154 98 / 10%);
+}
+
+.as-board__district {
+  font: 600 11px var(--as-ui);
+  letter-spacing: 0.32em;
+  fill: rgb(182 154 98 / 30%);
+  animation: as-board-fade 1.2s ease-out 1.2s both;
+}
+
+.as-board__compass {
+  fill: none;
+  stroke: rgb(182 154 98 / 28%);
+  animation: as-board-fade 1.2s ease-out 1.6s both;
+}
+
+.as-board__compass path {
+  fill: rgb(182 154 98 / 18%);
+}
+
+.as-board__compass text {
+  font: 700 12px var(--as-display);
+  text-anchor: middle;
+  fill: rgb(182 154 98 / 45%);
+  stroke: none;
+}
+
+/* Kaca pembesar */
+.as-board__lens-bg {
+  fill: rgb(40 36 30 / 92%);
+}
+
+.as-board__lens use {
+  /* Peta di dalam kaca lebih terang, seperti diterangi lampu */
+  filter: brightness(2.2) saturate(1.2);
+}
+
+.as-board__lens-glass {
+  fill: rgb(233 225 209 / 4%);
+  stroke: #8a7448;
+  stroke-width: 7;
+}
+
+.as-board__lens-handle {
+  stroke: #3a2c1f;
+  stroke-width: 13;
+  stroke-linecap: round;
+}
+
+.as-board__lens-shine {
+  fill: none;
+  stroke: rgb(255 255 255 / 30%);
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+.as-board__lens {
+  filter: drop-shadow(0 12px 18px rgb(0 0 0 / 50%));
+  animation: as-board-fade 1s ease-out 1.8s both;
+}
+
+/* Barang bukti */
+.as-board__item {
+  animation: as-board-drop 0.5s cubic-bezier(0.2, 1.3, 0.4, 1) both;
+}
+
+.as-board__item-shadow {
+  filter: drop-shadow(0 8px 10px rgb(0 0 0 / 45%));
+}
+
+.as-board__paper {
+  fill: #ddd4c2;
+}
+
+.as-board__photo {
+  fill: #2d3034;
+}
+
+.as-board__silhouette {
+  fill: #50545a;
+}
+
+.as-board__question {
+  font: 700 40px var(--as-display);
+  text-anchor: middle;
+  dominant-baseline: middle;
+  fill: var(--as-blood-bright);
+}
+
+.as-board__script {
+  font: 26px var(--as-script);
+  text-anchor: middle;
+  fill: #3a3d42;
+}
+
+.as-board__note {
+  fill: #cfc39d;
+}
+
+.as-board__rule {
+  stroke: rgb(80 70 50 / 25%);
+}
+
+.as-board__hand {
+  font: 22px var(--as-script);
+  fill: #2c2a26;
+}
+
+.as-board__underline {
+  fill: none;
+  stroke: var(--as-blood);
+  stroke-width: 2;
+}
+
+.as-board__news {
+  fill: #c9c2b2;
+}
+
+.as-board__headline {
+  font: 700 17px var(--as-display);
+  letter-spacing: 0.04em;
+  fill: #1e1f21;
+}
+
+.as-board__type {
+  fill: rgb(30 31 33 / 35%);
+}
+
+.as-board__whorl {
+  fill: none;
+  stroke: rgb(40 42 46 / 55%);
+  stroke-width: 1.6;
+}
+
+.as-board__label {
+  font: 700 10px var(--as-ui);
+  letter-spacing: 0.18em;
+  text-anchor: middle;
+  fill: var(--as-blood);
+}
+
+/* Paku dan benang merah */
+.as-board__pin {
+  animation: as-board-pin 0.35s cubic-bezier(0.3, 1.6, 0.5, 1) both;
+}
+
+.as-board__pin-head {
+  fill: #b33a3a;
+  stroke: #6e1f1f;
+  stroke-width: 1;
+}
+
+.as-board__pin-shine {
+  fill: rgb(255 255 255 / 55%);
+}
+
+.as-board__pin-shadow {
+  fill: rgb(0 0 0 / 45%);
+}
+
+.as-board__string {
+  stroke: #b8403f;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  filter: drop-shadow(0 3px 2px rgb(0 0 0 / 55%));
+  animation-duration: 0.7s;
+}
+
+.as-board__ping {
+  fill: none;
+  stroke: var(--as-blood-bright);
+  stroke-width: 2;
+  transform-box: fill-box;
+  transform-origin: center;
+  opacity: 0;
+  animation: as-board-ping 1.4s ease-out 0.5s 2;
+}
+
+.as-board__clue {
+  font: 22px var(--as-script);
+  fill: var(--as-paper);
+  paint-order: stroke;
+  stroke: rgb(23 25 27 / 85%);
+  stroke-width: 4px;
+  animation: as-board-fade 0.6s ease-out 0.8s both;
+}
+
+.as-board__circle {
+  stroke: #c94a48;
+  stroke-width: 3.5;
+  stroke-linecap: round;
+  animation-duration: 0.9s;
+  animation-delay: 0.6s;
+}
+
+.as-board__round {
+  transition: opacity 0.9s;
+}
+
+.as-board__round.is-fading {
+  opacity: 0;
+}
+
+@keyframes as-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes as-board-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes as-board-drop {
+  from {
+    opacity: 0;
+    transform: translateY(-26px) scale(1.06);
+  }
+}
+
+@keyframes as-board-pin {
+  from {
+    opacity: 0;
+    transform: translateY(-14px) scale(1.6);
+  }
+}
+
+@keyframes as-board-ping {
+  0% {
+    opacity: 0.9;
+    transform: scale(0.6);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(4);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .as-board * {
+    animation: none !important;
+    stroke-dashoffset: 0 !important;
+  }
+
+  .as-board__ping {
     display: none;
   }
 }

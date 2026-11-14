@@ -1,3 +1,4 @@
+import { drawEye, tentacle } from './art'
 import { EEL, WORLD } from './config'
 import { diverY, type EelBoss, type GameState } from './engine'
 
@@ -61,67 +62,100 @@ export function drawEelBody(ctx: CanvasRenderingContext2D, age: number, charge: 
   }
   ctx.closePath()
   ctx.fill()
-  // Badan
-  ctx.strokeStyle = '#25374a'
-  for (let k = count - 1; k >= 0; k--) {
-    ctx.lineWidth = points[k].w
-    ctx.beginPath()
-    ctx.moveTo(points[k].x, points[k].y)
-    ctx.lineTo(points[k + 1].x, points[k + 1].y)
-    ctx.stroke()
-  }
-  // Garis perut jingga
-  ctx.strokeStyle = 'rgba(224, 140, 60, 0.85)'
-  ctx.lineWidth = 4
+  // Badan: satu bentuk meruncing (bukan rangkaian garis), punggung gelap, perut jingga
+  const spine: [number, number][] = points.map((p) => [p.x, p.y])
+  spine.unshift([-6, 0])
+  const skin = ctx.createLinearGradient(0, -20, 0, 20)
+  skin.addColorStop(0, '#41617e')
+  skin.addColorStop(0.45, '#22364b')
+  skin.addColorStop(0.75, '#2e4257')
+  skin.addColorStop(1, '#c8823e')
+  tentacle(ctx, spine, 34, skin, null, 'rgba(8, 14, 22, 0.75)', 0.4)
+  // Garis perut jingga dan kilau punggung
+  ctx.strokeStyle = 'rgba(232, 150, 70, 0.85)'
+  ctx.lineWidth = 3
   ctx.beginPath()
-  points.forEach((p, k) => (k ? ctx.lineTo(p.x, p.y + p.w * 0.28) : ctx.moveTo(p.x, p.y + p.w * 0.28)))
+  points.forEach((p, k) => (k ? ctx.lineTo(p.x, p.y + p.w * 0.3) : ctx.moveTo(p.x, p.y + p.w * 0.3)))
   ctx.stroke()
-  // Organ listrik: bintik-bintik di punggung
+  ctx.strokeStyle = 'rgba(190, 225, 255, 0.18)'
+  ctx.lineWidth = 2
+  ctx.beginPath()
+  points.forEach((p, k) => (k ? ctx.lineTo(p.x, p.y - p.w * 0.3) : ctx.moveTo(p.x, p.y - p.w * 0.3)))
+  ctx.stroke()
+  // Organ listrik: bintik bercahaya di punggung
   for (let k = 1; k < count; k++) {
     const p = points[k]
     const flicker = 0.6 + Math.sin(age * 20 + k * 1.7) * 0.4
-    ctx.fillStyle = `rgba(${CYAN}, ${0.25 + 0.7 * charge * flicker})`
+    const level = 0.25 + 0.7 * charge * flicker
+    const r = Math.max(2, p.w * 0.13)
+    const glow = ctx.createRadialGradient(p.x, p.y - p.w * 0.12, 0, p.x, p.y - p.w * 0.12, r * 3)
+    glow.addColorStop(0, `rgba(${CYAN}, ${level * 0.6})`)
+    glow.addColorStop(1, `rgba(${CYAN}, 0)`)
+    ctx.fillStyle = glow
     ctx.beginPath()
-    ctx.arc(p.x, p.y - p.w * 0.18, Math.max(2, p.w * 0.12), 0, Math.PI * 2)
+    ctx.arc(p.x, p.y - p.w * 0.12, r * 3, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.fillStyle = `rgba(${CYAN}, ${level})`
+    ctx.beginPath()
+    ctx.arc(p.x, p.y - p.w * 0.12, r, 0, Math.PI * 2)
     ctx.fill()
   }
-  // Kepala
-  ctx.fillStyle = '#2d4258'
+  // Kepala memanjang dengan rahang, lubang hidung, dan mata
+  const head = new Path2D()
+  head.moveTo(-34, 2)
+  head.quadraticCurveTo(-32, -14, -10, -18)
+  head.quadraticCurveTo(14, -20, 26, -12)
+  head.lineTo(26, 14)
+  head.quadraticCurveTo(6, 20, -14, 15)
+  head.quadraticCurveTo(-30, 12, -34, 2)
+  head.closePath()
+  const headSkin = ctx.createLinearGradient(0, -20, 0, 18)
+  headSkin.addColorStop(0, '#4a6c8a')
+  headSkin.addColorStop(0.55, '#26394e')
+  headSkin.addColorStop(1, '#b67638')
+  ctx.fillStyle = headSkin
+  ctx.fill(head)
+  ctx.strokeStyle = 'rgba(8, 14, 22, 0.75)'
+  ctx.lineWidth = 1.5
+  ctx.stroke(head)
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.12)'
   ctx.beginPath()
-  ctx.ellipse(-2, 0, 30, 19, 0, 0, Math.PI * 2)
+  ctx.ellipse(-6, -11, 18, 4, -0.08, 0, Math.PI * 2)
   ctx.fill()
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.08)'
-  ctx.beginPath()
-  ctx.ellipse(-6, -8, 18, 6, -0.1, 0, Math.PI * 2)
-  ctx.fill()
-  ctx.strokeStyle = '#111b26'
+  // Rahang (sedikit terbuka saat bermuatan) dengan gigi kecil
+  const open = 2 + charge * 4
+  ctx.strokeStyle = '#0c141d'
   ctx.lineWidth = 2
   ctx.beginPath()
-  ctx.moveTo(-30, 4)
-  ctx.quadraticCurveTo(-20, 10, -8, 8)
+  ctx.moveTo(-33, 3)
+  ctx.quadraticCurveTo(-20, 6 + open, -4, 8)
   ctx.stroke()
-  ctx.fillStyle = charge > 0.6 ? '#eaffff' : '#d8e4ee'
+  ctx.fillStyle = '#eef6fb'
+  for (let i = 0; i < 4; i++) {
+    const tx = -28 + i * 5
+    ctx.beginPath()
+    ctx.moveTo(tx, 4 + i * 0.6)
+    ctx.lineTo(tx + 1.5, 7.5 + i * 0.6)
+    ctx.lineTo(tx + 3, 4.5 + i * 0.6)
+    ctx.fill()
+  }
+  ctx.fillStyle = '#0c141d'
   ctx.beginPath()
-  ctx.arc(-15, -6, 4.2, 0, Math.PI * 2)
+  ctx.arc(-29, -4, 1.4, 0, Math.PI * 2)
   ctx.fill()
-  ctx.fillStyle = '#05080c'
+  // Insang
+  ctx.strokeStyle = 'rgba(8, 14, 22, 0.5)'
+  ctx.lineWidth = 1.5
   ctx.beginPath()
-  ctx.arc(-16, -6, 2.2, 0, Math.PI * 2)
-  ctx.fill()
+  ctx.moveTo(14, -10)
+  ctx.quadraticCurveTo(19, 0, 14, 10)
+  ctx.stroke()
+  drawEye(ctx, -15, -6, 4.4, charge > 0.6 ? 'glow' : 'fish', charge > 0.6 ? '#9ff6ff' : '#d6b13a')
   if (flash > 0) {
     ctx.globalAlpha = Math.min(0.8, flash * 2)
     ctx.fillStyle = '#ffffff'
-    ctx.beginPath()
-    ctx.ellipse(-2, 0, 30, 19, 0, 0, Math.PI * 2)
-    ctx.fill()
-    ctx.strokeStyle = '#ffffff'
-    for (let k = 0; k < count; k++) {
-      ctx.lineWidth = points[k].w
-      ctx.beginPath()
-      ctx.moveTo(points[k].x, points[k].y)
-      ctx.lineTo(points[k + 1].x, points[k + 1].y)
-      ctx.stroke()
-    }
+    ctx.fill(head)
+    tentacle(ctx, spine, 34, '#ffffff', null, '#ffffff', 0.4)
   }
   ctx.restore()
 }

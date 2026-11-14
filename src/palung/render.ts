@@ -3,6 +3,8 @@ import { drawAmbience, drawBioluminescence, seaAt } from './ambience'
 import { drawCave, drawCaveBar } from './caveRender'
 import { drawEel, drawEelBody, drawEelGlow, drawEelTop } from './eelRender'
 import { drawNote, drawSiren, drawSirenBody, drawSirenGlow, drawSirenTop, REVERSED_HINT } from './sirenRender'
+import { bubble } from './art'
+import { drawDiverArt, drawGhost, drawKraken, drawMissile, drawOxygen, drawPearl, drawPiranha, drawShark, drawTeri } from './creatures'
 import { accuracy, diverAt, diverY, lockedEnemy, steering, wpm, type Enemy, type GameState, type Megalodon } from './engine'
 
 /**
@@ -74,78 +76,13 @@ function drawDiver(ctx: CanvasRenderingContext2D, s: GameState, clock: number) {
   const x = diver.x
   const y = diver.y + (steering(s) ? 0 : Math.sin(clock * 1.8) * 4)
   if (s.grace > 0 && Math.floor(clock * 14) % 2 === 0) return
-  const kick = Math.sin(clock * 5) * 0.35
 
   ctx.save()
   ctx.translate(x, y)
   ctx.lineJoin = 'round'
   ctx.lineCap = 'round'
 
-  // Sirip kaki
-  for (const [dy, phase] of [[4, kick], [10, -kick]] as const) {
-    ctx.save()
-    ctx.translate(-34, dy)
-    ctx.rotate(phase)
-    ctx.fillStyle = '#ffb02e'
-    ctx.beginPath()
-    ctx.moveTo(0, -3)
-    ctx.lineTo(-24, -9)
-    ctx.lineTo(-26, 6)
-    ctx.lineTo(0, 3)
-    ctx.closePath()
-    ctx.fill()
-    ctx.restore()
-  }
-  // Kaki
-  ctx.strokeStyle = '#1b2a3a'
-  ctx.lineWidth = 8
-  ctx.beginPath()
-  ctx.moveTo(-14, 2)
-  ctx.lineTo(-34, 4 + kick * 6)
-  ctx.moveTo(-14, 6)
-  ctx.lineTo(-34, 10 - kick * 6)
-  ctx.stroke()
-  // Tabung oksigen
-  ctx.fillStyle = '#e8c547'
-  roundRect(ctx, -24, -20, 30, 11, 5)
-  ctx.fill()
-  ctx.fillStyle = '#9aa7b3'
-  ctx.fillRect(4, -18, 5, 7)
-  // Badan (baju selam)
-  ctx.fillStyle = '#23384f'
-  roundRect(ctx, -20, -10, 36, 18, 9)
-  ctx.fill()
-  ctx.fillStyle = '#3cc6d8'
-  ctx.fillRect(-12, -10, 4, 18)
-  // Lengan dan senapan tombak
-  ctx.strokeStyle = '#23384f'
-  ctx.lineWidth = 7
-  ctx.beginPath()
-  ctx.moveTo(8, -2)
-  ctx.lineTo(24, 4)
-  ctx.stroke()
-  ctx.fillStyle = '#566676'
-  roundRect(ctx, 18, 0, 26, 6, 2)
-  ctx.fill()
-  ctx.fillStyle = '#c9d4de'
-  ctx.fillRect(44, 2, 10, 2)
-  // Kepala dan masker
-  ctx.fillStyle = '#23384f'
-  ctx.beginPath()
-  ctx.arc(22, -10, 10, 0, Math.PI * 2)
-  ctx.fill()
-  ctx.fillStyle = '#9ff1ff'
-  roundRect(ctx, 22, -16, 10, 8, 3)
-  ctx.fill()
-  ctx.fillStyle = 'rgba(255,255,255,0.7)'
-  ctx.fillRect(24, -15, 3, 2)
-  // Selang regulator
-  ctx.strokeStyle = '#111c28'
-  ctx.lineWidth = 2
-  ctx.beginPath()
-  ctx.moveTo(6, -16)
-  ctx.quadraticCurveTo(14, -24, 20, -6)
-  ctx.stroke()
+  drawDiverArt(ctx, clock, (rx, ry, rw, rh, rr) => roundRect(ctx, rx, ry, rw, rh, rr))
   ctx.restore()
 
   // Sorot lampu kepala (terasa di zona gelap)
@@ -169,42 +106,6 @@ function drawDiver(ctx: CanvasRenderingContext2D, s: GameState, clock: number) {
 
 // ---------- Musuh ----------
 
-function fishBody(ctx: CanvasRenderingContext2D, length: number, height: number, back: string, belly: string, tail: number) {
-  // Ekor (di kanan, karena ikan berenang ke kiri)
-  ctx.save()
-  ctx.translate(length * 0.45, 0)
-  ctx.rotate(tail)
-  ctx.fillStyle = back
-  ctx.beginPath()
-  ctx.moveTo(0, 0)
-  ctx.lineTo(length * 0.35, -height * 0.55)
-  ctx.lineTo(length * 0.28, 0)
-  ctx.lineTo(length * 0.35, height * 0.55)
-  ctx.closePath()
-  ctx.fill()
-  ctx.restore()
-  // Badan: punggung dan perut
-  ctx.fillStyle = back
-  ctx.beginPath()
-  ctx.ellipse(0, 0, length / 2, height / 2, 0, 0, Math.PI * 2)
-  ctx.fill()
-  ctx.fillStyle = belly
-  ctx.beginPath()
-  ctx.ellipse(0, height * 0.16, length * 0.44, height * 0.3, 0, 0, Math.PI)
-  ctx.fill()
-}
-
-function eye(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, glow: boolean) {
-  ctx.fillStyle = glow ? '#fff7a8' : '#ffffff'
-  ctx.beginPath()
-  ctx.arc(x, y, r, 0, Math.PI * 2)
-  ctx.fill()
-  ctx.fillStyle = '#0b0f14'
-  ctx.beginPath()
-  ctx.arc(x - r * 0.25, y, r * 0.55, 0, Math.PI * 2)
-  ctx.fill()
-}
-
 /** Ikan tak kasatmata yang belum dekat: 50% (sedikit berdenyut); sisanya penuh. */
 function ghostAlpha(enemy: Enemy): number {
   return enemy.revealed ? 1 : 0.5 + Math.sin(enemy.age * 4) * 0.06
@@ -213,7 +114,6 @@ function ghostAlpha(enemy: Enemy): number {
 function drawEnemy(ctx: CanvasRenderingContext2D, enemy: Enemy, locked: boolean) {
   const type = ENEMIES[enemy.kind]
   const k = type.size
-  const tail = Math.sin(enemy.age * (enemy.kind === 'teri' ? 18 : 8)) * 0.3
   ctx.save()
   ctx.globalAlpha = ghostAlpha(enemy)
   ctx.translate(enemy.x, enemy.y)
@@ -238,178 +138,28 @@ function drawEnemy(ctx: CanvasRenderingContext2D, enemy: Enemy, locked: boolean)
     case 'nada':
       drawNote(ctx, 22 * k, enemy.age)
       break
-    case 'bayangan': {
-      // Ikan pucat tembus pandang dengan tulang samar dan mata bercahaya
-      fishBody(ctx, 74 * k, 30 * k, '#a9cfe3', '#e8f7ff', tail)
-      ctx.strokeStyle = 'rgba(40, 80, 110, 0.45)'
-      ctx.lineWidth = 1.5
-      ctx.beginPath()
-      ctx.moveTo(-24 * k, 0)
-      ctx.lineTo(26 * k, 0)
-      for (let i = 0; i < 5; i++) {
-        const rx = -14 * k + i * 9 * k
-        ctx.moveTo(rx, -9 * k)
-        ctx.lineTo(rx + 3 * k, 0)
-        ctx.lineTo(rx, 9 * k)
-      }
-      ctx.stroke()
-      ctx.fillStyle = '#7ff7ff'
-      ctx.beginPath()
-      ctx.arc(-26 * k, -4 * k, 3.6 * k, 0, Math.PI * 2)
-      ctx.fill()
-      ctx.fillStyle = '#05303a'
-      ctx.beginPath()
-      ctx.arc(-27 * k, -4 * k, 1.6 * k, 0, Math.PI * 2)
-      ctx.fill()
+    case 'bayangan':
+      drawGhost(ctx, k, enemy.age)
       break
-    }
     case 'teri':
-      fishBody(ctx, 30 * k * 2, 9 * k * 2, '#a9c3cf', '#e7f3f8', tail)
-      ctx.fillStyle = '#4f7d93'
-      ctx.fillRect(-16 * k, -1, 30 * k, 2)
-      eye(ctx, -10 * k * 2 + 4, -1, 2.2, false)
+      drawTeri(ctx, k, enemy.age)
       break
-    case 'piranha': {
-      fishBody(ctx, 56 * k, 40 * k, '#5d6f63', '#d2453b', tail)
-      // Rahang bawah dengan gigi
-      ctx.fillStyle = '#f2f2f2'
-      for (let i = 0; i < 4; i++) {
-        ctx.beginPath()
-        ctx.moveTo(-26 * k + i * 5, 5 * k)
-        ctx.lineTo(-24 * k + i * 5, 0)
-        ctx.lineTo(-22 * k + i * 5, 5 * k)
-        ctx.fill()
-      }
-      ctx.fillStyle = '#4b5a50'
-      ctx.beginPath()
-      ctx.moveTo(-4 * k, -18 * k)
-      ctx.lineTo(10 * k, -27 * k)
-      ctx.lineTo(12 * k, -15 * k)
-      ctx.fill()
-      eye(ctx, -14 * k, -7 * k, 4.2 * k, false)
+    case 'piranha':
+      drawPiranha(ctx, k, enemy.age)
       break
-    }
     case 'hiu':
-    case 'martil': {
-      const length = 92 * k
-      const height = 30 * k
-      // Sirip punggung dan dada
-      ctx.fillStyle = '#5f7486'
-      ctx.beginPath()
-      ctx.moveTo(-6 * k, -height * 0.4)
-      ctx.lineTo(8 * k, -height * 1.15)
-      ctx.lineTo(18 * k, -height * 0.4)
-      ctx.fill()
-      ctx.beginPath()
-      ctx.moveTo(-12 * k, height * 0.3)
-      ctx.lineTo(4 * k, height * 0.95)
-      ctx.lineTo(8 * k, height * 0.3)
-      ctx.fill()
-      fishBody(ctx, length, height, '#6c8296', '#e6edf2', tail)
-      // Insang
-      ctx.strokeStyle = 'rgba(30, 40, 52, 0.5)'
-      ctx.lineWidth = 1.5
-      for (let i = 0; i < 3; i++) {
-        ctx.beginPath()
-        ctx.moveTo(-22 * k + i * 4, -6 * k)
-        ctx.lineTo(-24 * k + i * 4, 6 * k)
-        ctx.stroke()
-      }
-      if (enemy.kind === 'martil') {
-        // Kepala martil: palang di depan dengan mata di kedua ujung
-        ctx.fillStyle = '#6c8296'
-        roundRect(ctx, -length * 0.56, -height * 0.85, 12 * k, height * 1.7, 5 * k)
-        ctx.fill()
-        eye(ctx, -length * 0.52, -height * 0.72, 3.2 * k, false)
-        eye(ctx, -length * 0.52, height * 0.72, 3.2 * k, false)
-      } else {
-        eye(ctx, -length * 0.34, -height * 0.12, 3.4 * k, false)
-        ctx.strokeStyle = '#2a3440'
-        ctx.lineWidth = 2
-        ctx.beginPath()
-        ctx.moveTo(-length * 0.46, height * 0.16)
-        ctx.lineTo(-length * 0.32, height * 0.2)
-        ctx.stroke()
-      }
+    case 'martil':
+      drawShark(ctx, k, enemy.age, enemy.kind === 'martil')
       break
-    }
-    case 'kraken': {
-      // Tentakel meliuk ke arah penyelam
-      ctx.strokeStyle = '#8a3f86'
-      ctx.lineCap = 'round'
-      for (let i = 0; i < 6; i++) {
-        const spread = (i - 2.5) * 16
-        ctx.lineWidth = 11 - Math.abs(i - 2.5) * 1.5
-        ctx.beginPath()
-        ctx.moveTo(-10, 20 + spread * 0.3)
-        for (let t = 1; t <= 6; t++) {
-          const wave = Math.sin(enemy.age * 3 + i + t * 0.9) * 12
-          ctx.lineTo(-10 - t * 18, 22 + spread * (0.3 + t * 0.12) + wave)
-        }
-        ctx.stroke()
-      }
-      ctx.fillStyle = '#a04d9b'
-      ctx.beginPath()
-      ctx.ellipse(18, -8, 56, 50, -0.25, 0, Math.PI * 2)
-      ctx.fill()
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.12)'
-      ctx.beginPath()
-      ctx.ellipse(30, -30, 22, 12, -0.4, 0, Math.PI * 2)
-      ctx.fill()
-      ctx.fillStyle = '#ffd447'
-      for (const ey of [-6, 22]) {
-        ctx.beginPath()
-        ctx.ellipse(-14, ey, 9, 7, 0, 0, Math.PI * 2)
-        ctx.fill()
-        ctx.fillStyle = '#1a0610'
-        ctx.fillRect(-16, ey - 6, 3, 12)
-        ctx.fillStyle = '#ffd447'
-      }
+    case 'kraken':
+      drawKraken(ctx, enemy.age)
       break
-    }
-    case 'oksigen': {
-      const r = 24
-      ctx.fillStyle = 'rgba(160, 235, 255, 0.18)'
-      ctx.strokeStyle = 'rgba(200, 245, 255, 0.85)'
-      ctx.lineWidth = 2
-      ctx.beginPath()
-      ctx.arc(0, 0, r, 0, Math.PI * 2)
-      ctx.fill()
-      ctx.stroke()
-      ctx.fillStyle = 'rgba(255,255,255,0.7)'
-      ctx.beginPath()
-      ctx.ellipse(-8, -10, 6, 3, -0.6, 0, Math.PI * 2)
-      ctx.fill()
-      ctx.fillStyle = COLORS.heart
-      heartPath(ctx, 0, -7, 20)
-      ctx.fill()
+    case 'oksigen':
+      drawOxygen(ctx, enemy.age, heartPath)
       break
-    }
-    case 'mutiara': {
-      ctx.fillStyle = '#d98fb0'
-      ctx.beginPath()
-      ctx.ellipse(0, 6, 26, 12, 0, 0, Math.PI)
-      ctx.fill()
-      ctx.beginPath()
-      ctx.ellipse(0, 2, 26, 16, 0, Math.PI, Math.PI * 2)
-      ctx.fill()
-      ctx.strokeStyle = 'rgba(120, 50, 80, 0.5)'
-      ctx.lineWidth = 1.5
-      for (let i = -2; i <= 2; i++) {
-        ctx.beginPath()
-        ctx.moveTo(0, 2)
-        ctx.lineTo(i * 10, -12)
-        ctx.stroke()
-      }
-      const glow = ctx.createRadialGradient(0, 4, 1, 0, 4, 12)
-      glow.addColorStop(0, '#ffffff')
-      glow.addColorStop(1, 'rgba(210, 240, 255, 0.4)')
-      ctx.fillStyle = glow
-      ctx.beginPath()
-      ctx.arc(0, 4, 8, 0, Math.PI * 2)
-      ctx.fill()
+    case 'mutiara':
+      drawPearl(ctx, enemy.age)
       break
-    }
   }
   ctx.restore()
 
@@ -446,46 +196,7 @@ function drawGlow(ctx: CanvasRenderingContext2D, enemy: Enemy, darkness: number)
 
 /** Misil menghadap kiri di titik (0,0). `friendly` = sudah dipantulkan (kuning). */
 function missileShape(ctx: CanvasRenderingContext2D, k: number, age: number, friendly: boolean) {
-  ctx.save()
-  ctx.scale(k, k)
-  // Api pendorong (di belakang = kanan)
-  const flicker = 0.75 + Math.sin(age * 40) * 0.25
-  const flame = ctx.createLinearGradient(20, 0, 20 + 26 * flicker, 0)
-  flame.addColorStop(0, friendly ? 'rgba(255, 240, 150, 0.95)' : 'rgba(255, 200, 90, 0.95)')
-  flame.addColorStop(1, 'rgba(255, 90, 40, 0)')
-  ctx.fillStyle = flame
-  ctx.beginPath()
-  ctx.moveTo(20, -5)
-  ctx.lineTo(20 + 28 * flicker, 0)
-  ctx.lineTo(20, 5)
-  ctx.closePath()
-  ctx.fill()
-  // Sirip
-  ctx.fillStyle = friendly ? '#b38a1c' : '#7a1f24'
-  for (const side of [-1, 1]) {
-    ctx.beginPath()
-    ctx.moveTo(8, 5 * side)
-    ctx.lineTo(22, 14 * side)
-    ctx.lineTo(22, 4 * side)
-    ctx.closePath()
-    ctx.fill()
-  }
-  // Badan
-  ctx.fillStyle = friendly ? '#ffe27a' : '#c9d2da'
-  roundRect(ctx, -18, -7, 40, 14, 6)
-  ctx.fill()
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.18)'
-  ctx.fillRect(-18, 1, 40, 6)
-  // Hulu ledak
-  ctx.fillStyle = friendly ? '#ff9f1c' : '#e0343c'
-  ctx.beginPath()
-  ctx.moveTo(-18, -7)
-  ctx.quadraticCurveTo(-34, 0, -18, 7)
-  ctx.closePath()
-  ctx.fill()
-  ctx.fillStyle = '#20262c'
-  ctx.fillRect(-6, -7, 3, 14)
-  ctx.restore()
+  drawMissile(ctx, k, age, friendly, (x, y, w, h, r) => roundRect(ctx, x, y, w, h, r))
 }
 
 /**
@@ -493,13 +204,25 @@ function missileShape(ctx: CanvasRenderingContext2D, k: number, age: number, fri
  * (menganga), `flash` kilatan putih saat terkena, `eye` terang mata (0–1).
  */
 function drawMegalodonBody(ctx: CanvasRenderingContext2D, age: number, jaw: number, flash: number, eye: number) {
-  const steel = '#4d5b69'
+  // Logam bergradasi (atas terang, bawah gelap) untuk ekor dan sirip
+  const plate = (y0: number, y1: number) => {
+    const g = ctx.createLinearGradient(0, y0, 0, y1)
+    g.addColorStop(0, '#8392a1')
+    g.addColorStop(0.5, '#4d5b69')
+    g.addColorStop(1, '#2c3640')
+    return g
+  }
   ctx.lineJoin = 'round'
+  // Gelembung dari ventilasi insang
+  for (let i = 0; i < 6; i++) {
+    const t = (age * 0.7 + i / 6) % 1
+    bubble(ctx, -48 + (i % 3) * 9 + Math.sin(t * 8 + i) * 4, -14 - t * 70, 1.5 + t * 2.5, 1 - t)
+  }
   // Ekor (bergerak pelan, ada sambungan logam)
   ctx.save()
   ctx.translate(106, -2)
   ctx.rotate(Math.sin(age * 4.5) * 0.16)
-  ctx.fillStyle = steel
+  ctx.fillStyle = plate(-60, 46)
   ctx.beginPath()
   ctx.moveTo(0, -8)
   ctx.lineTo(50, -60)
@@ -517,13 +240,20 @@ function drawMegalodonBody(ctx: CanvasRenderingContext2D, age: number, jaw: numb
   ctx.stroke()
   ctx.restore()
   // Sirip punggung dan dada
-  ctx.fillStyle = steel
+  ctx.fillStyle = plate(-90, -32)
   ctx.beginPath()
   ctx.moveTo(-14, -38)
   ctx.lineTo(26, -90)
   ctx.lineTo(46, -32)
   ctx.closePath()
   ctx.fill()
+  ctx.strokeStyle = 'rgba(200, 215, 230, 0.35)'
+  ctx.lineWidth = 1.5
+  ctx.beginPath()
+  ctx.moveTo(-8, -40)
+  ctx.lineTo(24, -84)
+  ctx.stroke()
+  ctx.fillStyle = plate(22, 70)
   ctx.beginPath()
   ctx.moveTo(-34, 22)
   ctx.lineTo(6, 70)
@@ -554,7 +284,7 @@ function drawMegalodonBody(ctx: CanvasRenderingContext2D, age: number, jaw: numb
   ctx.save()
   ctx.translate(-66, 16)
   ctx.rotate(-jaw * 0.5)
-  ctx.fillStyle = '#7d8a97'
+  ctx.fillStyle = plate(-2, 22)
   ctx.beginPath()
   ctx.moveTo(4, -2)
   ctx.lineTo(-54, 0)
@@ -609,12 +339,44 @@ function drawMegalodonBody(ctx: CanvasRenderingContext2D, age: number, jaw: numb
       ctx.fill()
     }
   }
-  // Kilau logam di punggung
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.12)'
+  // Kilau logam di punggung, goresan, dan noda karat
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.16)'
   ctx.beginPath()
   ctx.ellipse(-10, -34, 70, 7, -0.05, 0, Math.PI * 2)
   ctx.fill()
+  ctx.strokeStyle = 'rgba(235, 245, 255, 0.35)'
+  ctx.lineWidth = 1
+  ctx.beginPath()
+  ctx.moveTo(20, -20)
+  ctx.lineTo(44, -12)
+  ctx.moveTo(24, -14)
+  ctx.lineTo(40, -9)
+  ctx.moveTo(-30, 14)
+  ctx.lineTo(-12, 20)
+  ctx.stroke()
+  for (const [rx, ry, rr] of [
+    [70, 6, 9],
+    [-20, 24, 7],
+    [34, -30, 6],
+  ]) {
+    const rust = ctx.createRadialGradient(rx, ry, 0, rx, ry, rr)
+    rust.addColorStop(0, 'rgba(170, 90, 40, 0.45)')
+    rust.addColorStop(1, 'rgba(170, 90, 40, 0)')
+    ctx.fillStyle = rust
+    ctx.beginPath()
+    ctx.arc(rx, ry, rr, 0, Math.PI * 2)
+    ctx.fill()
+  }
+  // Bayangan bawah badan
+  const under = ctx.createLinearGradient(0, 10, 0, 38)
+  under.addColorStop(0, 'rgba(10, 18, 26, 0)')
+  under.addColorStop(1, 'rgba(10, 18, 26, 0.45)')
+  ctx.fillStyle = under
+  ctx.fill(body)
   ctx.restore()
+  ctx.strokeStyle = 'rgba(12, 18, 26, 0.7)'
+  ctx.lineWidth = 2
+  ctx.stroke(body)
   // Gigi rahang atas
   ctx.fillStyle = '#eef3f7'
   for (let i = 0; i < 6; i++) {
@@ -635,7 +397,14 @@ function drawMegalodonBody(ctx: CanvasRenderingContext2D, age: number, jaw: numb
     ctx.lineTo(-56 + i * 9, 6)
     ctx.stroke()
   }
-  // Mata: lensa merah dalam soket
+  // Mata: lensa merah dalam soket, berpendar
+  const halo = ctx.createRadialGradient(-89, -14, 0, -89, -14, 26)
+  halo.addColorStop(0, `rgba(255, 60, 40, ${0.25 + eye * 0.4})`)
+  halo.addColorStop(1, 'rgba(255, 60, 40, 0)')
+  ctx.fillStyle = halo
+  ctx.beginPath()
+  ctx.arc(-89, -14, 26, 0, Math.PI * 2)
+  ctx.fill()
   ctx.fillStyle = '#1a2129'
   ctx.beginPath()
   ctx.arc(-88, -14, 10, 0, Math.PI * 2)
@@ -1116,6 +885,19 @@ export function drawPreview(canvas: HTMLCanvasElement, kind: Enemy['kind']) {
   ctx.translate(kind === 'kraken' ? w * 0.58 : w / 2 - 6 * fit, h / 2 + (kind === 'kraken' ? 4 : 0))
   ctx.scale(fit, fit)
   drawEnemy(ctx, enemy, false)
+}
+
+/**
+ * Ikan hiasan (latar beranda): bentuk sama dengan musuh di game, tanpa kata. Default menghadap kiri;
+ * `dir` 1 = berenang ke kanan. `ghost` = setengah tembus pandang seperti ikan bayangan yang belum dekat.
+ */
+export function drawFishArt(ctx: CanvasRenderingContext2D, kind: Enemy['kind'], x: number, y: number, scale: number, dir: 1 | -1, age: number, ghost = false) {
+  const enemy: Enemy = { id: 0, kind, words: [''], segment: 0, progress: 0, x: 0, y: 0, base: 0, speed: 0, phase: 0, age, flash: 0, revealed: !ghost }
+  ctx.save()
+  ctx.translate(x, y)
+  ctx.scale(dir === 1 ? -scale : scale, scale)
+  drawEnemy(ctx, enemy, false)
+  ctx.restore()
 }
 
 /** Satu frame penuh. `scale` = piksel kanvas per satuan dunia (sudah termasuk devicePixelRatio). */

@@ -764,18 +764,59 @@
 
 .lb-dialog {
   width: min(560px, calc(100% - 32px));
+  /* Batas tinggi ada di kartunya (area scroll); batas bawaan browser untuk <dialog> dilepas */
+  max-height: none;
+  overflow: hidden;
   padding: 0;
   color: var(--lb-text);
   background: none;
   border: 0;
+  border-radius: 18px;
 }
 
 .lb-dialog::backdrop {
   background: rgb(0 0 0 / 60%);
 }
 
+/* Kartu panduan menjadi area scroll-nya sendiri: scrollbar tipis di dalam kartu, warna palet LABIRIN */
 .lb-dialog .lb-card {
+  max-height: calc(100vh - 32px);
+  max-height: min(100dvh - 32px, 900px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  box-sizing: border-box;
   padding: 26px 26px 20px;
+}
+
+.lb-dialog .lb-card::-webkit-scrollbar {
+  width: 14px;
+}
+
+.lb-dialog .lb-card::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 18px 0;
+}
+
+.lb-dialog .lb-card::-webkit-scrollbar-thumb {
+  background: var(--lb-line-strong);
+  background-clip: padding-box;
+  border: 4px solid transparent;
+  border-radius: 999px;
+}
+
+.lb-dialog .lb-card::-webkit-scrollbar-thumb:hover {
+  background-color: var(--lb-portal);
+}
+
+.lb-dialog .lb-card::-webkit-scrollbar-button {
+  display: none;
+}
+
+@supports not selector(::-webkit-scrollbar) {
+  .lb-dialog .lb-card {
+    scrollbar-width: thin;
+    scrollbar-color: var(--lb-line-strong) transparent;
+  }
 }
 
 .lb-guide {

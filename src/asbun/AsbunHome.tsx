@@ -1,20 +1,23 @@
-import type { ReactNode } from 'react'
+import { useRef, type ReactNode } from 'react'
 import { CreatorCredit } from '../components/HomeScreen'
 import { MusicSlot } from '../components/MusicPlayer'
+import { AsbunBoard } from './AsbunBoard'
 import { MAX_PLAYERS, MIN_PLAYERS } from './roles'
 
 /** Kredit inspirasi permainan: di tepi kiri layar lebar (AsbunApp) dan di kartu beranda pada layar sempit. */
 export const INSPIRED_BY = 'Inspired by Under Cover · Yanstar Studio OU'
 
 export function AsbunHome({ nav, onCreate, onJoin, onGuide }: { nav: ReactNode; onCreate: () => void; onJoin: () => void; onGuide: () => void }) {
+  const fileRef = useRef<HTMLElement>(null)
   return (
     <main className="as-home">
+      <AsbunBoard cardRef={fileRef} />
       {nav}
       <div className="home__tools">
         <MusicSlot />
       </div>
 
-      <section className="as-home__file" aria-labelledby="as-home-title">
+      <section ref={fileRef} className="as-home__file" aria-labelledby="as-home-title">
         <div className="as-home__tab" aria-hidden="true">
           Berkas No. 07 · Rahasia
         </div>
