@@ -1,6 +1,6 @@
 import { t } from '../i18n'
 
-export type GameId = 'mahjong' | 'uno' | 'capsa' | 'bomkata' | 'armada' | 'asbun' | 'palung' | 'labirin'
+export type GameId = 'mahjong' | 'uno' | 'capsa' | 'bomkata' | 'armada' | 'asbun' | 'palung' | 'labirin' | 'koboi'
 
 const GAMES: { id: GameId; label: string; icon: string }[] = [
   // Ubin tegak dengan lingkaran (ubin bulat)
@@ -50,6 +50,12 @@ const GAMES: { id: GameId; label: string; icon: string }[] = [
     id: 'labirin',
     label: 'LABIRIN',
     icon: 'M1 1h14v14H9v-2h4V3H3v10h4v2H1ZM5 5h6v2H7v2h2v2H5Z',
+  },
+  // Topi koboi
+  {
+    id: 'koboi',
+    label: 'KOBOI',
+    icon: 'M5 3.5c1-.8 1.7.6 3 .6s2-1.4 3-.6c.8.6 1 3 1 5H4c0-2 .2-4.4 1-5ZM1 9.5c1 .9 3.6 1.5 7 1.5s6-.6 7-1.5c.3 1.6-2.5 3-7 3s-7.3-1.4-7-3Z',
   },
 ]
 

@@ -21,7 +21,7 @@ type Screen =
   | { kind: 'host'; name: string; capacity: number; turnSeconds: number; timeAttack: boolean }
   | { kind: 'guest'; name: string; code: string }
 
-/** UNO, Capsa, KA-BOOM!, Armada Royale, ASBUN, dan PALUNG dimuat terpisah, supaya pemain satu game tidak ikut mengunduh kode game lain. */
+/** UNO, Capsa, KA-BOOM!, Armada Royale, ASBUN, PALUNG, LABIRIN, dan KOBOI dimuat terpisah, supaya pemain satu game tidak ikut mengunduh kode game lain. */
 const UnoApp = lazy(() => import('./uno/UnoApp').then((module) => ({ default: module.UnoApp })))
 const CapsaApp = lazy(() => import('./capsa/CapsaApp').then((module) => ({ default: module.CapsaApp })))
 const BomKataApp = lazy(() => import('./bomkata/BomKataApp').then((module) => ({ default: module.BomKataApp })))
@@ -29,8 +29,9 @@ const ArmadaApp = lazy(() => import('./armada/ArmadaApp').then((module) => ({ de
 const AsbunApp = lazy(() => import('./asbun/AsbunApp').then((module) => ({ default: module.AsbunApp })))
 const PalungApp = lazy(() => import('./palung/PalungApp').then((module) => ({ default: module.PalungApp })))
 const LabirinApp = lazy(() => import('./labirin/LabirinApp').then((module) => ({ default: module.LabirinApp })))
+const KoboiApp = lazy(() => import('./koboi/KoboiApp').then((module) => ({ default: module.KoboiApp })))
 
-const GAMES: GameId[] = ['mahjong', 'uno', 'capsa', 'bomkata', 'armada', 'asbun', 'palung', 'labirin']
+const GAMES: GameId[] = ['mahjong', 'uno', 'capsa', 'bomkata', 'armada', 'asbun', 'palung', 'labirin', 'koboi']
 
 function isGame(value: string | null): value is GameId {
   return GAMES.includes(value as GameId)
@@ -226,8 +227,10 @@ export function App() {
             <AsbunApp nav={nav} />
           ) : game === 'palung' ? (
             <PalungApp nav={nav} />
-          ) : (
+          ) : game === 'labirin' ? (
             <LabirinApp nav={nav} />
+          ) : (
+            <KoboiApp nav={nav} />
           )}
         </Suspense>
       )}

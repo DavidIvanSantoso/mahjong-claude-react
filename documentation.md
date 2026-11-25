@@ -2,7 +2,7 @@
 
 Game mahjong 2D untuk 2–4 pemain, dibuat dengan React dan TypeScript. Bisa dimainkan bergantian di satu perangkat, atau online lewat room (PeerJS) dengan tiap pemain di perangkatnya sendiri.
 
-Situs yang sama juga memuat game kartu **UNO** (online, 2–6 pemain; [bagian 11](#11-game-uno)) **Capsa** (online, 2–4 pemain; [bagian 12](#12-game-capsa)), **KA-BOOM!** (online, 2–6 pemain; [bagian 13](#13-game-ka-boom)), **Armada Royale** (online, 2–6 pemain; [bagian 14](#14-game-armada-royale)), **ASBUN** (online, 4–10 pemain; [bagian 15](#15-game-asbun)), game mengetik **PALUNG** (1 pemain; [bagian 16](#16-game-palung)), dan balapan labirin **LABIRIN** (online, 2–8 pemain; [bagian 17](#17-game-labirin)). Navbar di pojok kiri atas homescreen dipakai untuk berpindah game.
+Situs yang sama juga memuat game kartu **UNO** (online, 2–6 pemain; [bagian 11](#11-game-uno)) **Capsa** (online, 2–4 pemain; [bagian 12](#12-game-capsa)), **KA-BOOM!** (online, 2–6 pemain; [bagian 13](#13-game-ka-boom)), **Armada Royale** (online, 2–6 pemain; [bagian 14](#14-game-armada-royale)), **ASBUN** (online, 4–10 pemain; [bagian 15](#15-game-asbun)), game mengetik **PALUNG** (1 pemain; [bagian 16](#16-game-palung)), balapan labirin **LABIRIN** (online, 2–8 pemain; [bagian 17](#17-game-labirin)), dan game menghindar peluru **KOBOI** (1 pemain; [bagian 18](#18-game-koboi)). Navbar di pojok kiri atas homescreen dipakai untuk berpindah game.
 
 - Situs: https://davidivansantoso.github.io/mahjong-claude-react/
 - Repo: https://github.com/DavidIvanSantoso/mahjong-claude-react
@@ -26,6 +26,7 @@ Situs yang sama juga memuat game kartu **UNO** (online, 2–6 pemain; [bagian 11
 15. [Game ASBUN](#15-game-asbun)
 16. [Game PALUNG](#16-game-palung)
 17. [Game LABIRIN](#17-game-labirin)
+18. [Game KOBOI](#18-game-koboi)
 
 ---
 
@@ -94,6 +95,7 @@ src/
   asbun/                   Game ASBUN (lihat bagian 15)
   palung/                  Game PALUNG (lihat bagian 16)
   labirin/                 Game LABIRIN (lihat bagian 17)
+  koboi/                   Game KOBOI (lihat bagian 18)
 public/words/id/           Kamus kata KA-BOOM! (JSON)
 public/asbun/              Kamus pasangan kata ASBUN (JSON)
 .github/workflows/deploy.yml   Build dan deploy otomatis ke GitHub Pages
@@ -451,6 +453,7 @@ GitHub Pages hanya menyajikan file statis, dan itu cukup: aplikasi ini tidak pun
 - Mahjong adalah permainan tradisional; aturan dan namanya tidak dimiliki pihak mana pun.
 - UNO adalah merek dagang Mattel. Game UNO di sini adalah projek penggemar non-komersial; kartunya digambar dengan CSS, tanpa aset gambar resmi.
 - Armada Royale memakai konsep tembak-tembakan kapal di papan berpetak, permainan kertas-pensil lama yang aturannya tidak dimiliki siapa pun. Nama "Battleship" (merek dagang Hasbro) tidak dipakai. Semua gambarnya pixel art yang digambar di kode (`src/armada/Pixel.tsx`), efek suaranya dibuat dengan Web Audio, dan fontnya (Press Start 2P, VT323; dimuat dari Google Fonts, sama dengan KA-BOOM!) berlisensi SIL Open Font License.
+- KOBOI memakai mekanik menghindar peluru dalam kotak arena (genre *bullet hell*, terinspirasi Undertale) dengan identitas Wild West sendiri; tidak ada karakter, gambar, musik, dialog, atau pola serangan Undertale yang dipakai. Semua gambar dan suara dibuat di kode (`src/koboi/render.ts`, `sfx.ts`); fontnya (Rye, Space Grotesk; dari Google Fonts) berlisensi SIL Open Font License.
 - ASBUN terinspirasi dari permainan Under Cover (Yanstar Studio OU); kreditnya ditampilkan di tepi kiri layar desktop dan di beranda ASBUN pada layar sempit (`INSPIRED_BY` di `AsbunApp.tsx`). ASBUN memakai mekanik permainan pesta tebak kata dengan peran rahasia (genre *social deduction*). Nama peran, teks, dan kamus pasangan katanya ditulis sendiri untuk projek ini. Fontnya (Cormorant Garamond, DM Sans, Allura; dimuat dari Google Fonts) berlisensi SIL Open Font License. Ikon dan favicon digambar di kode (`src/asbun/Icons.tsx`, `src/assets/asbun-favicon.svg`).
 - LABIRIN adalah balapan labirin biasa (genre umum). Labirin, gambar, dan efek suaranya dibuat di kode (`src/labirin/maze.ts`, `render.ts`, `sfx.ts`); fontnya (Rubik, Rubik Mono One; dari Google Fonts) berlisensi SIL Open Font License.
 - PALUNG memakai mekanik genre game mengetik (ketik kata pada musuh yang mendekat). Nama, karakter, gambar, dan teksnya dibuat sendiri; tidak meniru game tertentu. Semua gambar digambar dengan Canvas di kode (`src/palung/render.ts`), efek suaranya dibuat dengan Web Audio, dan fontnya (Bungee, JetBrains Mono; dimuat dari Google Fonts) berlisensi SIL Open Font License.
@@ -1298,4 +1301,108 @@ src/labirin/
   sfx.ts           Efek suara Web Audio
   labirin.css      Semua gaya LABIRIN
 src/assets/labirin-favicon.svg
+```
+
+## 18. Game KOBOI
+
+Game menghindar peluru (*bullet dodging*) untuk 1 pemain bertema Wild West. Pemain mengendalikan **koboi berkuda** di dalam arena berpagar tali, menghindari tembakan revolver, dinamit, laso, duri kaktus, semak gulung, badai debu, kereta hantu, banteng, spiral peluru, dan tong mesiu. Tidak ada tombol menembak: tugasnya bertahan. Terinspirasi mekanik menghindar dalam kotak arena ala Undertale, tetapi semua karakter, pola serangan, gambar, dan suara dibuat sendiri.
+
+Dibuat dari brief `western_soul_claude_implementation_prompt.md`, disesuaikan dengan template projek ini:
+
+| Brief | Di projek ini |
+|---|---|
+| Struktur `src/game/engine/…`, `components/MainMenu`… | Satu folder `src/koboi/` seperti PALUNG (`src/game/` sudah dipakai mahjong) |
+| Nama "WESTERN SOUL" | KOBOI (nama pendek berbahasa Indonesia seperti game lain) |
+| Musik latar sendiri, master volume | Pemutar musik situs yang sudah ada; pengaturan KOBOI hanya volume efek suara |
+| Mode Endless, Boss, Wanted Challenges | Rilis pertama: **Bertahan** (endless) dan **Duel Bos** (satu bos, 3 fase). Tantangan belum dibuat |
+| Bos hanya bisa dikalahkan dengan bertahan | Ditambah **duel cepat** (adu cepat cabut pistol) di antara serangan, supaya duel terasa seperti duel |
+| Kontrol sentuh | Belum (desktop dulu); layar sentuh menampilkan catatan butuh keyboard |
+
+### Alur dan mode
+
+1. **Beranda** bergaya poster buronan di latar senja gurun: Bertahan, Duel Bos, rekor (localStorage `koboi-best`), Cara main, Pengaturan.
+2. **Hitung mundur** singkat, lalu serangan dimulai.
+3. **Bertahan:** gelombang tanpa akhir. Gelombang 1–12 memperkenalkan satu pola baru per gelombang (Kipas Revolver → Semak Gulung → Dinamit → Tanda Buronan → Peluru Pantul → Banteng Seruduk → Duri Kaktus → Tong Mesiu → Badai Debu → Kereta Hantu → Sabetan Laso → Putaran Peluru), masing-masing sendirian dulu. Setelah itu 3 pola per gelombang, bergantian satu-satu dan dua bersamaan; mulai gelombang 15 selalu 4 pola dengan dua bersamaan. Tiap 5 gelombang ada **istirahat** 3,5 detik dan +1 nyawa.
+4. **Duel Bos:** melawan **Si Mata Elang** (koboi berponco merah anggur di atas arena). Bar **nyali** 34; tiap serangannya yang dilewati −1 nyali (−2 kalau tanpa terkena). Tiap 2 serangan ada **duel cepat**: tahan, lalu tekan Spasi/Enter/klik secepatnya saat muncul "TEMBAK!" (−2 nyali; reaksi ≤ 320 ms −3). Terlalu cepat atau lebih dari 750 ms = −1 nyawa. Fase 2 mulai di 66% nyali (peluru pantul, laso, putaran peluru, banteng), fase 3 di 33% (ditambah dinamit, tong mesiu, kereta; dua pola bersamaan, lebih cepat).
+5. **Hasil** berupa poster buronan: hadiah (skor), lama bertahan, gelombang atau sisa nyali bos, terkena, lolos, gelombang/serangan sempurna, dan tanda rekor baru. Main lagi (tombol fokus otomatis, bisa Enter) atau Menu utama.
+
+### Kontrol dan gerak
+
+- `WASD`/panah: 8 arah, diagonal dinormalisasi, kecepatan 205 satuan/detik, dibatasi di dalam arena. Tombol dibaca dari `window` dengan `preventDefault` (halaman tidak bergulir); semua tombol dilepas saat jendela kehilangan fokus, dan permainan dijeda.
+- `Spasi`/`Shift`: **dash** 0,13 detik dengan kecepatan ×3,4 dan jeda 1,15 detik (cincin di kiri bawah arena). Keputusan: dash **kebal hanya selama dash berlangsung** (0,13 detik), cukup untuk menembus satu peluru tipis tapi tidak untuk ledakan atau dinding debu. Bisa dimatikan di Pengaturan.
+- `Esc`: jeda (Lanjut, Ulangi dari awal, Pengaturan, Menu utama). Pindah tab otomatis menjeda.
+
+### Nyawa dan kerusakan
+
+5 nyawa. Tiap kena −1, lalu kebal 0,9 detik (pemain berkedip, tidak ada kerusakan berulang tiap frame). Umpan balik: kilatan merah tipis, getaran layar kecil, percikan, suara.
+
+**Tampilan pemain:** koboi menunggangi kuda (±34 × 30). Hadapnya mengikuti kontrol: samping kiri/kanan kalau ada komponen mendatar, membelakangi layar saat naik, menghadap layar saat turun; kaki kuda berlari saat bergerak, debu tertinggal saat dash. Yang bisa terkena hanya **inti di pelana** (jari-jari 6), ditandai bintang emas bercahaya, supaya menghindar tetap presisi seperti mengendalikan satu titik. Semua angka ada di `config.ts` (`PLAYER`, `DASH`, `SCORE`, `TIMING`, `RECOVERY`, `BOSS`).
+
+### Pola serangan (`patterns.ts`)
+
+Tiap pola adalah garis waktu aksi (menaruh tanda, menembak, melempar dinamit); peluru dan hazard yang dibuat diurus sistem di `engine.ts`. Tingkat kesulitan `lv` (0 sampai 1,6, naik 0,075 per gelombang) memengaruhi sebagian variabel saja per pola: kecepatan, jumlah, jarak antar tembakan, lama tanda, atau lebar celah.
+
+| Pola | Tanda sebelum kena | Jalur aman |
+|---|---|---|
+| Kipas Revolver | Penembak muncul di tepi + garis bidik berkilau 0,5 dtk | Celah di antara peluru yang menyebar; arah digeser acak tiap tembakan |
+| Peluru Pantul | Lintasan biru putus-putus termasuk titik pantul 0,5–0,8 dtk | Maks. 2 pantulan (3 di level tinggi); titik masuk ≥120 dari pemain |
+| Dinamit | Lingkaran merah bergaris + cincin hitung mundur 0,9–1,35 dtk | Kena hanya 0,18 dtk pertama ledakan dan hanya di dalam radius |
+| Semak Gulung | Jalur berkedip di tepi masuk 0,5 dtk | Bergulir lurus/melengkung pelan sambil melompat kecil |
+| Duri Kaktus | Jalur bahaya merah bergaris di satu sisi, jalur aman bergaris hijau | 1–2 jalur aman (dari 8), berpindah tiap semburan |
+| Sabetan Laso | Sektor sapuan diarsir + panah arah / garis tali + simpul hijau | Sudut jauh dari poros / lewat simpul tali |
+| Tanda Buronan | Bidikan mengikuti pemain 0,85 dtk (dengan jeda), lalu terkunci merah 0,34–0,52 dtk | Tembakan ke titik terkunci, tidak mengejar terus |
+| Badai Debu | Celah ditandai hijau di tepi masuk 0,6 dtk | Satu celah 52–92 satuan per dinding |
+| Kereta Hantu | Rel + jalur berkedip merah + panah arah 0,85–1,25 dtk, suara peluit | Jalur selebar 58 (mendatar atau tegak); kereta berikutnya tidak di jalur yang sama |
+| Banteng Seruduk | Pita jalur serudukan bergaris 0,6–0,9 dtk | Membidik posisi pemain saat muncul lalu lari lurus (tidak mengejar) |
+| Putaran Peluru | Lingkaran menyusut ke silinder 0,8 dtk | Silinder muncul ≥150 dari pemain; spiral berputar pelan sehingga celah antar lengan bisa diikuti |
+| Tong Mesiu | Tong menggelinding lalu sumbu menyala + cincin putus-putus 0,75–1,05 dtk | Sasaran ≥110 dari pemain; cincin serpihan selalu punya dua celah berhadapan |
+
+Pasangan yang tidak boleh berjalan bersamaan ada di `INCOMPATIBLE` (mis. debu + kaktus, debu + laso, dinamit + bidikan, kereta + debu/kaktus/laso, spiral + debu/kaktus, tong + dinamit). Penjadwal menghindari pola yang sama dengan dua pola terakhir. Bahaya dibedakan lewat bentuk dan pola garis, bukan hanya warna.
+
+### Teknis
+
+- **Mesin tanpa React:** `engine.ts` (gerak, dash, peluru, hazard, tabrakan, penjadwal, bos, skor) dipanggil `requestAnimationFrame` di `KoboiGame.tsx`; dt dibatasi 0,05 detik; React hanya menyimpan layar, status jeda, dan dialog. HUD digambar di kanvas.
+- **Peluru:** kolam array (`spawnShot` memakai ulang slot mati, maksimum 600), dibuang saat keluar arena atau melewati umur maksimum. Tabrakan lingkaran-lingkaran; laso memakai jarak titik ke ruas garis.
+- **Acak ber-seed** (mulberry32) per permainan; seed tampil di mode debug sehingga pola bisa diulang.
+- **Dunia** 800 × 540 diperbesar agar pas (letterbox), sama dengan cara PALUNG mengubah ukuran kanvas.
+- **Suara:** Web Audio tanpa file (letusan, denting pantulan, desis sumbu, ledakan, lecutan, petikan gitar untuk gelombang/menang/kalah). Satu jenis suara paling banyak sekali per frame.
+- **Pengaturan** (localStorage `koboi-settings`): volume efek, getaran layar, kurangi kilatan, dash, mode debug (kotak tabrakan, jumlah peluru, seed). Bawaan mengikuti `prefers-reduced-motion`.
+- Mode pengembangan: `window.__koboi` (state permainan) untuk tes; tidak ikut build produksi.
+
+### Pengujian
+
+| Uji | Hasil |
+|---|---|
+| Bot penghindar (Node, 60 Hz) mode Bertahan, 4 seed × 7 menit, 12 pola | Bertahan sampai gelombang 20, 13–18 kali terkena, 10–12 gelombang sempurna; pola baru jarang mengenai (1–3 kali); peluru hidup maks. ±180, kolam ±180 slot (tidak menumpuk) |
+| Bot penghindar mode Duel Bos, 4 seed | Menang dalam 90–106 detik, 1–4 kali terkena |
+| 12 pola satu per satu di browser | Semua tanda muncul sebelum kerusakan, pola selesai dan hazard dibersihkan |
+| Jeda (Esc) | Simulasi berhenti, tombol arah dilepas |
+| Jendela kehilangan fokus | Tombol dilepas dan permainan dijeda |
+| Duel cepat | Tekan setelah aba-aba = "Secepat kilat!", nyali bos berkurang 3 |
+| Kalah → poster → Enter | Main lagi dari awal (nyawa penuh, waktu 0) |
+| Pengaturan dan rekor setelah muat ulang | Tersimpan |
+| Navbar 9 game, lebar 700–1440 px, semua beranda | Tidak bertabrakan (batas navbar ikon-saja dinaikkan ke 1240 px) |
+| 60 FPS di desktop | Ya |
+
+### Batasan
+
+- Belum ada kontrol sentuh, mode Wanted Challenges, pilihan upgrade, dan musik khusus.
+- Bot hanya membuktikan tiap pola *bisa* dihindari dengan reaksi sempurna; keseimbangan untuk pemain manusia masih perlu dicoba langsung (angkanya di `config.ts`).
+- Mengubah pengaturan dash baru berlaku di permainan berikutnya.
+
+### Struktur folder
+
+```
+src/koboi/
+  config.ts        Angka keseimbangan: dunia, arena, pemain, dash, skor, gelombang, bos
+  state.ts         Tipe state, kolam peluru, hazard, acak ber-seed, geometri (tanpa DOM)
+  patterns.ts      12 pola serangan sebagai garis waktu
+  engine.ts        Update per frame: gerak, dash, tabrakan, hazard, penjadwal, bos, duel cepat, skor
+  render.ts        Kanvas: latar senja, arena, koboi berkuda, peluru, tanda bahaya, kereta, banteng, bos, HUD
+  sfx.ts           Efek suara Web Audio
+  settings.ts      Pengaturan tersimpan (volume, getaran, kilatan, dash, debug)
+  KoboiGame.tsx    Kanvas, loop, keyboard, menu jeda
+  KoboiApp.tsx     Beranda, cara main, pengaturan, poster hasil, rekor, tema
+  koboi.css        Semua gaya KOBOI
+src/assets/koboi-favicon.svg
 ```

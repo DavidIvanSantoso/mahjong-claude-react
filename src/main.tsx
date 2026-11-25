@@ -10,6 +10,7 @@ import './armada/armada.css'
 import './asbun/asbun.css'
 import './palung/palung.css'
 import './labirin/labirin.css'
+import './koboi/koboi.css'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
