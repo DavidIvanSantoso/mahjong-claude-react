@@ -111,6 +111,43 @@ const SOUNDS: Record<string, () => void> = {
   charge: () => noise(0.4, { from: 300, to: 80, volume: 0.18 }),
   spin: () => tone(660, 0.3, { type: 'square', volume: 0.02, slide: 400 }),
   'shot-soft': () => noise(0.08, { from: 3000, to: 600, volume: 0.07 }),
+  pshot: () => {
+    noise(0.14, { from: 4200, to: 500, volume: 0.2 })
+    tone(140, 0.12, { type: 'sine', volume: 0.06, slide: -60 })
+  },
+  click: () => tone(1400, 0.04, { type: 'square', volume: 0.03 }),
+  roll: () => noise(0.25, { from: 900, to: 300, volume: 0.08, filter: 'bandpass' }),
+  pickup: () => {
+    tone(880, 0.08, { type: 'triangle', volume: 0.04 })
+    tone(1320, 0.12, { type: 'triangle', volume: 0.035, delay: 0.05 })
+  },
+  graze: () => tone(2400, 0.05, { type: 'sine', volume: 0.015 }),
+  'deadeye-ready': () => pluck([523, 659, 784], 0.06, 0.04),
+  deadeye: () => {
+    tone(220, 0.8, { type: 'sine', volume: 0.08, slide: -120 })
+    noise(0.6, { from: 300, to: 80, volume: 0.1 })
+  },
+  kick: () => {
+    noise(0.12, { from: 600, to: 200, volume: 0.2 })
+    tone(300, 0.15, { type: 'square', volume: 0.04, slide: 400 })
+  },
+  'lever-up': () => tone(500, 0.2, { type: 'triangle', volume: 0.03, slide: 200 }),
+  lever: () => {
+    noise(0.3, { from: 2500, to: 400, volume: 0.15, filter: 'bandpass' })
+    tone(196, 0.5, { type: 'sawtooth', volume: 0.04, delay: 0.1 })
+  },
+  reload: () => {
+    tone(1800, 0.04, { type: 'square', volume: 0.025 })
+    tone(1500, 0.04, { type: 'square', volume: 0.025, delay: 0.12 })
+  },
+  thud: () => noise(0.1, { from: 500, to: 150, volume: 0.1 }),
+  crash: () => noise(0.4, { from: 1200, to: 120, volume: 0.2 }),
+  creak: () => tone(180, 0.35, { type: 'sawtooth', volume: 0.02, slide: 60 }),
+  glass: () => {
+    noise(0.35, { from: 7000, to: 2500, volume: 0.15, filter: 'highpass' })
+    tone(2600, 0.3, { type: 'sine', volume: 0.02, slide: -800 })
+  },
+  decoy: () => tone(330, 0.1, { type: 'square', volume: 0.03 }),
   win: () => pluck([196, 247, 294, 392, 494, 587], 0.11, 0.05),
   over: () => pluck([294, 262, 220, 147], 0.2, 0.05),
 }

@@ -1305,7 +1305,7 @@ src/assets/labirin-favicon.svg
 
 ## 18. Game KOBOI
 
-Game menghindar peluru (*bullet dodging*) untuk 1 pemain bertema Wild West. Pemain mengendalikan **koboi berkuda** di dalam arena berpagar tali, menghindari tembakan revolver, dinamit, laso, duri kaktus, semak gulung, badai debu, kereta hantu, banteng, spiral peluru, dan tong mesiu. Tidak ada tombol menembak: tugasnya bertahan. Terinspirasi mekanik menghindar dalam kotak arena ala Undertale, tetapi semua karakter, pola serangan, gambar, dan suara dibuat sendiri.
+Game menghindar peluru (*bullet dodging*) untuk 1 pemain bertema Wild West. Pemain mengendalikan **koboi berkuda** di dalam arena berpagar tali, menghindari tembakan revolver, dinamit, laso, duri kaktus, semak gulung, badai debu, kereta hantu, banteng, spiral peluru, dan tong mesiu. Di gelombang biasa tugasnya hanya bertahan; saat melawan **bos** pemain juga mengumpulkan peluru emas dan menembak balik. Terinspirasi mekanik menghindar dalam kotak arena ala Undertale, tetapi semua karakter, pola serangan, gambar, dan suara dibuat sendiri.
 
 Dibuat dari brief `western_soul_claude_implementation_prompt.md`, disesuaikan dengan template projek ini:
 
@@ -1314,29 +1314,70 @@ Dibuat dari brief `western_soul_claude_implementation_prompt.md`, disesuaikan de
 | Struktur `src/game/engine/…`, `components/MainMenu`… | Satu folder `src/koboi/` seperti PALUNG (`src/game/` sudah dipakai mahjong) |
 | Nama "WESTERN SOUL" | KOBOI (nama pendek berbahasa Indonesia seperti game lain) |
 | Musik latar sendiri, master volume | Pemutar musik situs yang sudah ada; pengaturan KOBOI hanya volume efek suara |
-| Mode Endless, Boss, Wanted Challenges | Rilis pertama: **Bertahan** (endless) dan **Duel Bos** (satu bos, 3 fase). Tantangan belum dibuat |
-| Bos hanya bisa dikalahkan dengan bertahan | Ditambah **duel cepat** (adu cepat cabut pistol) di antara serangan, supaya duel terasa seperti duel |
+| Mode Endless, Boss, Wanted Challenges | **Bertahan** (endless, dengan bos mini tiap 5 gelombang) dan **Duel Bos** (3 bos × 3 babak). Tantangan belum dibuat |
+| Bos dikalahkan dengan bertahan | Pemain **menembak balik** dengan peluru emas yang dikumpulkan, ditambah **duel cepat** dengan kata pengecoh, mekanik khusus tiap bos, tembakan terakhir, dan duel penentuan |
+| Bos: The Gunslinger, Dynamite Kid, Train Wraith | **Si Mata Elang**, **Bocah Dinamit**, **Hantu Masinis** (karakter sendiri) |
 | Kontrol sentuh | Belum (desktop dulu); layar sentuh menampilkan catatan butuh keyboard |
 
 ### Alur dan mode
 
-1. **Beranda** bergaya poster buronan di latar senja gurun: Bertahan, Duel Bos, rekor (localStorage `koboi-best`), Cara main, Pengaturan.
+1. **Beranda** bergaya poster buronan di latar senja gurun: pilihan **tingkat kesulitan**, Bertahan, Duel Bos (lalu pilih buronan), rekor (localStorage `koboi-best`: skor bertahan, dan per bos jumlah menang, waktu tercepat, tingkat tertinggi), Cara main, Pengaturan.
 2. **Hitung mundur** singkat, lalu serangan dimulai.
-3. **Bertahan:** gelombang tanpa akhir. Gelombang 1–12 memperkenalkan satu pola baru per gelombang (Kipas Revolver → Semak Gulung → Dinamit → Tanda Buronan → Peluru Pantul → Banteng Seruduk → Duri Kaktus → Tong Mesiu → Badai Debu → Kereta Hantu → Sabetan Laso → Putaran Peluru), masing-masing sendirian dulu. Setelah itu 3 pola per gelombang, bergantian satu-satu dan dua bersamaan; mulai gelombang 15 selalu 4 pola dengan dua bersamaan. Tiap 5 gelombang ada **istirahat** 3,5 detik dan +1 nyawa.
-4. **Duel Bos:** melawan **Si Mata Elang** (koboi berponco merah anggur di atas arena). Bar **nyali** 34; tiap serangannya yang dilewati −1 nyali (−2 kalau tanpa terkena). Tiap 2 serangan ada **duel cepat**: tahan, lalu tekan Spasi/Enter/klik secepatnya saat muncul "TEMBAK!" (−2 nyali; reaksi ≤ 320 ms −3). Terlalu cepat atau lebih dari 750 ms = −1 nyawa. Fase 2 mulai di 66% nyali (peluru pantul, laso, putaran peluru, banteng), fase 3 di 33% (ditambah dinamit, tong mesiu, kereta; dua pola bersamaan, lebih cepat).
+3. **Bertahan:** gelombang tanpa akhir. Gelombang 1–12 memperkenalkan satu pola baru per gelombang (Kipas Revolver → Semak Gulung → Dinamit → Tanda Buronan → Peluru Pantul → Banteng Seruduk → Duri Kaktus → Tong Mesiu → Badai Debu → Kereta Hantu → Sabetan Laso → Putaran Peluru), masing-masing sendirian dulu. Setelah itu 3 pola per gelombang, bergantian satu-satu dan dua bersamaan; mulai gelombang 15 selalu 4 pola dengan dua bersamaan. **Tiap 5 gelombang muncul bos mini** bergiliran (Bocah Dinamit → Si Mata Elang → Hantu Masinis, lalu berulang lebih ganas): nyali 40–80% bos penuh (naik dengan gelombang), tanpa tembakan terakhir dan duel penentuan. Mengalahkannya = bonus 1.500 (naik 50% tiap bos berikutnya) dan +2 nyawa, lalu gelombang berlanjut.
+4. **Duel Bos:** pilih salah satu dari tiga buronan (lihat *Pertarungan bos*). Tiap bos punya 3 babak; saat nyali habis ia melepas tembakan terakhir lalu duel penentuan.
 5. **Hasil** berupa poster buronan: hadiah (skor), lama bertahan, gelombang atau sisa nyali bos, terkena, lolos, gelombang/serangan sempurna, dan tanda rekor baru. Main lagi (tombol fokus otomatis, bisa Enter) atau Menu utama.
+
+### Tingkat kesulitan
+
+| Tingkat | Nyawa | Dash | Pola | Nyali bos | Bos berguling | Waktu isi ulang | +nyawa tiap babak | Skor |
+|---|---|---|---|---|---|---|---|---|
+| Koboi | 5 | ya | −0,1 | ×1 | ×1 | 1,9 dtk | +1 | ×1 |
+| Sheriff | 3 | ya | +0,25 | ×1,15 | ×1,25 | 1,5 dtk | +1 | ×1,5 |
+| Legenda | 1 | tidak | +0,4 | ×1,25 | ×1,4 | 1,25 dtk | – | ×2,5 |
+
+### Pertarungan bos (`boss.ts`, `engine.ts`)
+
+Mekanik bersama ketiga bos:
+
+- **Revolver 6 peluru.** Selama bos menyerang, **peluru emas** (+2 peluru) muncul tiap 1,5 detik, 65% di dekat bahaya aktif (lingkaran dinamit, jalur kereta, sekitar spiral, jalur banteng, lintasan peluru) dan tidak pernah dalam 60 satuan dari pemain; hilang setelah 6 detik. Tembak dengan `F`/`J`/klik: peluru melesat ke posisi bos saat itu.
+- **Guling.** Bos bisa berguling (kebal 0,34 detik, lalu jeda) saat ditembak; Hantu Masinis memudar menembus. Setelah tiap serangan bos **mengisi ulang** (1,25–1,9 detik, ditandai label berkedip): saat itu ia tidak bisa menghindar.
+- **Mata Elang.** Peluru yang lewat ≤13 satuan dari inti tanpa mengenai mengisi meter 7%. Meter penuh + `E`/`Q` = dunia melambat ke 35% selama 3 detik (pemain dan tembakannya tetap normal) dan tembakan pemain mengunci ke bos.
+- **Duel cepat tiap 3 serangan** (−3 nyali, reaksi ≤ 320 ms −4). Di babak 3, Sheriff, dan Legenda muncul **kata pengecoh** (TEMBOK, TAMBAK, TEMPAT, TEMBAGA, TEMPE, TAMBAH) yang tampil persis seperti aba-aba; menekan saat itu = tertipu, −1 nyawa. Pengecoh tidak pernah muncul dalam 0,3 detik sebelum aba-aba asli.
+- **3 babak** (batas 66% dan 33% nyali): lapangan dibersihkan, +1 nyawa (kecuali Legenda), arena bisa berubah.
+- **Tembakan terakhir:** nyali habis → 8 detik tirai proyektil dari atas dengan satu **lorong hijau** selebar 78 yang bergoyang pelan (lebih lambat dari kecepatan pemain). Lalu **duel penentuan** dengan tiga pengecoh; kalah = −1 nyawa dan duel diulang, menang = bos tertangkap.
+
+| Bos | Cara khusus melukai | Babak 1 | Babak 2 | Babak 3 |
+|---|---|---|---|---|
+| **Si Mata Elang** (nyali 30, paling sering berguling) | – (tembak saat ia mengisi ulang) | Jalan Utama: kipas, bidikan yang mendahului gerak, peluru pantul | Saloon: **meja** penahan peluru (hancur setelah 3 tembakan, menghalangi gerak), **lampu gantung** jatuh | Atap Kereta: lantai bergulir, **angin** ke kiri, **celah antar gerbong** (jatuh −1 nyawa; lompati dengan dash atau lewat papan), dua pola bersamaan |
+| **Bocah Dinamit** (nyali 26, lambat berguling) | **Dash menabrak dinamit yang masih menyala** = ditendang balik ke bos (−2 nyali, pasti kena) | Tambang Tua: dinamit, semak, tong | Gudang Mesiu: + banteng, spiral | Ledakan Berantai: dua pola bersamaan |
+| **Hantu Masinis** (nyali 32) | **Tuas rel** muncul tiap ±6,5 detik: berdiri di atasnya 1 detik penuh = kereta dibelokkan ke bos (−3 nyali) | Stasiun Mati: kereta, debu, peluru pantul | Jembatan Kabut: + laso, bidikan | Kereta Terakhir: dua pola bersamaan |
+
+Saat melawan bos, kipas revolver ditembakkan bos sendiri ke sekitar pemain dan dinamit dilempar dari tangannya, jadi posisi bos ikut menentukan arah serangan.
+
+### Tema arena per babak (`scenes.ts`)
+
+Tiap babak bos punya tema sendiri: latar layar penuh, lantai arena, pagar dan tiang sudut, serta warna HUD (papan atas, bar nyali, skor, spanduk). Tema dipilih lewat `scene` di tiap babak `BOSSES` (config.ts), terpisah dari `arena` yang mengatur mekanik (meja saloon, angin dan celah gerbong). Gelombang biasa Mode Bertahan tetap memakai latar gurun senja; bos mini di Mode Bertahan memakai tema babaknya, jadi latar ikut berganti saat bos datang.
+
+| Bos | Babak 1 | Babak 2 | Babak 3 | Warna HUD |
+|---|---|---|---|---|
+| Si Mata Elang | Jalan Utama: deretan fasad kayu (HOTEL, BANK, SALOON…), palung air, poster buronan, elang terbang | Saloon: rak botol, cermin, meja bar, piano, meja poker, karpet anggur, lampu dinding berkedip, asap cerutu | Atap Kereta: langit senja, bukit dan tiang telegraf bergulir (paralaks), asap lokomotif, sisi gerbong dengan roda berputar, lampu merah di sudut | Kayu/emas, anggur/emas, ungu senja |
+| Bocah Dinamit | Tambang Tua: dinding batu, rangka kayu, mulut terowongan, lori bijih, lentera, debu jatuh | Gudang Mesiu: dinding papan, jendela berjeruji, peti TNT, piramida tong mesiu, lampu gantung berayun, percikan merambat di jejak mesiu | Ledakan Berantai: tambang terbakar, balok patah membara, retakan bara, api dan bara naik | Arang dan bara jingga |
+| Hantu Masinis | Stasiun Mati: malam purnama, kanopi peron, jam yang berputar mundur, pohon mati, lampu gas hijau, arwah melayang | Jembatan Kabut: tebing jurang, rangka jembatan, kabut bergerak (juga terlihat di sela papan) | Kereta Terakhir: aurora, kereta hantu melintas dengan jendela bercahaya, rel berdenyut hijau | Biru malam dan hijau hantu |
+
+Saat babak berganti, latar dan lantai memudar 0,9 detik dari tema lama ke tema baru. Aturan keterbacaan: lantai arena selalu gelap, semua hiasan bergerak digambar di belakang arena (tidak pernah di atas area main), dan teks HUD bawah diberi pita gelap. Latar statis tiap tema digambar sekali ke kanvas cadangan (resolusi mengikuti layar, maks 2×, paling banyak 9 tersimpan) lalu disalin tiap frame. Di layar Pilih Buronan, tiap kartu bos punya warna khas dan chip nama babak berwarna sesuai latarnya.
 
 ### Kontrol dan gerak
 
 - `WASD`/panah: 8 arah, diagonal dinormalisasi, kecepatan 205 satuan/detik, dibatasi di dalam arena. Tombol dibaca dari `window` dengan `preventDefault` (halaman tidak bergulir); semua tombol dilepas saat jendela kehilangan fokus, dan permainan dijeda.
 - `Spasi`/`Shift`: **dash** 0,13 detik dengan kecepatan ×3,4 dan jeda 1,15 detik (cincin di kiri bawah arena). Keputusan: dash **kebal hanya selama dash berlangsung** (0,13 detik), cukup untuk menembus satu peluru tipis tapi tidak untuk ledakan atau dinding debu. Bisa dimatikan di Pengaturan.
+- `F`/`J`/klik: tembak bos (dan menembak di duel cepat; `Spasi`/`Enter` juga bisa di duel). `E`/`Q`: Mata Elang.
 - `Esc`: jeda (Lanjut, Ulangi dari awal, Pengaturan, Menu utama). Pindah tab otomatis menjeda.
 
 ### Nyawa dan kerusakan
 
-5 nyawa. Tiap kena −1, lalu kebal 0,9 detik (pemain berkedip, tidak ada kerusakan berulang tiap frame). Umpan balik: kilatan merah tipis, getaran layar kecil, percikan, suara.
+Nyawa sesuai tingkat kesulitan. Tiap kena −1, lalu kebal 0,9 detik (pemain berkedip, tidak ada kerusakan berulang tiap frame). Umpan balik: kilatan merah tipis, getaran layar kecil, percikan, suara.
 
-**Tampilan pemain:** koboi menunggangi kuda (±34 × 30). Hadapnya mengikuti kontrol: samping kiri/kanan kalau ada komponen mendatar, membelakangi layar saat naik, menghadap layar saat turun; kaki kuda berlari saat bergerak, debu tertinggal saat dash. Yang bisa terkena hanya **inti di pelana** (jari-jari 6), ditandai bintang emas bercahaya, supaya menghindar tetap presisi seperti mengendalikan satu titik. Semua angka ada di `config.ts` (`PLAYER`, `DASH`, `SCORE`, `TIMING`, `RECOVERY`, `BOSS`).
+**Tampilan pemain:** koboi menunggangi kuda (±34 × 30). Hadapnya mengikuti kontrol: samping kiri/kanan kalau ada komponen mendatar, membelakangi layar saat naik, menghadap layar saat turun; kaki kuda berlari saat bergerak, debu tertinggal saat dash. Yang bisa terkena hanya **inti di pelana** (jari-jari 6), ditandai bintang emas bercahaya, supaya menghindar tetap presisi seperti mengendalikan satu titik. Semua angka ada di `config.ts` (`PLAYER`, `DASH`, `SCORE`, `TIMING`, `DIFFICULTY`, `FIGHT`, `BOSSES`, `ENDLESS_BOSS`).
 
 ### Pola serangan (`patterns.ts`)
 
@@ -1356,6 +1397,8 @@ Tiap pola adalah garis waktu aksi (menaruh tanda, menembak, melempar dinamit); p
 | Banteng Seruduk | Pita jalur serudukan bergaris 0,6–0,9 dtk | Membidik posisi pemain saat muncul lalu lari lurus (tidak mengejar) |
 | Putaran Peluru | Lingkaran menyusut ke silinder 0,8 dtk | Silinder muncul ≥150 dari pemain; spiral berputar pelan sehingga celah antar lengan bisa diikuti |
 | Tong Mesiu | Tong menggelinding lalu sumbu menyala + cincin putus-putus 0,75–1,05 dtk | Sasaran ≥110 dari pemain; cincin serpihan selalu punya dua celah berhadapan |
+| Lampu Gantung (khusus bos, saloon) | Lampu berayun di atas titik jatuh + lingkaran bahaya 0,9–1,25 dtk | Radius 34; jatuh tepat saat cincin hitung mundur habis |
+| Tembakan Terakhir (khusus bos) | Lorong hijau ditandai di tepi atas dan sepanjang arena | Lorong 78 satuan yang bergoyang lebih lambat dari kecepatan pemain |
 
 Pasangan yang tidak boleh berjalan bersamaan ada di `INCOMPATIBLE` (mis. debu + kaktus, debu + laso, dinamit + bidikan, kereta + debu/kaktus/laso, spiral + debu/kaktus, tong + dinamit). Penjadwal menghindari pola yang sama dengan dua pola terakhir. Bahaya dibedakan lewat bentuk dan pola garis, bukan hanya warna.
 
@@ -1374,7 +1417,11 @@ Pasangan yang tidak boleh berjalan bersamaan ada di `INCOMPATIBLE` (mis. debu + 
 | Uji | Hasil |
 |---|---|
 | Bot penghindar (Node, 60 Hz) mode Bertahan, 4 seed × 7 menit, 12 pola | Bertahan sampai gelombang 20, 13–18 kali terkena, 10–12 gelombang sempurna; pola baru jarang mengenai (1–3 kali); peluru hidup maks. ±180, kolam ±180 slot (tidak menumpuk) |
-| Bot penghindar mode Duel Bos, 4 seed | Menang dalam 90–106 detik, 1–4 kali terkena |
+| Bot penghindar + penembak (ambil peluru emas, tembak saat bos mengisi ulang, Mata Elang, tendang dinamit, tarik tuas), Duel Bos, 8 seed per bos | **Koboi**: menang 8/8 untuk ketiga bos (±80–125 detik). **Sheriff**: Si Mata Elang 4/8, Bocah Dinamit 7/8, Hantu Masinis 5/8. **Legenda**: bot kalah semua (1 nyawa, tanpa dash) |
+| Alur lengkap tiap bos | Babak 1 → 2 → 3 → tembakan terakhir → duel penentuan → menang |
+| Bot di mode Bertahan (dengan nyawa asli, Koboi) | Bertahan 5,5–8,5 menit, gelombang 14–18, mengalahkan 2–3 bos mini |
+| Bos mini mode Bertahan di browser | Muncul di gelombang 5 (Bocah Dinamit, nyali 13), kalah → "BURONAN TERTANGKAP", lanjut gelombang 6 |
+| Kata pengecoh, lorong tembakan terakhir, HUD revolver dan Mata Elang | Tampil tanpa saling menutupi (diperiksa lewat tangkapan layar) |
 | 12 pola satu per satu di browser | Semua tanda muncul sebelum kerusakan, pola selesai dan hazard dibersihkan |
 | Jeda (Esc) | Simulasi berhenti, tombol arah dilepas |
 | Jendela kehilangan fokus | Tombol dilepas dan permainan dijeda |
@@ -1387,6 +1434,7 @@ Pasangan yang tidak boleh berjalan bersamaan ada di `INCOMPATIBLE` (mis. debu + 
 ### Batasan
 
 - Belum ada kontrol sentuh, mode Wanted Challenges, pilihan upgrade, dan musik khusus.
+- Legenda sengaja sangat berat (1 nyawa, tanpa dash); bot tidak pernah menang di tingkat itu.
 - Bot hanya membuktikan tiap pola *bisa* dihindari dengan reaksi sempurna; keseimbangan untuk pemain manusia masih perlu dicoba langsung (angkanya di `config.ts`).
 - Mengubah pengaturan dash baru berlaku di permainan berikutnya.
 
@@ -1394,13 +1442,15 @@ Pasangan yang tidak boleh berjalan bersamaan ada di `INCOMPATIBLE` (mis. debu + 
 
 ```
 src/koboi/
-  config.ts        Angka keseimbangan: dunia, arena, pemain, dash, skor, gelombang, bos
+  config.ts        Angka keseimbangan: dunia, arena, pemain, dash, skor, gelombang, tingkat kesulitan, aturan bos, 3 bos
   state.ts         Tipe state, kolam peluru, hazard, acak ber-seed, geometri (tanpa DOM)
-  patterns.ts      12 pola serangan sebagai garis waktu
-  engine.ts        Update per frame: gerak, dash, tabrakan, hazard, penjadwal, bos, duel cepat, skor
-  render.ts        Kanvas: latar senja, arena, koboi berkuda, peluru, tanda bahaya, kereta, banteng, bos, HUD
+  patterns.ts      12 pola serangan + Lampu Gantung dan Tembakan Terakhir (khusus bos) sebagai garis waktu
+  boss.ts          Bos: membuat, arena tiap babak, gerak/guling, letak peluru emas, duel dan pengecoh
+  engine.ts        Update per frame: gerak, dash, tabrakan, hazard, revolver, tuas, celah gerbong, penjadwal, duel, skor
+  scenes.ts        Tema 9 babak bos + gurun: latar (statis + animasi), lantai arena, pagar, warna HUD, transisi
+  render.ts        Kanvas: arena, koboi berkuda, peluru, tanda bahaya, kereta, banteng, bos, HUD
   sfx.ts           Efek suara Web Audio
-  settings.ts      Pengaturan tersimpan (volume, getaran, kilatan, dash, debug)
+  settings.ts      Pengaturan tersimpan (volume, getaran, kilatan, dash, debug, tingkat kesulitan)
   KoboiGame.tsx    Kanvas, loop, keyboard, menu jeda
   KoboiApp.tsx     Beranda, cara main, pengaturan, poster hasil, rekor, tema
   koboi.css        Semua gaya KOBOI

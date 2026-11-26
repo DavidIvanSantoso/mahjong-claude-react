@@ -7,6 +7,7 @@ import {
   edgePoint,
   inward,
   pick,
+  puff,
   range,
   spawnShot,
   type Edge,
@@ -60,6 +61,27 @@ export function revolverFan(s: GameState, lv: number, fromBoss = false): Run {
   const warn = 0.55
   for (let v = 0; v < volleys; v++) {
     const at = warn + v * gap
+    if (fromBoss) {
+      // Bos mengangkat revolver (tanda) lalu menembak dari posisinya saat itu, ke sekitar pemain.
+      actions.push([at - warn * 0.9, () => s.boss && (s.boss.draw = warn)])
+      actions.push([
+        at,
+        () => {
+          const boss = s.boss
+          if (!boss) return
+          const gx = boss.x + 20
+          const gy = boss.y - 6
+          const base = Math.atan2(s.player.y - gy, s.player.x - gx) + range(s, -0.3, 0.3)
+          for (let i = 0; i < count; i++) {
+            const angle = base + spread * (i / (count - 1) - 0.5)
+            spawnShot(s, 'bullet', 'fan', gx, gy, Math.cos(angle) * speed, Math.sin(angle) * speed)
+          }
+          puff(s, gx, gy, 5, '#ffe08a', 'spark', 90, 3)
+          s.events.push('shot')
+        },
+      ])
+      continue
+    }
     const edge = pick(s, edges)
     const [gx, gy] = gunSpot(s, edge)
     // Arah tembakan: ke tengah arena, digeser acak supaya celahnya berpindah-pindah.
@@ -178,10 +200,15 @@ export function dynamiteWarning(s: GameState, lv: number): Run {
           fuse,
           total: fuse,
           boom: -1,
-          fromX: s.rand() < 0.5 ? ARENA.x - 60 : ARENA_RIGHT + 60,
+          fromX: s.boss ? s.boss.x : s.rand() < 0.5 ? ARENA.x - 60 : ARENA_RIGHT + 60,
+          fromY: s.boss ? s.boss.y - 20 : ARENA.y - 40,
           hurt: false,
           t: 0,
+          style: 'dynamite',
+          kick: s.boss?.id === 'dinamit',
+          kicked: false,
         })
+        if (s.boss) s.boss.draw = 0.3
         s.events.push('fuse')
       },
     ])
@@ -349,8 +376,10 @@ export function wantedMark(s: GameState, lv: number): Run {
       i * gap,
       () => {
         const edge = pick(s, s.boss ? (['top'] as Edge[]) : EDGES)
-        const [gx, gy] = gunSpot(s, edge)
-        s.hazards.push({ kind: 'mark', pattern: 'mark', x: s.player.x, y: s.player.y, r: 17, follow: 0.85, lock, t: 0, fired: -1, gx, gy })
+        const [gx, gy] = s.boss ? [s.boss.x + 20, s.boss.y - 6] : gunSpot(s, edge)
+        // Bos (dan gelombang tinggi) membidik ke depan arah gerak pemain, bukan posisinya sekarang.
+        const lead = s.boss ? (s.boss.act >= 1 || s.boss.id === 'elang' ? 0.35 : 0) : lv > 1 ? 0.25 : 0
+        s.hazards.push({ kind: 'mark', pattern: 'mark', x: s.player.x, y: s.player.y, r: 17, follow: 0.85, lock, t: 0, fired: -1, gx, gy, lead })
         s.events.push('mark')
       },
     ])
@@ -523,6 +552,80 @@ export function powderBarrel(s: GameState, lv: number): Run {
   return timeline('barrel', barrels * gap + 0.7 + fuse + 2.4, actions)
 }
 
+// ---------- Khusus bos: Lampu Gantung ----------
+
+export function chandelier(s: GameState, lv: number): Run {
+  const count = 4 + Math.round(lv * 2)
+  const gap = Math.max(0.45, 0.75 - lv * 0.2)
+  const fuse = Math.max(0.9, 1.25 - lv * 0.25)
+  const actions: Action[] = []
+  for (let i = 0; i < count; i++) {
+    actions.push([
+      i * gap,
+      () => {
+        // Bos menembak tali lampu: bayangannya membesar di lantai sebelum lampu jatuh.
+        const near = s.rand() < 0.45
+        const x = near ? s.player.x + range(s, -60, 60) : range(s, ARENA.x + 30, ARENA_RIGHT - 30)
+        const y = near ? s.player.y + range(s, -40, 40) : range(s, ARENA.y + 30, ARENA_BOTTOM - 30)
+        s.hazards.push({
+          kind: 'blast',
+          pattern: 'lamp',
+          x: Math.max(ARENA.x + 20, Math.min(ARENA_RIGHT - 20, x)),
+          y: Math.max(ARENA.y + 20, Math.min(ARENA_BOTTOM - 20, y)),
+          r: 34,
+          fuse,
+          total: fuse,
+          boom: -1,
+          fromX: x,
+          fromY: ARENA.y - 60,
+          hurt: false,
+          t: 0,
+          style: 'lamp',
+          kick: false,
+          kicked: false,
+        })
+        if (s.boss) s.boss.draw = 0.25
+        s.events.push('creak')
+      },
+    ])
+  }
+  return timeline('lamp', count * gap + fuse + 0.8, actions)
+}
+
+// ---------- Khusus bos: Tembakan Terakhir ----------
+
+/**
+ * Tirai proyektil dari atas selama `duration` detik dengan satu lorong aman yang bergeser pelan
+ * (lorongnya selalu ditandai hijau di tepi atas). Terlihat mustahil, tapi selalu bisa dilewati.
+ */
+export function lastStand(s: GameState, duration: number, kind: 'bullet' | 'thorn' | 'dust'): Run {
+  const width = 78
+  const corridor = { kind: 'corridor' as const, pattern: 'curtain' as const, x: s.player.x, width, t: 0, life: duration + 1.5 }
+  s.hazards.push(corridor)
+  const phase = s.rand() * Math.PI * 2
+  let next = 0.6
+  const run: Run = {
+    id: 'curtain',
+    t: 0,
+    duration: duration + 1.6,
+    step: (dt) => {
+      run.t += dt
+      // Lorong bergoyang pelan; kecepatan geraknya < kecepatan pemain sehingga selalu bisa diikuti.
+      const wobble = Math.sin(run.t * 0.7 + phase) * 0.6 + Math.sin(run.t * 0.31 + phase * 2) * 0.4
+      corridor.x = ARENA_CX + wobble * (ARENA.w / 2 - width)
+      if (run.t > duration || run.t < next) return
+      next = run.t + 0.3
+      for (let x = ARENA.x + 6; x < ARENA_RIGHT; x += 17) {
+        if (Math.abs(x - corridor.x) < width / 2) continue
+        spawnShot(s, kind, 'curtain', x, ARENA.y - 12, 0, 175, { life: 4, entered: true })
+      }
+      if (s.boss) s.boss.draw = 0.2
+      s.events.push('shot-soft')
+    },
+  }
+  return run
+}
+
 export const PATTERNS: Record<PatternId, (s: GameState, lv: number) => Run> = {
   fan: (s, lv) => revolverFan(s, lv, Boolean(s.boss)),
   ricochet: ricochetRound,
@@ -536,4 +639,6 @@ export const PATTERNS: Record<PatternId, (s: GameState, lv: number) => Run> = {
   bull: bullCharge,
   spiral: spiralShot,
   barrel: powderBarrel,
+  lamp: chandelier,
+  curtain: (s) => lastStand(s, 8, 'bullet'),
 }

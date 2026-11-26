@@ -40,7 +40,7 @@ export const SCORE = {
   perWave: 60,
   /** Bonus gelombang tanpa terkena = perfect × nomor gelombang. */
   perfect: 90,
-  /** Bonus mengalahkan bos. */
+  /** Bonus mengalahkan bos (mode Duel Bos). */
   boss: 5000,
   /** Bonus per detik di bawah 3 menit saat mengalahkan bos. */
   bossTime: 20,
@@ -53,10 +53,8 @@ export const TIMING = {
   countdown: 2.4,
 }
 
-/** Gelombang istirahat: tiap sekian gelombang, tanpa serangan sebentar dan +1 HP. */
-export const RECOVERY = { every: 5, duration: 3.5, heal: 1 }
 
-export type PatternId = 'fan' | 'ricochet' | 'dynamite' | 'tumbleweed' | 'cactus' | 'lasso' | 'mark' | 'dust' | 'train' | 'bull' | 'spiral' | 'barrel'
+export type PatternId = 'fan' | 'ricochet' | 'dynamite' | 'tumbleweed' | 'cactus' | 'lasso' | 'mark' | 'dust' | 'train' | 'bull' | 'spiral' | 'barrel' | 'lamp' | 'curtain'
 
 export const PATTERN_NAMES: Record<PatternId, string> = {
   fan: 'Kipas Revolver',
@@ -71,6 +69,8 @@ export const PATTERN_NAMES: Record<PatternId, string> = {
   bull: 'Banteng Seruduk',
   spiral: 'Putaran Peluru',
   barrel: 'Tong Mesiu',
+  lamp: 'Lampu Gantung',
+  curtain: 'Tembakan Terakhir',
 }
 
 /** Urutan pola diperkenalkan di mode Bertahan: satu pola baru per gelombang di awal. */
@@ -111,32 +111,148 @@ export function waveShape(wave: number): { patterns: number; together: number } 
   return { patterns: 4, together: 2 }
 }
 
-// ---------- Bos: Si Mata Elang ----------
+// ---------- Tingkat kesulitan ----------
 
-export const BOSS = {
-  name: 'Si Mata Elang',
-  /** Nyali bos; berkurang tiap serangannya berhasil dihindari dan tiap duel cepat dimenangkan. */
-  hp: 34,
-  /** Nyali berkurang per serangan yang selamat dilewati (tanpa terkena: +1). */
-  survive: 1,
-  perfectBonus: 1,
+export type DifficultyId = 'koboi' | 'sheriff' | 'legenda'
+
+export const DIFFICULTY: Record<DifficultyId, { label: string; hint: string; hp: number; dash: boolean; level: number; bossHp: number; rollChance: number; reload: number; actHeal: number }> = {
+  koboi: { label: 'Koboi', hint: '5 nyawa, dash', hp: 5, dash: true, level: -0.1, bossHp: 1, rollChance: 1, reload: 1.9, actHeal: 1 },
+  sheriff: { label: 'Sheriff', hint: '3 nyawa, bos lebih cepat', hp: 3, dash: true, level: 0.25, bossHp: 1.15, rollChance: 1.25, reload: 1.5, actHeal: 1 },
+  legenda: { label: 'Legenda', hint: '1 nyawa, tanpa dash', hp: 1, dash: false, level: 0.4, bossHp: 1.25, rollChance: 1.4, reload: 1.25, actHeal: 0 },
+}
+
+// ---------- Aturan bersama semua bos ----------
+
+export const FIGHT = {
+  /** Revolver pemain: 6 peluru, diisi dengan mengambil peluru emas di arena. */
+  ammoMax: 6,
+  fireCooldown: 0.16,
+  shotSpeed: 640,
+  shotDamage: 1,
+  /** Peluru emas muncul tiap sekian detik selama bos menyerang, sering di dekat bahaya. */
+  pickupEvery: 1.5,
+  pickupLife: 6,
+  pickupRadius: 15,
+  /** Peluang peluru emas diletakkan di dekat bahaya (sisanya acak). */
+  pickupDanger: 0.65,
+  /** Jari-jari tubuh bos untuk tembakan pemain. */
+  bossRadius: 24,
+  /** Bos berguling menghindar (kebal) sebentar, lalu jeda sebelum bisa berguling lagi. */
+  rollTime: 0.34,
+  rollCooldown: 1.5,
   /** Duel cepat tiap sekian serangan. */
-  duelEvery: 2,
-  /** Duel: jeda acak sebelum aba-aba "TEMBAK!" (detik). */
-  duelWait: [1.2, 2.6] as [number, number],
-  /** Waktu reaksi maksimum; di bawah `fast` bonus kerusakan. */
+  duelEvery: 3,
+  duelWait: [1.4, 2.8] as [number, number],
   duelWindow: 0.75,
   duelFast: 0.32,
-  duelDamage: 2,
-  duelFastDamage: 3,
-  /** Menekan sebelum aba-aba = terlalu cepat: kehilangan 1 HP. */
-  earlyPenalty: 1,
-  /** Batas nyali tiap fase (pecahan dari HP awal). */
-  phases: [0.66, 0.33],
-  /** Pola tiap fase dan tingkat kesulitannya. */
-  phasePatterns: [
-    { patterns: ['fan', 'mark'] as PatternId[], level: 0.45, together: 1 },
-    { patterns: ['ricochet', 'lasso', 'fan', 'mark', 'spiral', 'bull'] as PatternId[], level: 0.8, together: 1 },
-    { patterns: ['fan', 'mark', 'ricochet', 'lasso', 'dynamite', 'spiral', 'barrel', 'train'] as PatternId[], level: 1.15, together: 2 },
-  ],
+  duelDamage: 3,
+  duelFastDamage: 4,
+  /** Kata pengecoh di duel (babak 3, Sheriff/Legenda, dan duel penentuan). */
+  decoys: ['TEMBOK', 'TAMBAK', 'TEMPAT', 'TEMBAGA', 'TEMPE', 'TAMBAH'],
+  /** Meter Mata Elang: diisi peluru yang lewat sangat dekat (serempetan). */
+  grazeRange: 13,
+  grazeFill: 0.07,
+  deadeyeTime: 3,
+  /** Kecepatan dunia selama Mata Elang (pemain tetap normal). */
+  deadeyeScale: 0.35,
+  /** Tembakan terakhir sebelum duel penentuan. */
+  lastStand: 8,
+  /** Batas nyali tiap babak (pecahan dari HP awal). */
+  acts: [0.66, 0.33],
+  /** Kerusakan mekanik khusus: dinamit yang ditendang balik, kereta yang dibelokkan. */
+  kickDamage: 2,
+  leverDamage: 3,
+  leverTime: 1,
+  leverEvery: 6.5,
+  /** Atap kereta (Si Mata Elang babak 3): angin dan celah antar gerbong. */
+  wind: -28,
+  pitEvery: 2.4,
+  pitSpeed: 85,
+  pitWidth: 34,
+  plank: 48,
+}
+
+export type ArenaStyle = 'street' | 'saloon' | 'train'
+
+/** Tema visual (latar, lantai, pagar, warna HUD) — lihat scenes.ts. Mekanik arena tetap dari `arena`. */
+export type SceneId = 'desert' | 'street' | 'saloon' | 'trainroof' | 'mine' | 'powder' | 'inferno' | 'station' | 'bridge' | 'ghosttrain'
+
+export interface BossAct {
+  name: string
+  arena: ArenaStyle
+  scene: SceneId
+  patterns: PatternId[]
+  level: number
+  together: number
+}
+
+export interface BossDef {
+  name: string
+  title: string
+  /** Cara khusus melukai bos ini (selain revolver dan duel). */
+  special: 'none' | 'kick' | 'lever'
+  hint: string
+  hp: number
+  /** Peluang dasar berguling saat ditembak di luar waktu mengisi ulang. */
+  roll: number
+  acts: [BossAct, BossAct, BossAct]
+  /** Tembakan terakhir memakai proyektil ini. */
+  curtain: 'bullet' | 'thorn' | 'dust'
+}
+
+export const BOSSES: Record<'elang' | 'dinamit' | 'masinis', BossDef> = {
+  elang: {
+    name: 'Si Mata Elang',
+    title: 'Penembak tercepat di barat',
+    special: 'none',
+    hint: 'Gesit dan suka berguling. Tembak saat ia mengisi ulang; di saloon berlindung di balik meja, di atap kereta lompati celah gerbong.',
+    hp: 30,
+    roll: 0.6,
+    acts: [
+      { name: 'Jalan Utama', arena: 'street', scene: 'street', patterns: ['fan', 'mark', 'ricochet'], level: 0.45, together: 1 },
+      { name: 'Saloon', arena: 'saloon', scene: 'saloon', patterns: ['ricochet', 'fan', 'spiral', 'lamp', 'mark'], level: 0.7, together: 1 },
+      { name: 'Atap Kereta', arena: 'train', scene: 'trainroof', patterns: ['fan', 'mark', 'bull', 'spiral', 'dynamite'], level: 0.8, together: 2 },
+    ],
+    curtain: 'bullet',
+  },
+  dinamit: {
+    name: 'Bocah Dinamit',
+    title: 'Peledak tambang yang tak bisa diam',
+    special: 'kick',
+    hint: 'Lambat menghindar, tapi arena penuh ledakan. Dash menabrak dinamit yang masih menyala untuk menendangnya balik.',
+    hp: 26,
+    roll: 0.35,
+    acts: [
+      { name: 'Tambang Tua', arena: 'street', scene: 'mine', patterns: ['dynamite', 'tumbleweed', 'barrel'], level: 0.5, together: 1 },
+      { name: 'Gudang Mesiu', arena: 'street', scene: 'powder', patterns: ['dynamite', 'barrel', 'bull', 'spiral'], level: 0.8, together: 1 },
+      { name: 'Ledakan Berantai', arena: 'street', scene: 'inferno', patterns: ['dynamite', 'barrel', 'fan', 'tumbleweed', 'bull'], level: 1.05, together: 2 },
+    ],
+    curtain: 'thorn',
+  },
+  masinis: {
+    name: 'Hantu Masinis',
+    title: 'Penumpang terakhir kereta malam',
+    special: 'lever',
+    hint: 'Bisa menembus (menghilang) saat ditembak. Berdiri di tuas rel sampai penuh untuk membelokkan kereta ke arahnya.',
+    hp: 32,
+    roll: 0.45,
+    acts: [
+      { name: 'Stasiun Mati', arena: 'street', scene: 'station', patterns: ['train', 'dust', 'ricochet'], level: 0.5, together: 1 },
+      { name: 'Jembatan Kabut', arena: 'street', scene: 'bridge', patterns: ['train', 'lasso', 'ricochet', 'dust', 'mark'], level: 0.8, together: 1 },
+      { name: 'Kereta Terakhir', arena: 'street', scene: 'ghosttrain', patterns: ['train', 'spiral', 'bull', 'mark', 'fan'], level: 1.05, together: 2 },
+    ],
+    curtain: 'dust',
+  },
+}
+
+/** Mode Bertahan: bos mini tiap sekian gelombang, bergiliran. */
+export const ENDLESS_BOSS = {
+  every: 5,
+  order: ['dinamit', 'elang', 'masinis'] as ('elang' | 'dinamit' | 'masinis')[],
+  /** HP bos mini = HP bos × (base + per gelombang), dibatasi max. */
+  hpBase: 0.4,
+  hpPerWave: 0.02,
+  hpMax: 0.8,
+  score: 1500,
+  heal: 2,
 }

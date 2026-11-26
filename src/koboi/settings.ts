@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react'
+import type { Difficulty } from './state'
 
 /** Pengaturan KOBOI, disimpan di perangkat ini (localStorage `koboi-settings`). */
 export interface Settings {
@@ -9,10 +10,12 @@ export interface Settings {
   dash: boolean
   /** Tampilkan kotak tabrakan dan info seed (untuk menguji keadilan pola). */
   debug: boolean
+  /** Tingkat kesulitan: Koboi, Sheriff, Legenda. */
+  difficulty: Difficulty
 }
 
 const KEY = 'koboi-settings'
-const DEFAULTS: Settings = { volume: 0.7, shake: true, reduceFlash: false, dash: true, debug: false }
+const DEFAULTS: Settings = { volume: 0.7, shake: true, reduceFlash: false, dash: true, debug: false, difficulty: 'koboi' }
 
 function load(): Settings {
   try {
@@ -25,6 +28,7 @@ function load(): Settings {
       reduceFlash: typeof raw.reduceFlash === 'boolean' ? raw.reduceFlash : base.reduceFlash,
       dash: typeof raw.dash === 'boolean' ? raw.dash : base.dash,
       debug: typeof raw.debug === 'boolean' ? raw.debug : base.debug,
+      difficulty: raw.difficulty === 'sheriff' || raw.difficulty === 'legenda' ? raw.difficulty : 'koboi',
     }
   } catch {
     return DEFAULTS

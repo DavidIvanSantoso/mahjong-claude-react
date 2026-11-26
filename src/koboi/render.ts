@@ -1,5 +1,7 @@
-import { ARENA, BOSS, DASH, PATTERN_NAMES, PLAYER, WORLD } from './config'
-import { ARENA_BOTTOM, ARENA_RIGHT, edgePoint, type Edge, type GameState, type Hazard, type Shot } from './state'
+import { activeDecoy } from './boss'
+import { drawBackdrop, drawBorder, drawFloor, hudTheme } from './scenes'
+import { ARENA, BOSSES, DASH, DIFFICULTY, FIGHT, PATTERN_NAMES, PLAYER, WORLD } from './config'
+import { ARENA_BOTTOM, ARENA_RIGHT, edgePoint, type Edge, type Boss, type GameState, type Hazard, type Shot } from './state'
 
 /**
  * Menggambar KOBOI ke kanvas (dunia 800 × 540). Gaya ilustrasi datar bergradasi dengan palet gurun:
@@ -28,163 +30,15 @@ const COLOR = {
   safe: '#9be07a',
 }
 
-// ---------- Latar ----------
-
-let backdrop: HTMLCanvasElement | null = null
-
-/** Langit senja, mesa, kota di kejauhan, dan kaktus; digambar sekali lalu disalin tiap frame. */
-function background(): HTMLCanvasElement {
-  if (backdrop) return backdrop
-  const canvas = document.createElement('canvas')
-  canvas.width = WORLD.width
-  canvas.height = WORLD.height
-  const ctx = canvas.getContext('2d')!
-  const sky = ctx.createLinearGradient(0, 0, 0, WORLD.height)
-  sky.addColorStop(0, '#2b1630')
-  sky.addColorStop(0.35, '#8a2f3a')
-  sky.addColorStop(0.55, '#e0702f')
-  sky.addColorStop(0.7, '#f2b25c')
-  sky.addColorStop(1, '#6b4128')
-  ctx.fillStyle = sky
-  ctx.fillRect(0, 0, WORLD.width, WORLD.height)
-  // Matahari terbenam
-  const sun = ctx.createRadialGradient(400, 300, 10, 400, 300, 160)
-  sun.addColorStop(0, 'rgba(255, 230, 160, 0.95)')
-  sun.addColorStop(0.3, 'rgba(255, 190, 110, 0.55)')
-  sun.addColorStop(1, 'rgba(255, 150, 80, 0)')
-  ctx.fillStyle = sun
-  ctx.fillRect(0, 100, 800, 400)
-  // Mesa berlapis
-  const mesa = (y: number, color: string, seed: number) => {
-    ctx.fillStyle = color
-    ctx.beginPath()
-    ctx.moveTo(0, WORLD.height)
-    let x = 0
-    let h = y
-    while (x <= WORLD.width) {
-      const r = Math.abs(Math.sin(x * 0.013 + seed) * Math.cos(x * 0.007 + seed * 2))
-      const flat = r > 0.55
-      h = flat ? y - 40 - r * 30 : y - r * 18
-      ctx.lineTo(x, h)
-      x += flat ? 50 : 18
-      ctx.lineTo(x, h)
-    }
-    ctx.lineTo(WORLD.width, WORLD.height)
-    ctx.closePath()
-    ctx.fill()
-  }
-  mesa(250, 'rgba(110, 45, 50, 0.75)', 1.3)
-  mesa(300, 'rgba(80, 34, 38, 0.9)', 4.1)
-  // Kota kecil di kejauhan (siluet), dengan menara air
-  ctx.fillStyle = '#3a1c22'
-  for (const [x, w, h] of [
-    [40, 46, 34],
-    [92, 30, 48],
-    [126, 54, 30],
-    [650, 40, 40],
-    [694, 58, 28],
-    [756, 36, 46],
-  ]) {
-    ctx.fillRect(x, 330 - h, w, h + 40)
-    ctx.fillRect(x - 3, 330 - h - 4, w + 6, 5)
-  }
-  ctx.fillRect(612, 270, 4, 60)
-  ctx.fillRect(632, 270, 4, 60)
-  ctx.beginPath()
-  ctx.ellipse(624, 266, 18, 14, 0, 0, Math.PI * 2)
-  ctx.fill()
-  // Tanah
-  const ground = ctx.createLinearGradient(0, 320, 0, WORLD.height)
-  ground.addColorStop(0, '#8a5634')
-  ground.addColorStop(1, '#4a2c1d')
-  ctx.fillStyle = ground
-  ctx.fillRect(0, 330, WORLD.width, WORLD.height - 330)
-  // Kaktus saguaro
-  const cactus = (x: number, y: number, s: number) => {
-    ctx.fillStyle = '#2c3a24'
-    ctx.beginPath()
-    ctx.roundRect(x - 7 * s, y - 70 * s, 14 * s, 70 * s, 7 * s)
-    ctx.roundRect(x - 24 * s, y - 46 * s, 10 * s, 26 * s, 5 * s)
-    ctx.roundRect(x - 24 * s, y - 26 * s, 20 * s, 9 * s, 4 * s)
-    ctx.roundRect(x + 14 * s, y - 56 * s, 10 * s, 30 * s, 5 * s)
-    ctx.roundRect(x + 4 * s, y - 32 * s, 20 * s, 9 * s, 4 * s)
-    ctx.fill()
-  }
-  cactus(60, 470, 1.2)
-  cactus(730, 440, 1)
-  cactus(110, 520, 0.8)
-  cactus(690, 530, 1.4)
-  // Butir pasir
-  ctx.fillStyle = 'rgba(255, 220, 170, 0.12)'
-  for (let i = 0; i < 260; i++) {
-    const x = (Math.sin(i * 91.7) * 0.5 + 0.5) * WORLD.width
-    const y = 340 + (Math.cos(i * 37.3) * 0.5 + 0.5) * 200
-    ctx.fillRect(x, y, 2, 1)
-  }
-  backdrop = canvas
-  return canvas
-}
-
 // ---------- Arena ----------
 
 function drawArena(ctx: CanvasRenderingContext2D, s: GameState, clock: number) {
   const { x, y, w, h } = ARENA
-  // Bayangan arena dan lantai papan kayu gelap (supaya peluru terang terlihat jelas)
+  // Bayangan arena, lalu lantai dan pagar sesuai tema babak (lihat scenes.ts)
   ctx.fillStyle = 'rgba(20, 10, 8, 0.45)'
   ctx.fillRect(x - 6, y + 8, w + 12, h + 6)
-  const floor = ctx.createLinearGradient(0, y, 0, y + h)
-  floor.addColorStop(0, '#2c201b')
-  floor.addColorStop(1, '#1d1512')
-  ctx.fillStyle = floor
-  ctx.fillRect(x, y, w, h)
-  ctx.strokeStyle = 'rgba(255, 220, 170, 0.05)'
-  ctx.lineWidth = 1
-  ctx.beginPath()
-  for (let py = y + 24; py < y + h; py += 24) {
-    ctx.moveTo(x, py)
-    ctx.lineTo(x + w, py)
-  }
-  for (let row = 0; row < h / 24; row++) {
-    const offset = (row * 97) % 140
-    for (let px = x + offset; px < x + w; px += 140) {
-      ctx.moveTo(px, y + row * 24)
-      ctx.lineTo(px, y + row * 24 + 24)
-    }
-  }
-  ctx.stroke()
-  // Debu tipis yang melayang di lantai (atmosfer, tidak menutupi peluru)
-  ctx.fillStyle = 'rgba(232, 196, 138, 0.05)'
-  for (let i = 0; i < 5; i++) {
-    const dx = ((clock * 12 + i * 160) % (w + 120)) - 60
-    ctx.beginPath()
-    ctx.ellipse(x + dx, y + 40 + i * 52, 70, 10, 0, 0, Math.PI * 2)
-    ctx.fill()
-  }
-
-  // Tali pembatas dengan pilin dan tiang kayu di sudut
-  ctx.save()
-  ctx.lineWidth = 5
-  ctx.strokeStyle = '#c99a5b'
-  ctx.strokeRect(x - 2, y - 2, w + 4, h + 4)
-  ctx.strokeStyle = 'rgba(90, 55, 25, 0.8)'
-  ctx.lineWidth = 1.5
-  ctx.setLineDash([3, 5])
-  ctx.strokeRect(x - 2, y - 2, w + 4, h + 4)
-  ctx.restore()
-  for (const [cx, cy] of [
-    [x - 2, y - 2],
-    [x + w + 2, y - 2],
-    [x - 2, y + h + 2],
-    [x + w + 2, y + h + 2],
-  ]) {
-    const post = ctx.createLinearGradient(cx - 7, 0, cx + 7, 0)
-    post.addColorStop(0, '#5a3820')
-    post.addColorStop(0.5, '#8d5f36')
-    post.addColorStop(1, '#4a2e1a')
-    ctx.fillStyle = post
-    ctx.fillRect(cx - 7, cy - 12, 14, 24)
-    star(ctx, cx, cy - 14, 7, COLOR.gold)
-  }
+  drawFloor(ctx, s, clock)
+  drawBorder(ctx, s, clock, (sx, sy) => star(ctx, sx, sy, 7, COLOR.gold))
   if (s.flash > 0) {
     ctx.fillStyle = `rgba(255, 80, 60, ${s.flash * 0.12})`
     ctx.fillRect(x, y, w, h)
@@ -903,10 +757,53 @@ function drawHazard(ctx: CanvasRenderingContext2D, h: Hazard, clock: number) {
         ctx.beginPath()
         ctx.arc(h.x, h.y, h.r * 0.42, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (1 - k))
         ctx.stroke()
+        if (h.style === 'lamp') {
+          // Lampu gantung: berayun di atas, lalu jatuh tepat sebelum meledak (pecah kaca)
+          const drop = Math.max(0, (k - 0.7) / 0.3)
+          const ly = h.fromY + (h.y - h.fromY) * drop * drop
+          ctx.strokeStyle = 'rgba(200, 180, 140, 0.6)'
+          ctx.lineWidth = 1
+          if (drop === 0) {
+            ctx.beginPath()
+            ctx.moveTo(h.x, ARENA.y - 120)
+            ctx.lineTo(h.x, ly)
+            ctx.stroke()
+          }
+          ctx.save()
+          ctx.translate(h.x + (drop === 0 ? Math.sin(clock * 9) * 3 : 0), ly)
+          ctx.fillStyle = '#b8791f'
+          ctx.fillRect(-16, -3, 32, 5)
+          ctx.fillStyle = '#ffe9b0'
+          for (const dx of [-14, -5, 5, 14]) {
+            ctx.beginPath()
+            ctx.moveTo(dx, -3)
+            ctx.lineTo(dx - 3, -10)
+            ctx.lineTo(dx + 3, -10)
+            ctx.closePath()
+            ctx.fill()
+          }
+          ctx.restore()
+          return
+        }
         // Batang dinamit: terbang ke titik sasaran lalu tergeletak dengan sumbu memercik
         const fly = Math.min(1, k / 0.25)
         const sx = h.fromX + (h.x - h.fromX) * fly
-        const sy = ARENA.y - 40 + (h.y - (ARENA.y - 40)) * fly - Math.sin(fly * Math.PI) * 60
+        const sy = h.fromY + (h.y - h.fromY) * fly - Math.sin(fly * Math.PI) * 60
+        if (h.kick && fly >= 1) {
+          // Bisa ditendang: cincin emas + tulisan DASH!
+          ctx.strokeStyle = `rgba(255, 220, 120, ${0.5 + 0.4 * Math.sin(clock * 10)})`
+          ctx.lineWidth = 2
+          ctx.setLineDash([3, 4])
+          ctx.beginPath()
+          ctx.arc(h.x, h.y, 24, 0, Math.PI * 2)
+          ctx.stroke()
+          ctx.setLineDash([])
+          ctx.fillStyle = COLOR.gold
+          ctx.font = `700 9px ${UI_FONT}`
+          ctx.textAlign = 'center'
+          ctx.textBaseline = 'middle'
+          ctx.fillText('DASH = TENDANG', h.x, h.y - 30)
+        }
         ctx.save()
         ctx.translate(sx, sy)
         ctx.rotate(fly < 1 ? clock * 12 : 0.4)
@@ -1136,6 +1033,28 @@ function drawHazard(ctx: CanvasRenderingContext2D, h: Hazard, clock: number) {
       ctx.restore()
       return
     }
+    case 'corridor': {
+      const fade = Math.min(1, h.t / 0.4, (h.life - h.t) / 0.5)
+      ctx.save()
+      ctx.globalAlpha = Math.max(0, fade)
+      ctx.fillStyle = 'rgba(155, 224, 122, 0.08)'
+      ctx.fillRect(h.x - h.width / 2, ARENA.y, h.width, ARENA.h)
+      ctx.strokeStyle = COLOR.safe
+      ctx.lineWidth = 2
+      ctx.setLineDash([6, 6])
+      ctx.lineDashOffset = -clock * 30
+      ctx.beginPath()
+      ctx.moveTo(h.x - h.width / 2, ARENA.y)
+      ctx.lineTo(h.x - h.width / 2, ARENA_BOTTOM)
+      ctx.moveTo(h.x + h.width / 2, ARENA.y)
+      ctx.lineTo(h.x + h.width / 2, ARENA_BOTTOM)
+      ctx.stroke()
+      ctx.setLineDash([])
+      ctx.fillStyle = COLOR.safe
+      ctx.fillRect(h.x - h.width / 2, ARENA.y - 10, h.width, 6)
+      ctx.restore()
+      return
+    }
     case 'train':
       drawTrain(ctx, h, clock)
       return
@@ -1193,20 +1112,9 @@ function rope(ctx: CanvasRenderingContext2D, ax: number, ay: number, bx: number,
 
 // ---------- Bos ----------
 
-/** Si Mata Elang: koboi bertopi lebar dengan ponco merah anggur, berdiri di atas arena. */
-function drawBoss(ctx: CanvasRenderingContext2D, s: GameState, clock: number) {
-  const boss = s.boss!
-  const x = 400
-  const y = 150 + Math.sin(clock * 1.4) * 2
-  const rage = boss.phase
-  ctx.save()
-  ctx.translate(x, y)
-  if (boss.hurt > 0) ctx.translate(Math.sin(boss.hurt * 60) * 4, 0)
-  // Bayangan
-  ctx.fillStyle = 'rgba(20, 8, 6, 0.4)'
-  ctx.beginPath()
-  ctx.ellipse(0, 40, 46, 8, 0, 0, Math.PI * 2)
-  ctx.fill()
+/** Si Mata Elang: koboi bertopi lebar dengan ponco merah anggur. */
+function drawElang(ctx: CanvasRenderingContext2D, boss: Boss, clock: number) {
+  const rage = boss.act
   // Ponco bergerak tertiup angin
   const sway = Math.sin(clock * 2) * 3
   const poncho = ctx.createLinearGradient(0, -20, 0, 40)
@@ -1229,28 +1137,7 @@ function drawBoss(ctx: CanvasRenderingContext2D, s: GameState, clock: number) {
     ctx.lineTo(-22 + i * 13 + sway, 26)
   }
   ctx.stroke()
-  // Lengan dengan revolver (terangkat saat menembak)
-  const draw = boss.draw > 0 ? 1 : 0
-  ctx.save()
-  ctx.translate(26, -6)
-  ctx.rotate(draw ? 0.9 : 0.25)
-  ctx.fillStyle = '#5a1c26'
-  ctx.fillRect(0, -4, 22, 8)
-  ctx.fillStyle = '#3b3b40'
-  ctx.fillRect(20, -3, 18, 6)
-  ctx.fillStyle = '#6b4a2b'
-  ctx.fillRect(16, -4, 7, 10)
-  if (draw) {
-    ctx.fillStyle = 'rgba(255, 220, 120, 0.9)'
-    ctx.beginPath()
-    ctx.moveTo(38, 0)
-    ctx.lineTo(50, -7)
-    ctx.lineTo(46, 0)
-    ctx.lineTo(50, 7)
-    ctx.closePath()
-    ctx.fill()
-  }
-  ctx.restore()
+  drawGunArm(ctx, boss, '#5a1c26')
   // Kepala dan wajah dalam bayangan topi
   ctx.fillStyle = '#c98a5e'
   ctx.beginPath()
@@ -1258,21 +1145,18 @@ function drawBoss(ctx: CanvasRenderingContext2D, s: GameState, clock: number) {
   ctx.fill()
   ctx.fillStyle = 'rgba(30, 12, 8, 0.55)'
   ctx.fillRect(-12, -34, 24, 8)
-  // Mata elang: satu mata menyala
   ctx.fillStyle = rage === 2 ? '#ff4a2a' : '#ffcf5a'
   ctx.beginPath()
   ctx.ellipse(4, -30, 3, 1.6, 0, 0, Math.PI * 2)
   ctx.fill()
   ctx.fillStyle = '#2a1a10'
   ctx.fillRect(-7, -31, 5, 2)
-  // Kumis
   ctx.fillStyle = '#3a2416'
   ctx.beginPath()
   ctx.moveTo(-8, -22)
   ctx.quadraticCurveTo(0, -26, 8, -22)
   ctx.quadraticCurveTo(0, -20, -8, -22)
   ctx.fill()
-  // Topi lebar
   const hat = ctx.createLinearGradient(0, -60, 0, -36)
   hat.addColorStop(0, '#4a3024')
   hat.addColorStop(1, '#22150f')
@@ -1290,26 +1174,428 @@ function drawBoss(ctx: CanvasRenderingContext2D, s: GameState, clock: number) {
   ctx.fillStyle = COLOR.wine
   ctx.fillRect(-16, -44, 32, 4)
   star(ctx, 0, -42, 4, COLOR.gold)
-  if (boss.hurt > 0) {
-    ctx.globalAlpha = Math.min(0.6, boss.hurt)
-    ctx.fillStyle = '#ffffff'
+}
+
+/** Lengan dengan revolver: terangkat saat membidik/menembak, terbuka silindernya saat mengisi ulang. */
+function drawGunArm(ctx: CanvasRenderingContext2D, boss: Boss, sleeve: string) {
+  const aiming = boss.draw > 0
+  ctx.save()
+  ctx.translate(20, -6)
+  ctx.rotate(boss.reload > 0 ? 1.3 : aiming ? 0.9 : 0.25)
+  ctx.fillStyle = sleeve
+  ctx.fillRect(0, -4, 20, 8)
+  ctx.fillStyle = '#3b3b40'
+  ctx.fillRect(18, -3, 18, 6)
+  ctx.fillStyle = '#6b4a2b'
+  ctx.fillRect(14, -4, 7, 10)
+  if (boss.reload > 0) {
+    // Silinder terbuka: lubang-lubang peluru terlihat kosong
+    ctx.fillStyle = '#9aa0a8'
     ctx.beginPath()
-    ctx.arc(0, -28, 13, 0, Math.PI * 2)
+    ctx.arc(26, -9, 6, 0, Math.PI * 2)
     ctx.fill()
+    ctx.fillStyle = '#1d1f23'
+    for (let i = 0; i < 6; i++) {
+      ctx.beginPath()
+      ctx.arc(26 + Math.cos((i * Math.PI) / 3) * 3.5, -9 + Math.sin((i * Math.PI) / 3) * 3.5, 1.2, 0, Math.PI * 2)
+      ctx.fill()
+    }
   }
   ctx.restore()
 }
 
+/** Bocah Dinamit: anak bertopi tambang dengan lampu, bandana, dan karung dinamit. */
+function drawDinamit(ctx: CanvasRenderingContext2D, boss: Boss, clock: number) {
+  const hop = Math.abs(Math.sin(clock * 5)) * 3
+  ctx.translate(0, -hop)
+  // Karung dinamit di punggung
+  ctx.fillStyle = '#8a6a3a'
+  ctx.beginPath()
+  ctx.ellipse(-18, -2, 14, 18, -0.2, 0, Math.PI * 2)
+  ctx.fill()
+  for (let i = 0; i < 4; i++) {
+    ctx.fillStyle = '#c0322b'
+    ctx.fillRect(-26 + i * 5, -24 - (i % 2) * 3, 4, 12)
+  }
+  // Badan: kemeja kotak-kotak dan celana
+  ctx.fillStyle = '#3b4a66'
+  ctx.fillRect(-11, 14, 9, 16)
+  ctx.fillRect(2, 14, 9, 16)
+  const shirt = ctx.createLinearGradient(0, -14, 0, 16)
+  shirt.addColorStop(0, '#d0562c')
+  shirt.addColorStop(1, '#8e3418')
+  ctx.fillStyle = shirt
+  ctx.beginPath()
+  ctx.roundRect(-13, -14, 26, 30, 6)
+  ctx.fill()
+  ctx.strokeStyle = 'rgba(40, 10, 5, 0.35)'
+  ctx.lineWidth = 1
+  ctx.beginPath()
+  for (let i = -8; i <= 8; i += 6) {
+    ctx.moveTo(i, -14)
+    ctx.lineTo(i, 16)
+  }
+  ctx.stroke()
+  // Lengan melempar dinamit
+  const throwing = boss.draw > 0
+  ctx.save()
+  ctx.translate(12, -8)
+  ctx.rotate(throwing ? -1.9 : -0.4 + Math.sin(clock * 3) * 0.2)
+  ctx.fillStyle = '#d0562c'
+  ctx.fillRect(0, -3, 16, 7)
+  ctx.fillStyle = '#c0322b'
+  ctx.fillRect(14, -6, 5, 13)
+  ctx.fillStyle = '#ffe08a'
+  ctx.beginPath()
+  ctx.arc(16, -8, 2 + Math.random() * 1.5, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.restore()
+  // Kepala, bandana, dan senyum nakal
+  ctx.fillStyle = '#e2a98a'
+  ctx.beginPath()
+  ctx.arc(0, -24, 11, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.fillStyle = '#c0322b'
+  ctx.beginPath()
+  ctx.moveTo(-10, -20)
+  ctx.lineTo(10, -20)
+  ctx.lineTo(0, -12)
+  ctx.closePath()
+  ctx.fill()
+  ctx.fillStyle = '#1a0f08'
+  ctx.beginPath()
+  ctx.arc(-4, -26, 1.5, 0, Math.PI * 2)
+  ctx.arc(4, -26, 1.5, 0, Math.PI * 2)
+  ctx.fill()
+  // Helm tambang dengan lampu
+  ctx.fillStyle = '#e3b450'
+  ctx.beginPath()
+  ctx.arc(0, -30, 12, Math.PI, 0)
+  ctx.fill()
+  ctx.fillRect(-14, -31, 28, 3)
+  ctx.fillStyle = '#fff6c8'
+  ctx.beginPath()
+  ctx.arc(0, -37, 3.2, 0, Math.PI * 2)
+  ctx.fill()
+  if (boss.reload > 0) {
+    // Mengisi karung (mengeluarkan dinamit baru)
+    ctx.fillStyle = COLOR.cream
+    ctx.font = `700 10px ${UI_FONT}`
+    ctx.textAlign = 'center'
+    ctx.fillText('…', -18, -30)
+  }
+}
+
+/** Hantu Masinis: masinis tembus pandang bertopi kereta, dengan lentera hijau dan lokomotif hantu di belakang. */
+function drawMasinis(ctx: CanvasRenderingContext2D, boss: Boss, clock: number) {
+  const float = Math.sin(clock * 1.8) * 4
+  ctx.translate(0, float)
+  ctx.globalAlpha *= 0.85
+  // Lokomotif hantu samar di belakang
+  ctx.fillStyle = 'rgba(160, 230, 210, 0.16)'
+  ctx.beginPath()
+  ctx.roundRect(-70, -24, 140, 40, 8)
+  ctx.fill()
+  ctx.fillRect(40, -46, 14, 24)
+  ctx.fillStyle = 'rgba(200, 255, 230, 0.25)'
+  ctx.beginPath()
+  ctx.arc(-58, -4, 7, 0, Math.PI * 2)
+  ctx.fill()
+  // Jubah melayang (bawahnya berumbai)
+  const robe = ctx.createLinearGradient(0, -20, 0, 36)
+  robe.addColorStop(0, '#2c4a56')
+  robe.addColorStop(1, 'rgba(44, 74, 86, 0)')
+  ctx.fillStyle = robe
+  ctx.beginPath()
+  ctx.moveTo(-15, -16)
+  ctx.lineTo(15, -16)
+  ctx.lineTo(24, 30)
+  for (let i = 0; i < 6; i++) ctx.lineTo(24 - (i + 1) * 8, 30 + (i % 2 ? 0 : 8) + Math.sin(clock * 6 + i) * 2)
+  ctx.closePath()
+  ctx.fill()
+  // Lentera hijau
+  ctx.save()
+  ctx.translate(20, 0)
+  ctx.rotate(Math.sin(clock * 2) * 0.2)
+  const lamp = ctx.createRadialGradient(0, 12, 0, 0, 12, 22)
+  lamp.addColorStop(0, 'rgba(140, 255, 190, 0.6)')
+  lamp.addColorStop(1, 'rgba(140, 255, 190, 0)')
+  ctx.fillStyle = lamp
+  ctx.beginPath()
+  ctx.arc(0, 12, 22, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.strokeStyle = '#6b7a80'
+  ctx.lineWidth = 1.5
+  ctx.beginPath()
+  ctx.moveTo(0, -4)
+  ctx.lineTo(0, 6)
+  ctx.stroke()
+  ctx.fillStyle = '#9dffc8'
+  ctx.fillRect(-4, 6, 8, 11)
+  ctx.restore()
+  // Wajah pucat dengan mata kosong bercahaya
+  ctx.fillStyle = '#cfe8e2'
+  ctx.beginPath()
+  ctx.arc(0, -26, 11, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.fillStyle = boss.act === 2 ? '#ff6a5a' : '#7dffc0'
+  ctx.beginPath()
+  ctx.ellipse(-4, -26, 2.4, 3, 0, 0, Math.PI * 2)
+  ctx.ellipse(4, -26, 2.4, 3, 0, 0, Math.PI * 2)
+  ctx.fill()
+  // Topi masinis bergaris
+  ctx.fillStyle = '#3b4a66'
+  ctx.beginPath()
+  ctx.roundRect(-12, -44, 24, 12, 4)
+  ctx.fill()
+  ctx.fillStyle = '#d8e2f0'
+  for (let i = -10; i < 12; i += 5) ctx.fillRect(i, -44, 2, 12)
+  ctx.fillStyle = '#22252c'
+  ctx.fillRect(-14, -33, 28, 3)
+}
+
+function drawBoss(ctx: CanvasRenderingContext2D, s: GameState, clock: number) {
+  const boss = s.boss!
+  ctx.save()
+  ctx.translate(boss.x, boss.y + Math.sin(clock * 1.4) * 2)
+  // Bayangan
+  ctx.fillStyle = 'rgba(20, 8, 6, 0.4)'
+  ctx.beginPath()
+  ctx.ellipse(0, 40, 40, 7, 0, 0, Math.PI * 2)
+  ctx.fill()
+  if (boss.hurt > 0) ctx.translate(Math.sin(boss.hurt * 60) * 4, 0)
+  if (boss.roll > 0) {
+    // Berguling (Hantu Masinis: memudar menembus)
+    if (boss.id === 'masinis') ctx.globalAlpha = 0.25
+    else ctx.rotate(boss.rollDir * (1 - boss.roll / 0.34) * Math.PI * 2)
+  }
+  if (boss.id === 'elang') drawElang(ctx, boss, clock)
+  else if (boss.id === 'dinamit') drawDinamit(ctx, boss, clock)
+  else drawMasinis(ctx, boss, clock)
+  if (boss.hurt > 0) {
+    ctx.globalAlpha = Math.min(0.6, boss.hurt)
+    ctx.fillStyle = '#ffffff'
+    ctx.beginPath()
+    ctx.arc(0, -26, 14, 0, Math.PI * 2)
+    ctx.fill()
+  }
+  ctx.restore()
+  // Tanda celah serang saat mengisi ulang
+  if (boss.reload > 0 && boss.stage === 'fight') {
+    const text = boss.id === 'dinamit' ? 'MENGISI KARUNG! TEMBAK!' : boss.id === 'masinis' ? 'MENYALAKAN LENTERA! TEMBAK!' : 'MENGISI ULANG! TEMBAK!'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.font = `700 12px ${UI_FONT}`
+    const w = ctx.measureText(text).width + 16
+    const tx = Math.max(w / 2 + 16, Math.min(WORLD.width - w / 2 - 16, boss.x))
+    ctx.fillStyle = 'rgba(35, 20, 14, 0.85)'
+    ctx.beginPath()
+    ctx.roundRect(tx - w / 2, boss.y + 30, w, 18, 6)
+    ctx.fill()
+    ctx.fillStyle = Math.floor(clock * 6) % 2 ? COLOR.gold : COLOR.cream
+    ctx.fillText(text, tx, boss.y + 39)
+  }
+}
+
+// ---------- Objek pertarungan: meja, atap kereta, tuas, peluru emas, tembakan pemain ----------
+
+function drawFightFloor(ctx: CanvasRenderingContext2D, s: GameState, clock: number) {
+  const boss = s.boss
+  if (!boss) return
+  const arena = BOSSES[boss.id].acts[boss.act].arena
+  ctx.save()
+  ctx.beginPath()
+  ctx.rect(ARENA.x, ARENA.y, ARENA.w, ARENA.h)
+  ctx.clip()
+  if (arena === 'train' && boss.stage === 'fight') {
+    // Garis angin (lantai atap bergulir digambar di scenes.ts)
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.18)'
+    ctx.lineWidth = 1.5
+    ctx.beginPath()
+    for (let i = 0; i < 9; i++) {
+      const y = ARENA.y + 20 + ((i * 53) % ARENA.h)
+      const x = ARENA_RIGHT - ((clock * 260 + i * 97) % (ARENA.w + 80))
+      ctx.moveTo(x, y)
+      ctx.lineTo(x + 30, y)
+    }
+    ctx.stroke()
+    // Celah antar gerbong (jurang gelap) dengan papan penyeberangan
+    for (const pit of s.pits) {
+      ctx.fillStyle = '#0c0807'
+      ctx.fillRect(pit.x, ARENA.y, pit.w, ARENA.h)
+      ctx.strokeStyle = 'rgba(255, 90, 60, 0.7)'
+      ctx.lineWidth = 2
+      ctx.setLineDash([6, 6])
+      ctx.strokeRect(pit.x + 1, ARENA.y + 1, pit.w - 2, ARENA.h - 2)
+      ctx.setLineDash([])
+      const plank = ctx.createLinearGradient(0, pit.plankY - pit.plankH / 2, 0, pit.plankY + pit.plankH / 2)
+      plank.addColorStop(0, '#a06a3a')
+      plank.addColorStop(1, '#5a3820')
+      ctx.fillStyle = plank
+      ctx.fillRect(pit.x - 4, pit.plankY - pit.plankH / 2, pit.w + 8, pit.plankH)
+      ctx.strokeStyle = 'rgba(40, 20, 10, 0.7)'
+      ctx.lineWidth = 1
+      ctx.strokeRect(pit.x - 4, pit.plankY - pit.plankH / 2, pit.w + 8, pit.plankH)
+    }
+  }
+  ctx.restore()
+  // Meja saloon
+  for (const c of s.covers) {
+    if (c.hp <= 0) {
+      ctx.fillStyle = 'rgba(90, 56, 32, 0.6)'
+      for (let i = 0; i < 4; i++) ctx.fillRect(c.x + i * 11, c.y + 8 + (i % 2) * 6, 9, 4)
+      continue
+    }
+    ctx.save()
+    if (c.hit > 0) ctx.translate(Math.sin(c.hit * 80) * 2, 0)
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.35)'
+    ctx.fillRect(c.x + 3, c.y + 6, c.w, c.h)
+    const top = ctx.createLinearGradient(0, c.y, 0, c.y + c.h)
+    top.addColorStop(0, '#b07a46')
+    top.addColorStop(1, '#6b4320')
+    ctx.fillStyle = top
+    ctx.fillRect(c.x, c.y, c.w, c.h)
+    ctx.strokeStyle = '#3a2418'
+    ctx.lineWidth = 1.5
+    ctx.strokeRect(c.x, c.y, c.w, c.h)
+    // Retakan sesuai kerusakan
+    ctx.strokeStyle = 'rgba(30, 15, 8, 0.8)'
+    ctx.beginPath()
+    if (c.hp <= 2) {
+      ctx.moveTo(c.x + 10, c.y)
+      ctx.lineTo(c.x + 16, c.y + c.h * 0.6)
+    }
+    if (c.hp <= 1) {
+      ctx.moveTo(c.x + 30, c.y + c.h)
+      ctx.lineTo(c.x + 26, c.y + 4)
+    }
+    ctx.stroke()
+    ctx.restore()
+  }
+}
+
+function drawLevers(ctx: CanvasRenderingContext2D, s: GameState, clock: number) {
+  for (const lever of s.levers) {
+    const pulled = lever.pulled > 0
+    const fade = pulled ? 1 - lever.pulled / 1.2 : Math.min(1, lever.t / 0.3, (lever.life - lever.t) / 0.5)
+    ctx.save()
+    ctx.globalAlpha = Math.max(0, fade)
+    ctx.translate(lever.x, lever.y)
+    // Lingkaran pijakan + cincin kemajuan
+    ctx.strokeStyle = 'rgba(160, 140, 255, 0.4)'
+    ctx.lineWidth = 3
+    ctx.beginPath()
+    ctx.arc(0, 0, 18, 0, Math.PI * 2)
+    ctx.stroke()
+    ctx.strokeStyle = '#c9b6ff'
+    ctx.beginPath()
+    ctx.arc(0, 0, 18, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (pulled ? 1 : lever.progress))
+    ctx.stroke()
+    // Tuas: pangkal dan batang (miring ke kanan saat ditarik)
+    ctx.fillStyle = '#3b3b40'
+    ctx.fillRect(-8, 4, 16, 6)
+    ctx.save()
+    ctx.translate(0, 6)
+    ctx.rotate(pulled ? 0.8 : -0.5 + lever.progress * 1.2)
+    ctx.fillStyle = '#9aa0a8'
+    ctx.fillRect(-1.5, -18, 3, 18)
+    ctx.fillStyle = '#c0322b'
+    ctx.beginPath()
+    ctx.arc(0, -19, 3.5, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.restore()
+    if (!pulled) {
+      ctx.fillStyle = COLOR.cream
+      ctx.font = `700 9px ${UI_FONT}`
+      ctx.textAlign = 'center'
+      ctx.fillText('TUAS', 0, -26 + Math.sin(clock * 4) * 1.5)
+    }
+    ctx.restore()
+  }
+}
+
+function drawPickups(ctx: CanvasRenderingContext2D, s: GameState, clock: number) {
+  for (const pickup of s.pickups) {
+    const left = pickup.life - pickup.t
+    if (left < 1.5 && Math.floor(clock * 10) % 2 === 0) continue
+    const appear = Math.min(1, pickup.t / 0.25)
+    ctx.save()
+    ctx.translate(pickup.x, pickup.y + Math.sin(clock * 4 + pickup.x) * 2)
+    ctx.scale(appear, appear)
+    const glow = ctx.createRadialGradient(0, 0, 0, 0, 0, 16)
+    glow.addColorStop(0, 'rgba(255, 220, 120, 0.7)')
+    glow.addColorStop(1, 'rgba(255, 220, 120, 0)')
+    ctx.fillStyle = glow
+    ctx.beginPath()
+    ctx.arc(0, 0, 16, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.rotate(Math.sin(clock * 3) * 0.3)
+    // Dua peluru emas berdiri
+    for (const dx of [-3.5, 3.5]) {
+      const brass = ctx.createLinearGradient(dx - 3, 0, dx + 3, 0)
+      brass.addColorStop(0, '#b8791f')
+      brass.addColorStop(0.5, '#ffe9a0')
+      brass.addColorStop(1, '#b8791f')
+      ctx.fillStyle = brass
+      ctx.beginPath()
+      ctx.moveTo(dx - 2.6, 6)
+      ctx.lineTo(dx - 2.6, -3)
+      ctx.quadraticCurveTo(dx, -9, dx + 2.6, -3)
+      ctx.lineTo(dx + 2.6, 6)
+      ctx.closePath()
+      ctx.fill()
+      ctx.strokeStyle = 'rgba(80, 50, 10, 0.8)'
+      ctx.lineWidth = 0.8
+      ctx.stroke()
+    }
+    ctx.restore()
+  }
+}
+
+function drawPlayerShots(ctx: CanvasRenderingContext2D, s: GameState, clock: number) {
+  for (const shot of s.pshots) {
+    if (shot.kind === 'kick') {
+      // Dinamit yang ditendang berputar ke arah bos
+      ctx.save()
+      ctx.translate(shot.x, shot.y)
+      ctx.rotate(clock * 18)
+      ctx.fillStyle = '#c0322b'
+      ctx.fillRect(-9, -4, 18, 8)
+      ctx.fillStyle = '#ffe08a'
+      ctx.beginPath()
+      ctx.arc(10, 0, 3, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.restore()
+      continue
+    }
+    const angle = Math.atan2(shot.vy, shot.vx)
+    ctx.save()
+    ctx.translate(shot.x, shot.y)
+    ctx.rotate(angle)
+    const trail = ctx.createLinearGradient(-26, 0, 0, 0)
+    trail.addColorStop(0, 'rgba(255, 220, 120, 0)')
+    trail.addColorStop(1, shot.homing ? 'rgba(255, 120, 80, 0.9)' : 'rgba(255, 230, 150, 0.9)')
+    ctx.fillStyle = trail
+    ctx.fillRect(-26, -2, 26, 4)
+    ctx.fillStyle = shot.homing ? '#ff8a5a' : '#ffe08a'
+    ctx.beginPath()
+    ctx.ellipse(0, 0, 5, 2.6, 0, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.restore()
+  }
+}
+
 // ---------- HUD ----------
 
-function drawHud(ctx: CanvasRenderingContext2D, s: GameState) {
+function drawHud(ctx: CanvasRenderingContext2D, s: GameState, clock: number) {
   const p = s.player
-  // Papan kayu di atas
-  ctx.fillStyle = 'rgba(35, 20, 14, 0.82)'
+  const theme = hudTheme(s)
+  // Papan di atas (warna mengikuti tema babak)
+  ctx.fillStyle = theme.panel
   ctx.beginPath()
   ctx.roundRect(14, 12, 772, 52, 10)
   ctx.fill()
-  ctx.strokeStyle = 'rgba(227, 180, 80, 0.45)'
+  ctx.strokeStyle = theme.stroke
   ctx.lineWidth = 1.5
   ctx.stroke()
   // Nyawa
@@ -1330,48 +1616,59 @@ function drawHud(ctx: CanvasRenderingContext2D, s: GameState) {
   ctx.textAlign = 'center'
   ctx.fillStyle = COLOR.cream
   ctx.font = `20px ${FONT}`
-  const label = s.boss ? BOSS.name.toUpperCase() : `GELOMBANG ${s.wave}`
+  const label = s.boss ? (s.mode === 'endless' ? `GEL. ${s.wave} · ${BOSSES[s.boss.id].name.toUpperCase()}` : BOSSES[s.boss.id].name.toUpperCase()) : `GELOMBANG ${s.wave}`
   ctx.fillText(label, 400, 30)
   ctx.font = `600 13px ${UI_FONT}`
   ctx.fillStyle = COLOR.sand
   const minutes = Math.floor(s.time / 60)
   const seconds = Math.floor(s.time % 60)
-  ctx.fillText(`${minutes}:${String(seconds).padStart(2, '0')}`, 400, 50)
+  ctx.fillText(`${minutes}:${String(seconds).padStart(2, '0')} · ${DIFFICULTY[s.difficulty].label}`, 400, 50)
   ctx.textAlign = 'right'
   ctx.font = `20px ${FONT}`
-  ctx.fillStyle = COLOR.gold
+  ctx.fillStyle = theme.accent
   ctx.fillText(Math.round(s.score).toLocaleString('id-ID'), 770, 30)
   ctx.font = `600 12px ${UI_FONT}`
   ctx.fillStyle = COLOR.sand
   ctx.fillText(`kena ${s.hits} · lolos ${s.dodged}`, 770, 50)
 
-  // Bar nyali bos
+  // Bar nyali bos dengan batas babak
   if (s.boss) {
     const boss = s.boss
     const w = 300
     const x = 250
     const y = 74
-    ctx.fillStyle = 'rgba(35, 20, 14, 0.85)'
+    ctx.fillStyle = theme.panel
     ctx.beginPath()
     ctx.roundRect(x - 4, y - 4, w + 8, 16, 6)
     ctx.fill()
+    ctx.strokeStyle = theme.stroke
+    ctx.lineWidth = 1
+    ctx.stroke()
     const fill = ctx.createLinearGradient(x, 0, x + w, 0)
-    fill.addColorStop(0, '#c0322b')
-    fill.addColorStop(1, '#e3b450')
+    fill.addColorStop(0, theme.bar[0])
+    fill.addColorStop(1, theme.bar[1])
     ctx.fillStyle = fill
     ctx.fillRect(x, y, (w * boss.hp) / boss.maxHp, 8)
     ctx.fillStyle = 'rgba(255, 240, 210, 0.85)'
-    for (const limit of BOSS.phases) ctx.fillRect(x + w * limit - 1, y - 2, 2, 12)
+    for (const limit of FIGHT.acts) ctx.fillRect(x + w * limit - 1, y - 2, 2, 12)
     ctx.textAlign = 'right'
     ctx.font = `600 11px ${UI_FONT}`
     ctx.fillStyle = COLOR.cream
-    ctx.fillText(`NYALI · FASE ${boss.phase + 1}`, x - 12, y + 4)
+    ctx.fillText(boss.stage === 'fight' ? `NYALI · BABAK ${boss.act + 1}` : 'NYALI HABIS', x - 12, y + 4)
+    ctx.textAlign = 'left'
+    ctx.fillStyle = COLOR.sand
+    ctx.fillText(BOSSES[boss.id].acts[boss.act].name, x + w + 12, y + 4)
   }
 
-  // Dash: cincin cooldown di bawah arena
+  const y = ARENA_BOTTOM + 24
+  // Pita gelap di bawah arena supaya teks tetap terbaca di atas latar apa pun
+  ctx.fillStyle = 'rgba(10, 6, 4, 0.45)'
+  ctx.beginPath()
+  ctx.roundRect(ARENA.x - 8, y - 13, ARENA.w + 16, 26, 8)
+  ctx.fill()
+  // Dash: cincin cooldown di kiri bawah arena
   if (s.dashEnabled) {
     const x = ARENA.x + 18
-    const y = ARENA_BOTTOM + 24
     const ready = p.dashCooldown <= 0
     ctx.strokeStyle = 'rgba(255, 240, 210, 0.25)'
     ctx.lineWidth = 4
@@ -1385,14 +1682,50 @@ function drawHud(ctx: CanvasRenderingContext2D, s: GameState) {
     ctx.textAlign = 'left'
     ctx.font = `600 12px ${UI_FONT}`
     ctx.fillStyle = ready ? COLOR.cream : 'rgba(255, 240, 210, 0.55)'
-    ctx.fillText(ready ? 'DASH siap · Spasi' : 'DASH…', x + 18, y)
+    ctx.fillText(ready ? 'DASH · Spasi' : 'DASH…', x + 18, y)
   }
-  // Nama serangan yang sedang berjalan
+
+  if (s.boss && s.boss.stage === 'fight') {
+    // Silinder revolver: 6 lubang, terisi sesuai peluru
+    const cx = 330
+    ctx.fillStyle = 'rgba(35, 20, 14, 0.85)'
+    ctx.beginPath()
+    ctx.arc(cx, y, 15, 0, Math.PI * 2)
+    ctx.fill()
+    for (let i = 0; i < s.gun.max; i++) {
+      const a = -Math.PI / 2 + (i * Math.PI * 2) / s.gun.max
+      ctx.fillStyle = i < s.gun.ammo ? '#ffd27a' : '#2a1a12'
+      ctx.beginPath()
+      ctx.arc(cx + Math.cos(a) * 9, y + Math.sin(a) * 9, 3.4, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.strokeStyle = 'rgba(255, 240, 210, 0.4)'
+      ctx.lineWidth = 1
+      ctx.stroke()
+    }
+    ctx.textAlign = 'left'
+    ctx.font = `600 12px ${UI_FONT}`
+    ctx.fillStyle = s.gun.ammo ? COLOR.cream : '#ff8a6a'
+    ctx.fillText(s.gun.ammo ? `${s.gun.ammo} · F tembak` : 'kosong · ambil emas', cx + 22, y)
+    // Meter Mata Elang (bar, label di kanannya)
+    const mx = 466
+    const ready = s.deadeye.meter >= 1
+    ctx.fillStyle = 'rgba(35, 20, 14, 0.85)'
+    ctx.beginPath()
+    ctx.roundRect(mx - 2, y - 6, 74, 12, 5)
+    ctx.fill()
+    ctx.fillStyle = s.deadeye.active > 0 ? '#ff8a5a' : ready ? (Math.floor(clock * 4) % 2 ? '#ffd27a' : '#fff1d6') : '#c0822b'
+    ctx.fillRect(mx, y - 4, 70 * (s.deadeye.active > 0 ? s.deadeye.active / FIGHT.deadeyeTime : s.deadeye.meter), 8)
+    ctx.textAlign = 'left'
+    ctx.fillStyle = ready ? COLOR.gold : 'rgba(255, 240, 210, 0.7)'
+    ctx.fillText(ready ? 'MATA ELANG · E' : s.deadeye.active > 0 ? 'MATA ELANG!' : 'serempet peluru', mx + 78, y)
+    return
+  }
+  // Nama serangan yang sedang berjalan (gelombang biasa)
   if (s.runs.length) {
     ctx.textAlign = 'right'
     ctx.font = `600 12px ${UI_FONT}`
     ctx.fillStyle = 'rgba(255, 240, 210, 0.75)'
-    ctx.fillText(s.runs.map((run) => PATTERN_NAMES[run.id]).join(' + '), ARENA_RIGHT, ARENA_BOTTOM + 24)
+    ctx.fillText(s.runs.map((run) => PATTERN_NAMES[run.id]).join(' + '), ARENA_RIGHT, y)
   }
 }
 
@@ -1404,11 +1737,14 @@ function drawBanner(ctx: CanvasRenderingContext2D, s: GameState) {
   if (alpha <= 0) return
   ctx.save()
   ctx.globalAlpha = alpha
-  ctx.fillStyle = 'rgba(35, 20, 14, 0.82)'
+  ctx.font = `600 14px ${UI_FONT}`
+  const width = Math.max(360, ctx.measureText(banner.subtitle).width + 50)
+  const theme = hudTheme(s)
+  ctx.fillStyle = theme.panel
   ctx.beginPath()
-  ctx.roundRect(220, 300, 360, 82, 12)
+  ctx.roundRect(400 - width / 2, 300, width, 82, 12)
   ctx.fill()
-  ctx.strokeStyle = COLOR.gold
+  ctx.strokeStyle = theme.accent
   ctx.lineWidth = 2
   ctx.stroke()
   ctx.textAlign = 'center'
@@ -1438,16 +1774,26 @@ function drawDuel(ctx: CanvasRenderingContext2D, s: GameState, clock: number) {
   if (!duel || s.phase !== 'duel') return
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
+  const cy = ARENA.y + ARENA.h / 2
   if (!duel.result) {
     if (duel.t < duel.signal) {
+      const decoy = activeDecoy(duel)
       ctx.fillStyle = 'rgba(35, 20, 14, 0.6)'
       ctx.fillRect(ARENA.x, ARENA.y, ARENA.w, ARENA.h)
+      if (decoy) {
+        // Kata pengecoh: tampil persis seperti aba-aba asli.
+        ctx.fillStyle = 'rgba(192, 50, 43, 0.55)'
+        ctx.fillRect(ARENA.x, ARENA.y, ARENA.w, ARENA.h)
+        ctx.fillStyle = COLOR.cream
+        ctx.font = `52px ${FONT}`
+        ctx.fillText(`${decoy}!`, 400, cy)
+        return
+      }
       ctx.fillStyle = COLOR.sand
       ctx.font = `26px ${FONT}`
-      ctx.fillText('TAHAN…', 400, ARENA.y + ARENA.h / 2 - 10)
+      ctx.fillText(duel.final ? 'DUEL PENENTUAN…' : 'TAHAN…', 400, cy - 10)
       ctx.font = `600 13px ${UI_FONT}`
-      ctx.fillText('Jangan menekan sebelum aba-aba', 400, ARENA.y + ARENA.h / 2 + 22)
-      // Jam berdetak
+      ctx.fillText(duel.decoys.length ? 'Tekan hanya saat tertulis TEMBAK!' : 'Jangan menekan sebelum aba-aba', 400, cy + 22)
       ctx.strokeStyle = COLOR.sand
       ctx.lineWidth = 2
       ctx.beginPath()
@@ -1461,21 +1807,27 @@ function drawDuel(ctx: CanvasRenderingContext2D, s: GameState, clock: number) {
       ctx.fillRect(ARENA.x, ARENA.y, ARENA.w, ARENA.h)
       ctx.fillStyle = COLOR.cream
       ctx.font = `${40 + k * 12}px ${FONT}`
-      ctx.fillText('TEMBAK!', 400, ARENA.y + ARENA.h / 2)
+      ctx.fillText('TEMBAK!', 400, cy)
     }
     return
   }
-  const text = { early: 'Terlalu cepat! −1 nyawa', slow: 'Terlalu lambat! −1 nyawa', hit: 'Kena!', fast: 'Secepat kilat!' }[duel.result]
+  const text: Record<NonNullable<typeof duel.result>, string> = {
+    early: 'Terlalu cepat! −1 nyawa',
+    decoy: 'Tertipu! −1 nyawa',
+    slow: 'Terlalu lambat! −1 nyawa',
+    hit: duel.final ? 'Kena! Duel dimenangkan' : 'Kena!',
+    fast: duel.final ? 'Secepat kilat! Menang!' : 'Secepat kilat!',
+  }
   ctx.fillStyle = 'rgba(35, 20, 14, 0.6)'
   ctx.fillRect(ARENA.x, ARENA.y, ARENA.w, ARENA.h)
-  ctx.fillStyle = duel.result === 'early' || duel.result === 'slow' ? '#ff8a6a' : COLOR.gold
+  const bad = duel.result === 'early' || duel.result === 'slow' || duel.result === 'decoy'
+  ctx.fillStyle = bad ? '#ff8a6a' : COLOR.gold
   ctx.font = `28px ${FONT}`
-  ctx.fillText(text, 400, ARENA.y + ARENA.h / 2 - 8)
-  if (duel.result === 'hit' || duel.result === 'fast') {
-    ctx.font = `600 14px ${UI_FONT}`
-    ctx.fillStyle = COLOR.sand
-    ctx.fillText(`Reaksi ${Math.round(duel.reaction * 1000)} ms`, 400, ARENA.y + ARENA.h / 2 + 24)
-  }
+  ctx.fillText(text[duel.result], 400, cy - 8)
+  ctx.font = `600 14px ${UI_FONT}`
+  ctx.fillStyle = COLOR.sand
+  if (!bad) ctx.fillText(`Reaksi ${Math.round(duel.reaction * 1000)} ms`, 400, cy + 24)
+  else if (duel.final) ctx.fillText('Duel penentuan diulang…', 400, cy + 24)
 }
 
 function drawParticles(ctx: CanvasRenderingContext2D, s: GameState, reduceFlash: boolean) {
@@ -1504,16 +1856,17 @@ function drawDebug(ctx: CanvasRenderingContext2D, s: GameState) {
     ctx.stroke()
   }
   for (const h of s.hazards) {
-    if (h.kind === 'bull') {
+    if (h.kind === 'bull' || h.kind === 'blast' || h.kind === 'mark') {
       ctx.beginPath()
       ctx.arc(h.x, h.y, h.r, 0, Math.PI * 2)
       ctx.stroke()
     }
-    if (h.kind === 'blast' || h.kind === 'mark') {
-      ctx.beginPath()
-      ctx.arc(h.x, h.y, h.r, 0, Math.PI * 2)
-      ctx.stroke()
-    }
+  }
+  if (s.boss) {
+    ctx.strokeStyle = '#00c8ff'
+    ctx.beginPath()
+    ctx.arc(s.boss.x, s.boss.y - 22, FIGHT.bossRadius, 0, Math.PI * 2)
+    ctx.stroke()
   }
   ctx.fillStyle = '#00ff9c'
   ctx.font = `11px monospace`
@@ -1524,23 +1877,35 @@ function drawDebug(ctx: CanvasRenderingContext2D, s: GameState) {
 /** Satu frame penuh. `scale` = piksel kanvas per satuan dunia (termasuk devicePixelRatio). */
 export function render(ctx: CanvasRenderingContext2D, s: GameState, scale: number, clock: number, options: RenderOptions) {
   ctx.setTransform(scale, 0, 0, scale, 0, 0)
-  ctx.drawImage(background(), 0, 0)
+  drawBackdrop(ctx, s, clock)
   ctx.save()
   if (options.shake && s.shake > 0) ctx.translate((Math.random() - 0.5) * 8 * s.shake, (Math.random() - 0.5) * 8 * s.shake)
   if (s.boss) drawBoss(ctx, s, clock)
   drawArena(ctx, s, clock)
-  for (const h of s.hazards) if (h.kind === 'lane' || h.kind === 'path' || h.kind === 'arc' || h.kind === 'rope' || h.kind === 'blast' || h.kind === 'train' || h.kind === 'spinner') drawHazard(ctx, h, clock)
+  drawFightFloor(ctx, s, clock)
+  for (const h of s.hazards) if (h.kind === 'lane' || h.kind === 'path' || h.kind === 'arc' || h.kind === 'rope' || h.kind === 'blast' || h.kind === 'train' || h.kind === 'spinner' || h.kind === 'corridor') drawHazard(ctx, h, clock)
+  drawLevers(ctx, s, clock)
+  drawPickups(ctx, s, clock)
   drawPlayer(ctx, s, clock, options)
   for (const shot of s.shots) if (shot.alive) drawShot(ctx, shot)
   for (const h of s.hazards) if (h.kind === 'gunman' || h.kind === 'mark' || h.kind === 'bull' || h.kind === 'barrel') drawHazard(ctx, h, clock)
+  drawPlayerShots(ctx, s, clock)
   drawParticles(ctx, s, options.reduceFlash)
   drawDuel(ctx, s, clock)
   ctx.restore()
+  // Mata Elang: tepi layar menggelap kemerahan (dunia melambat).
+  if (s.deadeye.active > 0) {
+    const vignette = ctx.createRadialGradient(400, 300, 160, 400, 300, 520)
+    vignette.addColorStop(0, 'rgba(120, 40, 10, 0)')
+    vignette.addColorStop(1, `rgba(120, 40, 10, ${options.reduceFlash ? 0.25 : 0.45})`)
+    ctx.fillStyle = vignette
+    ctx.fillRect(0, 0, WORLD.width, WORLD.height)
+  }
   if (s.flash > 0 && !options.reduceFlash) {
     ctx.fillStyle = `rgba(255, 60, 40, ${s.flash * 0.18})`
     ctx.fillRect(0, 0, WORLD.width, WORLD.height)
   }
-  drawHud(ctx, s)
+  drawHud(ctx, s, clock)
   drawCountdown(ctx, s)
   drawBanner(ctx, s)
   if (options.debug) drawDebug(ctx, s)

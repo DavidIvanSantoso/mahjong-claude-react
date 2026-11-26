@@ -730,6 +730,219 @@
   font-size: 0.8rem;
 }
 
+/* ---------- Tingkat kesulitan dan pilihan bos ---------- */
+
+.kb-difficulty {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  width: 100%;
+}
+
+.kb-difficulty button {
+  display: grid;
+  gap: 2px;
+  padding: 8px 6px;
+  font: 600 0.85rem var(--kb-font);
+  color: var(--kb-ink);
+  background: rgb(255 255 255 / 25%);
+  border: 1px dashed rgb(90 50 20 / 45%);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.kb-difficulty button small {
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: #6b4a2b;
+}
+
+.kb-difficulty button.is-active {
+  color: var(--kb-text);
+  background: linear-gradient(var(--kb-wine), #4a1420);
+  border: 1px solid #4a1420;
+}
+
+.kb-difficulty button.is-active small {
+  color: var(--kb-sand);
+}
+
+.kb-difficulty button:focus-visible,
+.kb-boss-card:focus-visible {
+  outline: 3px solid var(--kb-wine);
+  outline-offset: 2px;
+}
+
+.kb-bosses {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.kb-bosses__list {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.kb-boss-card {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  padding: 12px 14px;
+  text-align: left;
+  font: 500 0.82rem var(--kb-font);
+  color: var(--kb-ink);
+  background: rgb(255 255 255 / 28%);
+  border: 1px solid rgb(90 50 20 / 40%);
+  border-radius: 8px;
+  cursor: pointer;
+  transition:
+    transform 0.12s,
+    background 0.12s;
+}
+
+.kb-boss-card:hover {
+  background: rgb(255 255 255 / 45%);
+  transform: translateX(3px) rotate(-0.4deg);
+}
+
+.kb-boss-card__name {
+  font: 400 1.25rem var(--kb-title);
+  color: var(--kb-wine);
+}
+
+.kb-boss-card__title {
+  font-weight: 700;
+  font-style: italic;
+}
+
+.kb-boss-card__hint {
+  line-height: 1.45;
+  color: #4a3424;
+}
+
+/* Tiap bos punya warna khas; chip babak meniru latar arena (lihat scenes.ts). */
+.kb-boss-card--elang {
+  --kb-boss: #8a2433;
+  border-left: 6px solid var(--kb-boss);
+}
+
+.kb-boss-card--dinamit {
+  --kb-boss: #c2461c;
+  border-left: 6px solid var(--kb-boss);
+}
+
+.kb-boss-card--masinis {
+  --kb-boss: #1f6f72;
+  border-left: 6px solid var(--kb-boss);
+}
+
+.kb-boss-card--elang .kb-boss-card__name,
+.kb-boss-card--dinamit .kb-boss-card__name,
+.kb-boss-card--masinis .kb-boss-card__name {
+  color: var(--kb-boss);
+}
+
+.kb-boss-card__acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.kb-scene {
+  padding: 2px 8px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #fff1d6;
+  text-shadow: 0 1px 1px rgb(0 0 0 / 60%);
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 15%);
+}
+
+.kb-scene--street {
+  background: linear-gradient(180deg, #a8463a, #f08c3e 55%, #7a4a2c 56%);
+}
+
+.kb-scene--saloon {
+  background: linear-gradient(180deg, #3c121b, #6b2030 60%, #5a3418 61%);
+}
+
+.kb-scene--trainroof {
+  background: linear-gradient(180deg, #5a2448, #d8643a 60%, #3a1c2a 61%);
+}
+
+.kb-scene--mine {
+  background: linear-gradient(180deg, #2a1c14, #5a3820);
+}
+
+.kb-scene--powder {
+  background: linear-gradient(90deg, #3a2416, #8a1e16);
+}
+
+.kb-scene--inferno {
+  background: linear-gradient(180deg, #2a0c06, #c2461c);
+}
+
+.kb-scene--station {
+  background: linear-gradient(180deg, #05080f, #1c3040);
+}
+
+.kb-scene--bridge {
+  background: linear-gradient(180deg, #0b1622, #3a4a52);
+}
+
+.kb-scene--ghosttrain {
+  background: linear-gradient(180deg, #06201a, #1f7a6a);
+}
+
+.kb-boss-card__record {
+  margin-top: 4px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #6b4a2b;
+}
+
+.kb-wanted__sub {
+  margin: 0;
+  font-weight: 700;
+  color: #6b4a2b;
+}
+
+.kb-guide__heading {
+  margin: 6px 0 0;
+  font: 400 1.1rem var(--kb-title);
+  color: var(--kb-gold);
+}
+
+.kb-guide__bosses {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.kb-guide__bosses li {
+  display: grid;
+  gap: 2px;
+  padding: 8px 10px;
+  color: var(--kb-muted);
+  background: rgb(0 0 0 / 20%);
+  border: 1px solid var(--kb-line);
+  border-radius: 8px;
+}
+
+.kb-guide__bosses small {
+  color: var(--kb-sand);
+}
+
 /* ---------- Layar sempit ---------- */
 
 @media (max-width: 600px) {
@@ -742,7 +955,8 @@
   }
 
   .kb-guide__patterns,
-  .kb-best {
+  .kb-best,
+  .kb-difficulty {
     grid-template-columns: 1fr;
   }
 }

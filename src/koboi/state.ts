@@ -1,15 +1,17 @@
 import { ARENA, PLAYER, type PatternId } from './config'
 
 /**
- * Tipe dan state KOBOI (tanpa DOM), plus pembantu kecil yang dipakai engine.ts dan patterns.ts:
+ * Tipe dan state KOBOI (tanpa DOM), plus pembantu kecil yang dipakai engine.ts, boss.ts, dan patterns.ts:
  * kolam peluru, pembuat hazard, acak ber-seed, dan geometri tabrakan.
  */
 
 export type Mode = 'endless' | 'boss'
+export type BossId = 'elang' | 'dinamit' | 'masinis'
+export type Difficulty = 'koboi' | 'sheriff' | 'legenda'
 
 export type ShotKind = 'bullet' | 'tumbleweed' | 'thorn' | 'dust'
 
-/** Satu proyektil. Disimpan di kolam (array dipakai ulang) supaya tidak membuat objek baru tiap tembakan. */
+/** Satu proyektil musuh. Disimpan di kolam (array dipakai ulang) supaya tidak membuat objek baru tiap tembakan. */
 export interface Shot {
   alive: boolean
   kind: ShotKind
@@ -34,15 +36,20 @@ export interface Shot {
   hop: number
   /** Sudah pernah masuk arena (baru dibuang saat keluar lagi). */
   entered: boolean
+  /** Sudah menyerempet pemain (mengisi meter Mata Elang sekali saja). */
+  grazed: boolean
 }
 
 export type Hazard =
   /** Penembak di luar arena (Kipas Revolver, Tanda Buronan). `flash` = sisa kilatan moncong. */
   | { kind: 'gunman'; pattern: PatternId; x: number; y: number; aim: number; t: number; life: number; flash: number; glint: number }
-  /** Dinamit: dilempar, sumbu menyala `fuse` detik, lalu meledak (`boom` = waktu sejak meledak). */
-  | { kind: 'blast'; pattern: PatternId; x: number; y: number; r: number; fuse: number; total: number; boom: number; fromX: number; hurt: boolean; t: number }
-  /** Tanda Buronan: mengikuti pemain, lalu terkunci, lalu ditembak. */
-  | { kind: 'mark'; pattern: PatternId; x: number; y: number; r: number; follow: number; lock: number; t: number; fired: number; gx: number; gy: number }
+  /**
+   * Dinamit/lampu gantung: dilempar/jatuh, sumbu menyala `fuse` detik, lalu meledak (`boom` = waktu sejak
+   * meledak). `kick` = bisa ditendang balik ke bos dengan dash (Bocah Dinamit).
+   */
+  | { kind: 'blast'; pattern: PatternId; x: number; y: number; r: number; fuse: number; total: number; boom: number; fromX: number; fromY: number; hurt: boolean; t: number; style: 'dynamite' | 'lamp'; kick: boolean; kicked: boolean }
+  /** Tanda Buronan: mengikuti pemain (atau memprediksi arah geraknya), lalu terkunci, lalu ditembak. */
+  | { kind: 'mark'; pattern: PatternId; x: number; y: number; r: number; follow: number; lock: number; t: number; fired: number; gx: number; gy: number; lead: number }
   /** Laso melingkar: berporos di sudut, menyapu sudut `from`→`to`. */
   | { kind: 'arc'; pattern: PatternId; px: number; py: number; length: number; from: number; to: number; warn: number; sweep: number; t: number }
   /** Laso lurus: tali melintang yang bergerak, dengan simpul (celah) di `gap`. */
@@ -59,6 +66,8 @@ export type Hazard =
   | { kind: 'spinner'; pattern: PatternId; x: number; y: number; arms: number; angle: number; spin: number; speed: number; warn: number; fire: number; every: number; next: number; t: number }
   /** Tong Mesiu: menggelinding ke titik sasaran, sumbu menyala, lalu pecah jadi cincin serpihan bercelah. */
   | { kind: 'barrel'; pattern: PatternId; x: number; y: number; fromX: number; fromY: number; tx: number; ty: number; roll: number; fuse: number; pieces: number; speed: number; t: number; burst: boolean }
+  /** Tembakan terakhir: lorong aman yang bergeser (panduan hijau di atas arena). */
+  | { kind: 'corridor'; pattern: PatternId; x: number; width: number; t: number; life: number }
 
 export type Edge = 'top' | 'bottom' | 'left' | 'right'
 
@@ -83,31 +92,100 @@ export interface Run {
   step: (dt: number) => void
 }
 
-export type Phase = 'countdown' | 'attack' | 'break' | 'recovery' | 'duel' | 'over' | 'won'
+export type Phase = 'countdown' | 'attack' | 'break' | 'recovery' | 'reload' | 'laststand' | 'duel' | 'over' | 'won'
 
 export interface Duel {
   /** Kapan aba-aba "TEMBAK!" muncul (detik sejak duel dimulai). */
   signal: number
   t: number
   /** Hasil: null = belum, lalu teks hasilnya. */
-  result: null | 'early' | 'slow' | 'hit' | 'fast'
+  result: null | 'early' | 'slow' | 'hit' | 'fast' | 'decoy'
   reaction: number
   /** Sisa waktu menampilkan hasil. */
   show: number
+  /** Kata pengecoh yang muncul sebelum aba-aba asli. */
+  decoys: { at: number; word: string }[]
+  /** Duel penentuan (setelah tembakan terakhir): menang = bos kalah. */
+  final: boolean
 }
 
 export interface Boss {
+  id: BossId
   hp: number
   maxHp: number
-  phase: number
+  /** Babak 0–2. */
+  act: number
   attacks: number
-  /** Kilatan putih saat terluka, dan animasi menembak. */
+  /** Kilatan putih saat terluka, dan animasi menembak/melempar. */
   hurt: number
   draw: number
+  x: number
+  y: number
+  targetX: number
+  /** Sedang berguling menghindar (kebal) dan arah gulingnya. */
+  roll: number
+  rollDir: number
+  rollCd: number
+  /** Sisa waktu mengisi ulang (celah serang: tidak bisa menghindar). */
+  reload: number
+  /** 'fight' → 'laststand' (tembakan terakhir) → 'final' (duel penentuan). */
+  stage: 'fight' | 'laststand' | 'final'
+  /** Bos mini di mode Bertahan (tanpa tembakan terakhir dan duel penentuan). */
+  mini: boolean
+  /** Tambahan tingkat kesulitan pola (mode Bertahan: ikut gelombang). */
+  levelBonus: number
+}
+
+/** Peluru pemain atau dinamit yang ditendang balik. */
+export interface PlayerShot {
+  kind: 'bullet' | 'kick'
+  x: number
+  y: number
+  vx: number
+  vy: number
+  homing: boolean
+  alive: boolean
+  age: number
+}
+
+export interface Pickup {
+  x: number
+  y: number
+  t: number
+  life: number
+}
+
+/** Meja saloon: menahan peluru musuh dan menghalangi gerak; hancur setelah beberapa tembakan. */
+export interface Cover {
+  x: number
+  y: number
+  w: number
+  h: number
+  hp: number
+  hit: number
+}
+
+/** Celah antar gerbong di atap kereta: jatuh = −1 nyawa, kecuali sedang dash (melompat) atau lewat papan. */
+export interface Pit {
+  x: number
+  w: number
+  plankY: number
+  plankH: number
+}
+
+/** Tuas rel (Hantu Masinis): berdiri di atasnya sampai penuh untuk membelokkan kereta ke bos. */
+export interface Lever {
+  x: number
+  y: number
+  progress: number
+  t: number
+  life: number
+  pulled: number
 }
 
 export interface GameState {
   mode: Mode
+  difficulty: Difficulty
   seed: number
   rand: () => number
   phase: Phase
@@ -129,6 +207,9 @@ export interface GameState {
     /** Arah hadap terakhir (untuk dash tanpa tombol arah). */
     faceX: number
     faceY: number
+    /** Kecepatan gerak terakhir (dipakai Tanda Buronan yang memprediksi). */
+    vx: number
+    vy: number
     /** Hadap gambar: 'side' (kiri/kanan sesuai `flip`), 'up' (membelakangi), 'down' (menghadap layar). */
     view: 'side' | 'up' | 'down'
     flip: boolean
@@ -152,7 +233,24 @@ export interface GameState {
   dodged: number
   perfectWaves: number
   boss: Boss | null
+  /** Bos yang sudah dikalahkan (mode Bertahan). */
+  bossesDefeated: number
   duel: Duel | null
+  /** Revolver pemain (hanya aktif saat melawan bos). */
+  gun: { ammo: number; max: number; cool: number }
+  pickups: Pickup[]
+  pickupTimer: number
+  pshots: PlayerShot[]
+  /** Meter Mata Elang (0–1) dan sisa waktu gerak lambat. */
+  deadeye: { meter: number; active: number }
+  covers: Cover[]
+  pits: Pit[]
+  pitTimer: number
+  levers: Lever[]
+  leverTimer: number
+  /** Dorongan angin (satuan/detik, negatif = ke kiri) dan gulungan lantai (atap kereta). */
+  wind: number
+  scroll: number
   banner: { title: string; subtitle: string; time: number; total: number } | null
   shake: number
   /** Kilatan layar saat terkena. */
@@ -205,6 +303,7 @@ export function spawnShot(s: GameState, kind: ShotKind, pattern: PatternId, x: n
     baseY: y,
     hop: 0,
     entered: false,
+    grazed: false,
     ...extra,
   })
   return shot
@@ -249,12 +348,12 @@ export function inward(edge: Edge): [number, number] {
   return edge === 'top' ? [0, 1] : edge === 'bottom' ? [0, -1] : edge === 'left' ? [1, 0] : [-1, 0]
 }
 
-export function newPlayer() {
+export function newPlayer(hp: number = PLAYER.hp) {
   return {
     x: ARENA_CX,
     y: ARENA_CY + ARENA.h * 0.2,
-    hp: PLAYER.hp,
-    maxHp: PLAYER.hp,
+    hp,
+    maxHp: hp,
     invuln: 0,
     dash: 0,
     dashCooldown: 0,
@@ -262,6 +361,8 @@ export function newPlayer() {
     dashY: 0,
     faceX: 0,
     faceY: -1,
+    vx: 0,
+    vy: 0,
     view: 'side' as const,
     flip: false,
     moving: false,
@@ -276,4 +377,11 @@ export function puff(s: GameState, x: number, y: number, count: number, color: s
     s.particles.push({ x, y, vx: Math.cos(angle) * v, vy: Math.sin(angle) * v, life: 0.4 + s.rand() * 0.5, age: 0, size: size * (0.6 + s.rand() * 0.8), color, kind })
   }
   if (s.particles.length > 400) s.particles.splice(0, s.particles.length - 400)
+}
+
+/** Tabrakan lingkaran (x,y,r) dengan persegi panjang. */
+export function circleRect(x: number, y: number, r: number, box: { x: number; y: number; w: number; h: number }): boolean {
+  const cx = Math.max(box.x, Math.min(box.x + box.w, x))
+  const cy = Math.max(box.y, Math.min(box.y + box.h, y))
+  return Math.hypot(x - cx, y - cy) < r
 }

@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { WORLD } from './config'
-import { createGame, dash, draw, releaseInput, setInput, summary, update, type Direction, type GameState, type Summary } from './engine'
+import { createGame, dash, deadeye, draw, fire, releaseInput, setInput, summary, update, type Direction, type GameState, type Summary } from './engine'
 import { render } from './render'
 import { getSettings } from './settings'
 import { playEvents } from './sfx'
-import type { Mode } from './state'
+import type { BossId, Mode } from './state'
 
 /** Jeda setelah kalah/menang sebelum poster hasil muncul, supaya akhir permainan sempat terlihat. */
 const OVER_DELAY_MS = 1400
@@ -24,7 +24,7 @@ const KEYS: Record<string, Direction> = {
  * Layar permainan: kanvas + loop `requestAnimationFrame` (engine.ts lalu render.ts). React hanya
  * menyimpan status jeda; state permainan ada di `gameRef` dan diubah langsung tiap frame.
  */
-export function KoboiGame({ mode, onOver, onExit, onSettings, settingsOpen }: { mode: Mode; onOver: (result: Summary) => void; onExit: () => void; onSettings: () => void; settingsOpen: boolean }) {
+export function KoboiGame({ mode, bossId, onOver, onExit, onSettings, settingsOpen }: { mode: Mode; bossId?: BossId; onOver: (result: Summary) => void; onExit: () => void; onSettings: () => void; settingsOpen: boolean }) {
   const wrapRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const gameRef = useRef<GameState | null>(null)
@@ -54,7 +54,8 @@ export function KoboiGame({ mode, onOver, onExit, onSettings, settingsOpen }: { 
     const wrap = wrapRef.current!
     const canvas = canvasRef.current!
     const ctx = canvas.getContext('2d')!
-    const game = createGame(mode, getSettings().dash)
+    const settings = getSettings()
+    const game = createGame(mode, { difficulty: settings.difficulty, dash: settings.dash, bossId })
     gameRef.current = game
     pausedRef.current = false
     // Hanya saat pengembangan: state bisa dibaca dari konsol / tes browser. Tidak ikut di build produksi.
@@ -125,6 +126,15 @@ export function KoboiGame({ mode, onOver, onExit, onSettings, settingsOpen }: { 
         pause(!pausedRef.current)
         return
       }
+      const key = event.key.toLowerCase()
+      if (key === 'f' || key === 'j' || key === 'e' || key === 'q') {
+        if (pausedRef.current) return
+        event.preventDefault()
+        // F/J: tembak (atau menembak di duel cepat); E/Q: Mata Elang.
+        if (key === 'e' || key === 'q') act((g) => deadeye(g))
+        else act((g) => (g.phase === 'duel' ? (event.repeat ? undefined : draw(g)) : fire(g)))
+        return
+      }
       if (event.key === ' ' || event.key === 'Shift' || event.key === 'Enter') {
         // Tombol menu yang sedang difokus tetap boleh menerima Enter/Spasi saat dijeda.
         if (pausedRef.current) return
@@ -156,7 +166,7 @@ export function KoboiGame({ mode, onOver, onExit, onSettings, settingsOpen }: { 
       document.removeEventListener('visibilitychange', onHidden)
     }
     // `run` berubah = mulai ulang dari awal dengan state baru.
-  }, [mode, run])
+  }, [mode, bossId, run])
 
   function restart() {
     setPaused(false)
@@ -181,10 +191,11 @@ export function KoboiGame({ mode, onOver, onExit, onSettings, settingsOpen }: { 
         ref={wrapRef}
         className="kb-stage"
         onPointerDown={() => {
-          // Klik/ketuk saat duel cepat = menembak.
+          // Klik/ketuk: menembak di duel cepat, atau menembak revolver ke bos.
           const game = gameRef.current
-          if (game && game.phase === 'duel' && !pausedRef.current) {
-            draw(game)
+          if (game && !pausedRef.current) {
+            if (game.phase === 'duel') draw(game)
+            else fire(game)
             playEvents(game.events)
             game.events = []
           }
@@ -214,7 +225,7 @@ export function KoboiGame({ mode, onOver, onExit, onSettings, settingsOpen }: { 
         )}
       </div>
       <p className="kb-keys" aria-hidden="true">
-        <kbd>WASD</kbd>/<kbd>←↑→↓</kbd> gerak · <kbd>Spasi</kbd>/<kbd>Shift</kbd> dash · <kbd>Esc</kbd> jeda{mode === 'boss' && <> · duel: <kbd>Spasi</kbd>/<kbd>Enter</kbd>/klik saat "TEMBAK!"</>}
+        <kbd>WASD</kbd>/<kbd>←↑→↓</kbd> gerak · <kbd>Spasi</kbd>/<kbd>Shift</kbd> dash · <kbd>F</kbd>/klik tembak bos · <kbd>E</kbd> Mata Elang · <kbd>Esc</kbd> jeda
       </p>
     </div>
   )
