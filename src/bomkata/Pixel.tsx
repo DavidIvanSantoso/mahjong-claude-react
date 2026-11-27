@@ -98,5 +98,5 @@ const FACE = ['..aaaa..', '.aaaaaa.', 'aanaana.', 'aaaaaaaa', 'aaaaaaaa', 'aamaa
 const FACE_OUT = ['..dddd..', '.dddddd.', 'dxdddxd.', 'ddxdxdd.', 'dxdddxdd', 'dddddddd', '.dmmmmd.', '..dddd..']
 
 export function PixelFace({ out, seat }: { out?: boolean; seat: number }) {
-  return <PixelArt rows={out ? FACE_OUT : FACE} className={`bk-face bk-face--${seat % 6}`} />
+  return <PixelArt rows={out ? FACE_OUT : FACE} className={`bk-face bk-face--${seat % 8}`} />
 }

@@ -7,7 +7,7 @@ import { drawFromBag, isTwistKind, RECENT_WINDOW, shuffled, TWIST_CHANCE, twistO
 import { loadCategory, loadIndex, normalizeWord, type CategoryEntry } from './words'
 
 export const MIN_PLAYERS = 2
-export const MAX_PLAYERS = 6
+export const MAX_PLAYERS = 8
 
 /** Lama kategori baru ditampilkan (termasuk animasi undian) sebelum bom mulai berdetak. */
 const READY_MS = 3200

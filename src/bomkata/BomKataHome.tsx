@@ -2,6 +2,7 @@ import gsap from 'gsap'
 import { useLayoutEffect, useRef, type CSSProperties, type ReactNode } from 'react'
 import { CreatorCredit } from '../components/HomeScreen'
 import { MusicSlot } from '../components/MusicPlayer'
+import { MAX_PLAYERS, MIN_PLAYERS } from './net'
 import { PixelBomb } from './Pixel'
 
 /** Huruf-huruf yang melayang di sekitar bom di homescreen. */
@@ -45,7 +46,7 @@ export function BomKataHome({ nav, onOnline, onGuide }: { nav: ReactNode; onOnli
         <button type="button" className="bk-btn bk-btn--big bk-btn--alt" onClick={onGuide}>
           CARA MAIN
         </button>
-        <p className="bk-home__note">2–6 pemain · 2 nyawa · kamus Bahasa Indonesia</p>
+        <p className="bk-home__note">{MIN_PLAYERS}–{MAX_PLAYERS} pemain · 2 nyawa · kamus Bahasa Indonesia</p>
       </div>
 
       <div className="bk-home__stage" aria-hidden="true">

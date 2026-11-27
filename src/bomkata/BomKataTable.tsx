@@ -77,6 +77,11 @@ function CategoryRoller({
 function Seat({ view, seat, me, offline, wins }: { view: BomKataView; seat: number; me: number; offline: boolean; wins: number }) {
   const player = view.players[seat]
   const angle = (seatAngle(seat, me, view.players.length) * Math.PI) / 180
+  // Meja ramai (7–8 pemain): kursi diatur melingkar lonjong (lebih tinggi daripada lebar) supaya kursi
+  // kiri-kanan tidak terpotong di layar sempit dan kursi atas-bawah tidak saling menutupi.
+  const crowded = view.players.length > 6
+  const rx = crowded ? 38 : 41
+  const ry = crowded ? 43 : 41
   const out = player.lives === 0
   const holding = view.current === seat && (view.phase === 'play' || view.phase === 'ready')
   const hit = view.exploded === seat && (view.phase === 'boom' || view.phase === 'over')
@@ -85,7 +90,7 @@ function Seat({ view, seat, me, offline, wins }: { view: BomKataView; seat: numb
       className={['bk-seat', holding && 'bk-seat--turn', out && 'bk-seat--out', hit && 'bk-seat--hit', seat === me && 'bk-seat--me']
         .filter(Boolean)
         .join(' ')}
-      style={{ '--x': `${50 + 41 * Math.cos(angle)}%`, '--y': `${50 + 41 * Math.sin(angle)}%` } as CSSProperties}
+      style={{ '--x': `${50 + rx * Math.cos(angle)}%`, '--y': `${50 + ry * Math.sin(angle)}%` } as CSSProperties}
       title={offline ? `${player.name} terputus` : undefined}
     >
       <PixelFace seat={seat} out={out} />
@@ -212,7 +217,7 @@ export function BomKataTable({ room, onExit }: { room: BomKataRoom; onExit: () =
             rolling={phase === 'ready'}
           />
 
-          <section className="bk-arena" aria-label="Meja bundar">
+          <section className={`bk-arena ${n > 6 ? 'bk-arena--crowded' : ''}`} aria-label="Meja bundar">
             <div className="bk-arena__table" aria-hidden="true" />
             <ul className="bk-arena__seats">
               {players.map((_, seat) => (

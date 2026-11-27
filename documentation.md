@@ -2,7 +2,7 @@
 
 Game mahjong 2D untuk 2–4 pemain, dibuat dengan React dan TypeScript. Bisa dimainkan bergantian di satu perangkat, atau online lewat room (PeerJS) dengan tiap pemain di perangkatnya sendiri.
 
-Situs yang sama juga memuat game kartu **UNO** (online, 2–6 pemain; [bagian 11](#11-game-uno)) **Capsa** (online, 2–4 pemain; [bagian 12](#12-game-capsa)), **KA-BOOM!** (online, 2–6 pemain; [bagian 13](#13-game-ka-boom)), **Armada Royale** (online, 2–6 pemain; [bagian 14](#14-game-armada-royale)), **ASBUN** (online, 4–10 pemain; [bagian 15](#15-game-asbun)), game mengetik **PALUNG** (1 pemain; [bagian 16](#16-game-palung)), balapan labirin **LABIRIN** (online, 2–8 pemain; [bagian 17](#17-game-labirin)), dan game menghindar peluru **KOBOI** (1 pemain; [bagian 18](#18-game-koboi)). Navbar di pojok kiri atas homescreen dipakai untuk berpindah game.
+Situs yang sama juga memuat game kartu **UNO** (online, 2–6 pemain; [bagian 11](#11-game-uno)) **Capsa** (online, 2–4 pemain; [bagian 12](#12-game-capsa)), **KA-BOOM!** (online, 2–8 pemain; [bagian 13](#13-game-ka-boom)), **Armada Royale** (online, 2–6 pemain; [bagian 14](#14-game-armada-royale)), **ASBUN** (online, 4–10 pemain; [bagian 15](#15-game-asbun)), game mengetik **PALUNG** (1 pemain; [bagian 16](#16-game-palung)), balapan labirin **LABIRIN** (online, 2–8 pemain; [bagian 17](#17-game-labirin)), dan game menghindar peluru **KOBOI** (1 pemain; [bagian 18](#18-game-koboi)). Navbar di pojok kiri atas homescreen dipakai untuk berpindah game.
 
 - Situs: https://davidivansantoso.github.io/mahjong-claude-react/
 - Repo: https://github.com/DavidIvanSantoso/mahjong-claude-react
@@ -590,7 +590,9 @@ Nama internalnya tetap `bomkata` (folder `src/bomkata/`, link undangan `?game=bo
 
 ### Ringkasan
 
-Gabungan adu kata dan *hot potato*. Online, 2–6 pemain duduk di meja bundar, masing-masing punya 2 nyawa.
+Gabungan adu kata dan *hot potato*. Online, 2–8 pemain duduk di meja bundar, masing-masing punya 2 nyawa.
+
+Kapasitas room 8 (`MAX_PLAYERS` di `net.ts`); pemain ke-9 ditolak dengan "Room sudah penuh". Tiap kursi punya warna wajah sendiri (8 warna, `.bk-face--0` sampai `--7`). Dengan 7–8 pemain meja memakai tata letak ramai (`bk-arena--crowded`): kursi lebih kecil dan diatur melingkar lonjong (jari-jari 38% mendatar, 43% tegak) supaya kursi kiri-kanan tidak terpotong di HP dan kursi atas-bawah tidak saling menutupi. Sampai 6 pemain tata letaknya tetap lingkaran 41%. Aturan main tidak bergantung pada jumlah pemain, tetapi makin banyak pemain makin banyak ronde sampai tersisa satu pemenang (8 pemain × 2 nyawa = paling banyak 15 ronde).
 
 1. Setiap ronde, sebuah kategori diundi (animasi mesin slot), misalnya Hewan atau Buah. Kalau host menyalakan **Next Level**, sekitar 40% ronde mendapat tantangan tambahan (lihat *Tantangan (Next Level)* di bawah), misalnya "Buah berakhiran A".
 2. Bom di tengah mulai berdetak dengan durasi acak tersembunyi (12–30 detik). Panah di bom menunjuk pemain yang memegangnya.

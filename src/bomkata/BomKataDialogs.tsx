@@ -1,6 +1,6 @@
 import { useEffect, useRef, type ReactNode } from 'react'
 import { Confetti } from '../components/Confetti'
-import type { BomKataLobby, BomKataView } from './net'
+import { MAX_PLAYERS, MIN_PLAYERS, type BomKataLobby, type BomKataView } from './net'
 import { LIVES } from './state'
 
 const PIXEL_CONFETTI = ['#F5C451', '#F47735', '#EF4B55', '#62C96B', '#294A7A', '#F4F7FF']
@@ -37,7 +37,9 @@ export function GuideContent() {
       </Section>
       <Section title="Cara main">
         <ul>
-          <li>2–6 pemain duduk melingkar. Tiap pemain punya {LIVES} nyawa.</li>
+          <li>
+            {MIN_PLAYERS}–{MAX_PLAYERS} pemain duduk melingkar. Tiap pemain punya {LIVES} nyawa.
+          </li>
           <li>Setiap ronde, sebuah <strong>kategori</strong> diundi, misalnya Hewan atau Buah.</li>
           <li>
             Kalau host menyalakan <strong>Next Level</strong>, kategori kadang diberi tantangan: berawalan huruf tertentu, berakhiran huruf tertentu,

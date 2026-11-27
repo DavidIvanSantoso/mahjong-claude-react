@@ -153,6 +153,8 @@
 .bk-face--3 { --seat-color: var(--bk-red); }
 .bk-face--4 { --seat-color: #7fb2ff; }
 .bk-face--5 { --seat-color: #e58fd1; }
+.bk-face--6 { --seat-color: #5ed6c8; }
+.bk-face--7 { --seat-color: #b48cff; }
 
 /* ---------- Tombol pixel ---------- */
 
@@ -892,6 +894,26 @@
   filter: grayscale(1);
 }
 
+/* 7–8 pemain: kursi lebih ringkas supaya delapan kursi muat mengelilingi meja */
+.bk-arena--crowded .bk-seat {
+  width: clamp(70px, 16vw, 100px);
+  padding: 5px 4px;
+}
+
+.bk-arena--crowded .bk-seat .bk-face {
+  width: clamp(24px, 5.5vw, 34px);
+  height: clamp(24px, 5.5vw, 34px);
+}
+
+.bk-arena--crowded .bk-seat__name {
+  font-size: 0.95rem;
+}
+
+.bk-arena--crowded .bk-heart {
+  width: 15px;
+  height: 13px;
+}
+
 .bk-seat--me .bk-seat__name {
   color: var(--bk-yellow);
 }
@@ -1083,6 +1105,21 @@
   .bk-heart {
     width: 14px;
     height: 12px;
+  }
+
+  .bk-arena--crowded .bk-seat {
+    width: clamp(60px, 18vw, 72px);
+    padding: 4px 3px;
+    gap: 1px;
+  }
+
+  .bk-arena--crowded .bk-seat__name {
+    font-size: 0.8rem;
+  }
+
+  .bk-arena--crowded .bk-heart {
+    width: 12px;
+    height: 10px;
   }
 
 }
